@@ -1,0 +1,42 @@
+flowchart TD
+    Start([User Opens App]) --> Login[Login Page]
+    Login --> RoleCheck{Role?}
+
+    %% ASSISTANT PATH
+    RoleCheck -->|Assistant| AssistPortal[Assistant Portal]
+    AssistPortal --> ViewTable[View Active Cycle Record Table]
+    AssistPortal --> AddEntry[Open: Add Patient Record Form]
+
+    AddEntry --> FillForm[Enter Name, Category GP/Case,\nDiagnosis, Total Cost, Amount Paid Today]
+    FillForm --> SaveEntry[Save Entry]
+    SaveEntry --> ViewTable
+
+    ViewTable --> CycleOpen{Cycle Locked?}
+    CycleOpen -->|No, Open| EditEntry[Edit Existing Record]
+    EditEntry --> SaveEntry
+    CycleOpen -->|Yes, Locked| ReadOnly[Read-Only View\nNo Edits Allowed]
+
+    %% ADMIN PATH
+    RoleCheck -->|Admin| AdminPortal[Admin Portal]
+    AdminPortal --> Dashboard[Live Financial Dashboard]
+    AdminPortal --> LabRecon[Case & Lab Fee Reconciliation]
+    AdminPortal --> Overhead[Monthly Overhead & Expenses Input]
+    AdminPortal --> Closeout[Month-End Closeout]
+
+    LabRecon --> AssignLab[Assign Lab Fee to Case]
+    AssignLab --> AutoAgg[Lab Fees Auto-Aggregate]
+    AutoAgg --> Dashboard
+
+    Overhead --> EnterOverhead[Enter Salary, Bonus,\nRent, Utilities]
+    EnterOverhead --> Dashboard
+
+    Dashboard --> ViewKPIs[View Revenue, Commission,\nNet Profit/Loss]
+
+    Closeout --> ConfirmStep1[Confirmation Step 1]
+    ConfirmStep1 --> ConfirmStep2[Confirmation Step 2]
+    ConfirmStep2 --> Partition{Partition Records}
+    Partition -->|Balance = 0| HardDelete[Hard Delete\nSettled Records]
+    Partition -->|Balance > 0| Carryover[Carry Forward\nto New Cycle]
+    HardDelete --> NewCycle[New Monthly Cycle Opens]
+    Carryover --> NewCycle
+    NewCycle --> AssistPortal

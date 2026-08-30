@@ -1,0 +1,52 @@
+erDiagram
+    USERS ||--o{ MONTHLY_CYCLES : "manages (admin)"
+    MONTHLY_CYCLES ||--o{ PATIENT_RECORDS : "contains"
+    PATIENT_RECORDS ||--o{ CASE_PAYMENTS : "has installments"
+    MONTHLY_CYCLES ||--|| MONTHLY_FINANCIALS : "summarized by"
+
+    USERS {
+        uuid id PK
+        string username
+        string password_hash
+        enum role "ADMIN or ASSISTANT"
+    }
+
+    MONTHLY_CYCLES {
+        uuid id PK
+        string month_year
+        enum status "ACTIVE, LOCKED, CLOSED"
+    }
+
+    PATIENT_RECORDS {
+        uuid id PK
+        uuid cycle_id FK
+        date entry_date
+        string patient_name
+        string address "optional"
+        enum category "GP or CASE"
+        string diagnosis
+        decimal total_cost
+        decimal lab_fee
+        string payment_status
+        boolean is_carried_forward
+    }
+
+    CASE_PAYMENTS {
+        uuid id PK
+        uuid record_id FK
+        date payment_date
+        decimal paid_amount
+        string payment_note
+    }
+
+    MONTHLY_FINANCIALS {
+        uuid id PK
+        uuid cycle_id FK
+        decimal total_gp
+        decimal total_case
+        decimal gross_income
+        decimal lab_fee
+        decimal doc_comm
+        decimal expenses
+        decimal net_profit
+    }
