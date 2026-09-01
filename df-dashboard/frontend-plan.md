@@ -7,7 +7,7 @@
 
 ---
 
-## Task 1 — Project Scaffolding
+## Task 1 — Project Scaffolding (9/1/2026 => 11:25AM)
 
 **Title:** Initialize Next.js project with Tailwind CSS and shadcn/ui
 
@@ -29,17 +29,17 @@
 
 ---
 
-## Task 2 — TypeScript Types from ERD
+## Task 2 — TypeScript Types from ERD (Completed 9/1/2026)
 
 **Title:** Generate TypeScript interfaces for all data models
 
-**Expected Outcome:** A `types/database.ts` file with typed interfaces for `User`, `MonthlyCycle`, `PatientRecord`, `CasePayment`, `MonthlyFinancials` — matching the ERD exactly.
+**Expected Outcome:** A `lib/global.ts` file with typed interfaces for `User`, `MonthlyCycle`, `PatientRecord`, `CasePayment`, `MonthlyFinancials`, `Lab` — matching the ERD exactly.
 
 **Things To Do:**
-- Read `dc-fms-erd.mmd` and translate each table into a TypeScript interface
-- Define enums: `UserRole` (ADMIN/ASSISTANT), `CycleStatus` (OPEN/CLOSED), `RecordCategory` (GP/CASE), `LabPaymentStatus` (PAID/UNPAID), `PaymentStatus` (PAID/UNPAID)
-- Define relationship types (e.g. `PatientRecord` has `CasePayment[]`)
-- Create a `MockData` type that mirrors the shape of Supabase query results (for easy swap later)
+- ✅ Read `dc-fms-erd.mmd` and translate each table into a TypeScript interface
+- ✅ Define enums: `UserRole` (ADMIN/ASSISTANT), `CycleStatus` (OPEN/CLOSED), `RecordCategory` (GP/CASE), `LabPaymentStatus` (PAID/UNPAID), `PaymentStatus` (PAID/UNPAID)
+- ✅ Define relationship types (e.g. `PatientRecordWithPayments` has `CasePayment[]`)
+- ✅ Create a `MockData` type that mirrors the shape of Supabase query results (for easy swap later)
 
 **Connection:** Depends on Task 1 (project exists). Types are used by every screen in Tasks 5–8.
 
