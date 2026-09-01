@@ -7,19 +7,25 @@
 
 ---
 
-## Task 1 — Project Scaffolding (9/1/2026 => 11:25AM)
+## Task 1 — Project Scaffolding (Completed 9/1/2026 11:25AM)
 
 **Title:** Initialize Next.js project with Tailwind CSS and shadcn/ui
 
 **Expected Outcome:** A running Next.js dev server with Tailwind configured, shadcn/ui components installed, and the `tokens.css` file imported in the global stylesheet.
 
 **Things To Do:**
-- `npx create-next-app@latest` with App Router, TypeScript, Tailwind CSS
-- Run `npx shadcn@latest init` to set up shadcn/ui
-- Install shadcn components: `npx shadcn@latest add button input label card dialog table badge alert select textarea skeleton sidebar separator pagination progress radio-group`
-- Move `tokens.css` into `app/globals.css` or import it — all CSS variables available in `:root`
-- Add Inter font via `next/font/google`
-- Verify dev server runs, Tailwind classes work, and CSS tokens are accessible
+- ✅ `npx create-next-app@latest` with App Router, TypeScript, Tailwind CSS
+- ✅ Run `npx shadcn@latest init` to set up shadcn/ui
+- ✅ Install shadcn components: `npx shadcn@latest add button input label card dialog table badge alert select textarea skeleton sidebar separator pagination progress radio-group`
+- ✅ Move `tokens.css` into `app/globals.css` or import it — all CSS variables available in `:root`
+- ✅ Add Inter font via `next/font/google`
+- ✅ Verify dev server runs, Tailwind classes work, and CSS tokens are accessible
+
+**Backup Plan Remarks:**
+- Project uses Next.js App Router — all pages under `app/` directory
+- shadcn/ui components are in `components/ui/` — import from `@/components/ui/`
+- Tailwind CSS v4 uses `@theme` directive for custom tokens
+- `tokens.css` is imported in `globals.css` — CSS variables available globally
 
 **Note:** Supabase client setup (`@supabase/supabase-js`, `@supabase/ssr`, `lib/supabase/*`) is handled in `backend-draft-plan.md` (B-4).
 
@@ -29,7 +35,7 @@
 
 ---
 
-## Task 2 — TypeScript Types from ERD (Completed 9/1/2026)
+## Task 2 — TypeScript Types from ERD (Completed 9/1/2026 11:25AM)
 
 **Title:** Generate TypeScript interfaces for all data models
 
@@ -41,27 +47,39 @@
 - ✅ Define relationship types (e.g. `PatientRecordWithPayments` has `CasePayment[]`)
 - ✅ Create a `MockData` type that mirrors the shape of Supabase query results (for easy swap later)
 
+**Backup Plan Remarks:**
+- All types are in `lib/global.ts` — single source of truth for data models
+- `MockData` type mirrors Supabase query results — swap context with Supabase client later
+- Enums are string-based — compatible with Supabase enum columns
+- Relationship types are optional extensions — use when needed for nested queries
+
 **Connection:** Depends on Task 1 (project exists). Types are used by every screen in Tasks 5–8.
 
 **Next Step →** Task 3
 
 ---
 
-## Task 3 — Auth & Login Page
+## Task 3 — Auth & Login Page (Completed 9/1/2026 11:45AM)
 
 **Title:** Build login page with mock authentication and role-based redirect
 
 **Expected Outcome:** A functional login page that authenticates via mock state, reads the user's role, and redirects to `/assistant` or `/admin`. Handles all 5 UI states from the checklist.
 
 **Things To Do:**
-- Create `app/page.tsx` as redirect to `/login`
-- Build `app/login/page.tsx` with username + password form using shadcn `Card`, `Input`, `Label`, `Button`, `Alert`
-- Implement mock auth — use a hardcoded credential check (e.g. `admin/admin123`, `assistant/assist123`) stored in `lib/mock-data.ts`
-- On success, store user role in React context or `useState` → redirect `/admin` or `/assistant`
-- On failure, show inline error using shadcn `Alert` (never reveal which field was wrong)
-- Implement all 5 states: ideal, empty (blank form), loading (shadcn `Skeleton`), error (inline `Alert`), edge case (long input, caps lock)
-- Create a simple `AuthContext` to hold the logged-in user and role (no middleware, no cookies)
-- After Supabase integration, replace context with `@supabase/ssr` session
+- ✅ Create `app/page.tsx` as redirect to `/login`
+- ✅ Build `app/login/page.tsx` with username + password form using shadcn `Card`, `Input`, `Label`, `Button`, `Alert`
+- ✅ Implement mock auth — use a hardcoded credential check (e.g. `admin/admin123`, `assistant/assist123`) stored in `lib/mock-data.ts`
+- ✅ On success, store user role in React context or `useState` → redirect `/admin` or `/assistant`
+- ✅ On failure, show inline error using shadcn `Alert` (never reveal which field was wrong)
+- ✅ Implement all 5 states: ideal, empty (blank form), loading (shadcn `Skeleton`), error (inline `Alert`), edge case (long input, caps lock)
+- ✅ Create a simple `AuthContext` to hold the logged-in user and role (no middleware, no cookies)
+- ⏳ After Supabase integration, replace context with `@supabase/ssr` session
+
+**Backend Plan Remarks:**
+- Mock auth uses hardcoded credentials in `lib/mock-data.ts` for easy replacement
+- `AuthContext` is isolated — swap `authenticateUser()` with Supabase `signInWithPassword()`
+- No cookies/session management yet — `@supabase/ssr` middleware will handle this
+- Role-based redirect logic is already in place — just need to connect to real user data
 
 **Connection:** First user-facing screen. Foundation for all portal access.
 
