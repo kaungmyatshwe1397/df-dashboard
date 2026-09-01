@@ -23,3 +23,7 @@
 7. **Mobile_responsive** required.
 8. **Never hardcode hex, pixel, or font-size values.** Always use CSS variable tokens.
 9. **Use shadcn components** for all UI: Button, Input, Label, Card, Dialog, Table, Badge, Alert, Select, Textarea, Skeleton, Sidebar, Separator, Pagination, Progress, RadioGroup, etc. Never build custom components when shadcn provides them.
+
+## Library & External Documentation Rule
+- Whenever working with a new library, an external framework (e.g., Tailwind CSS, shadcn/ui, Next.js), or when interacting with libraries after a long duration, you **MUST** use the Context7 MCP server  to check their latest official documentation first.
+- Always retrieve up-to-date syntax, configuration rules, and breaking changes from Context7, and explicitly summarize those updates/changes before writing or modifying code.

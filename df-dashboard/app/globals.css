@@ -1,0 +1,84 @@
+@import "tailwindcss";
+@import "../tokens.css";
+
+@theme inline {
+  /* Spacing */
+  --spacing-0: var(--space-0);
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-7: var(--space-7);
+  --spacing-8: var(--space-8);
+
+  /* Typography - Font Sizes (use --text-* namespace) */
+  --text-display: var(--font-display-size);
+  --text-h1: var(--font-h1-size);
+  --text-h2: var(--font-h2-size);
+  --text-h3: var(--font-h3-size);
+  --text-h4: var(--font-h4-size);
+  --text-body-lg: var(--font-body-lg-size);
+  --text-body: var(--font-body-size);
+  --text-body-sm: var(--font-body-sm-size);
+  --text-caption: var(--font-caption-size);
+
+  /* Typography - Font Families (use --font-* namespace) */
+  --font-heading: var(--font-family-heading);
+  --font-body: var(--font-family-body);
+
+  /* Typography - Weights (use --font-weight-* namespace) */
+  --font-weight-regular: var(--font-weight-regular);
+  --font-weight-medium: var(--font-weight-medium);
+  --font-weight-semibold: var(--font-weight-semibold);
+  --font-weight-bold: var(--font-weight-bold);
+
+  /* Typography - Line Heights (use --leading-* namespace) */
+  --leading-tight: var(--line-height-tight);
+  --leading-normal: var(--line-height-normal);
+  --leading-relaxed: var(--line-height-relaxed);
+
+  /* Typography - Letter Spacing (use --tracking-* namespace) */
+  --tracking-tight: var(--letter-spacing-tight);
+  --tracking-normal: var(--letter-spacing-normal);
+  --tracking-wide: var(--letter-spacing-wide);
+
+  /* Colors - Surface */
+  --color-surface-primary: var(--color-surface-primary);
+  --color-surface-secondary: var(--color-surface-secondary);
+  --color-surface-tertiary: var(--color-surface-tertiary);
+  --color-background: var(--color-background);
+
+  /* Colors - Text */
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-disabled: var(--color-text-disabled);
+  --color-text-inverse: var(--color-text-inverse);
+
+  /* Colors - Border */
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+
+  /* Colors - Action */
+  --color-action-primary: var(--color-action-primary);
+  --color-action-primary-hover: var(--color-action-primary-hover);
+  --color-action-primary-active: var(--color-action-primary-active);
+  --color-action-secondary: var(--color-action-secondary);
+
+  /* Colors - Feedback */
+  --color-success: var(--color-success);
+  --color-success-surface: var(--color-success-surface);
+  --color-warning: var(--color-warning);
+  --color-warning-surface: var(--color-warning-surface);
+  --color-danger: var(--color-danger);
+  --color-danger-surface: var(--color-danger-surface);
+  --color-info: var(--color-info);
+  --color-info-surface: var(--color-info-surface);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+}
