@@ -87,21 +87,36 @@
 
 ---
 
-## Task 4 — Layout Shells (Assistant + Admin)
+## Task 4 — Layout Shells (Assistant + Admin) (Completed 9/1/2026)
 
 **Title:** Create role-specific layout components with sidebar/header navigation
 
 **Expected Outcome:** Two layout wrappers — `AssistantLayout` and `AdminLayout` — each with a sidebar showing only the navigation items that role can access (per PRD Section 2).
 
 **Things To Do:**
-- Create `components/layout/Sidebar.tsx` with navigation links using shadcn `Sidebar`, `Button`, `Badge`, `Separator`
-- Create `app/assistant/layout.tsx` — sidebar links: "Record Table", "Add Entry" (hide financial links)
-- Create `app/admin/layout.tsx` — sidebar links: "Dashboard", "Lab Reconciliation", "Overhead", "Closeout"
-- Add user info display (username, shadcn `Badge` for role) and logout `Button` in sidebar footer
-- Use Lucide icons for nav items
-- Style using Tailwind + tokens (spacing, colors, typography)
-- Handle locked cycle state — visually indicate when cycle is locked in the layout
-- Read cycle lock state from mock data context
+- ✅ Create `components/layout/AppSidebar.tsx` with navigation links using shadcn `Sidebar`, `Button`, `Badge`, `Separator`
+- ✅ Create `app/assistant/layout.tsx` — sidebar links: "Record Table", "Add Entry" (hide financial links)
+- ✅ Create `app/admin/layout.tsx` — sidebar links: "Dashboard", "Lab Reconciliation", "Overhead", "Closeout"
+- ✅ Add user info display (username, shadcn `Badge` for role) and logout `Button` in sidebar footer
+- ✅ Use Lucide icons for nav items
+- ✅ Style using Tailwind + tokens (spacing, colors, typography)
+- ✅ Handle locked cycle state — visually indicate when cycle is locked in the layout
+- ✅ Read cycle lock state from mock data context (passed as `cycleLocked` prop, ready for DataContext)
+
+**Backup Plan Remarks:**
+- `AppSidebar` is a single shared component that accepts `cycleLocked` prop — avoids duplication
+- `SidebarMenuButton` uses `render` prop pattern (not `asChild`) — compatible with shadcn/ui base-nova style
+- Layouts redirect unauthorized users (assistant → `/assistant`, admin → `/admin`) using `useEffect`
+- Placeholder `page.tsx` files created for all routes — ready for Tasks 5–10 to replace
+- `TooltipProvider` not wrapped yet — add to root layout if tooltips are needed later
+
+**Backend Plan Remarks:**
+- Layout redirect logic uses mock `AuthContext` — swap with `@supabase/ssr` session check in middleware
+- `cycleLocked` prop will read from Supabase `monthly_cycles` table where `status = 'CLOSED'`
+- Logout button calls `useAuth().logout()` — replace with `supabase.auth.signOut()`
+- Role-based nav filtering stays on client — Supabase RLS enforces server-side access control
+- No server-side data fetching in layouts yet — `getActiveCycle()` call will move to layout or page-level query
+- Sidebar nav items are hardcoded per role — consider fetching allowed routes from a `user_roles` or config table if roles expand
 
 **Connection:** Depends on Task 3 (auth/role). Provides shell for Tasks 5–8.
 
@@ -294,12 +309,12 @@ Task 1 (Scaffolding)
 
 ## Task Summary
 
-| # | Task | Screen | Role |
-|---|------|--------|------|
-| 1 | Project Scaffolding | — | — |
-| 2 | TypeScript Types | — | — |
-| 3 | Auth & Login | `/login` | Both |
-| 4 | Layout Shells | Sidebar/Layout | Both |
+| # | Task | Screen | Role | Status |
+|---|------|--------|------|--------|
+| 1 | Project Scaffolding | — | — | ✅ |
+| 2 | TypeScript Types | — | — | ✅ |
+| 3 | Auth & Login | `/login` | Both | ✅ |
+| 4 | Layout Shells | Sidebar/Layout | Both | ✅ |
 | 5 | Record Table | `/assistant` | Assistant |
 | 6 | Add/Edit Modal | `/assistant` (modal) | Assistant |
 | 7 | Financial Dashboard | `/admin` | Admin |

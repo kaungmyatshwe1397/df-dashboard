@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,41 +11,37 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 
-type LoginState = "idle" | "error" | "success";
-
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, isAdmin } = useAuth();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [state, setState] = useState<LoginState>("idle");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [capsLockOn, setCapsLockOn] = useState(false);
 
-  // Redirect if already authenticated
+  // Redirect when auth state changes
   useEffect(() => {
     if (isAuthenticated) {
       router.push(isAdmin ? "/admin" : "/assistant");
     }
   }, [isAuthenticated, isAdmin, router]);
 
-  const handleKeyPress = (e: KeyboardEvent) => {
+  // Stable ref for caps lock handler to avoid re-registering listener
+  const handleCapsLock = useCallback((e: KeyboardEvent) => {
     setCapsLockOn(e.getModifierState("CapsLock"));
-  };
+  }, []);
 
   useEffect(() => {
-    document.addEventListener("keydown", handleKeyPress);
-    return () => document.removeEventListener("keydown", handleKeyPress);
-  }, []);
+    document.addEventListener("keydown", handleCapsLock);
+    return () => document.removeEventListener("keydown", handleCapsLock);
+  }, [handleCapsLock]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Empty state validation
     if (!username.trim() || !password.trim()) {
-      setState("error");
       setErrorMessage("Please enter both username and password");
       return;
     }
@@ -53,26 +49,18 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMessage("");
 
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
     const success = login(username, password);
 
-    if (success) {
-      setState("success");
-      // Redirect based on role
-      setTimeout(() => {
-        router.push(isAdmin ? "/admin" : "/assistant");
-      }, 500);
-    } else {
-      setState("error");
+    if (!success) {
       setErrorMessage("Invalid username or password");
+      setIsLoading(false);
+      return;
     }
 
-    setIsLoading(false);
+    // Success: isLoading stays true (skeleton shows while redirect fires)
+    // The useEffect above handles redirect when isAuthenticated flips to true
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
@@ -100,15 +88,13 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Error Alert */}
-            {state === "error" && errorMessage && (
+            {errorMessage && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{errorMessage}</AlertDescription>
               </Alert>
             )}
 
-            {/* Caps Lock Warning */}
             {capsLockOn && (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
@@ -116,7 +102,6 @@ export default function LoginPage() {
               </Alert>
             )}
 
-            {/* Username Field */}
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <Input
@@ -130,7 +115,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Password Field */}
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -144,12 +128,10 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Submit Button */}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
 
-            {/* Demo Credentials */}
             <div className="text-body-sm text-text-secondary text-center">
               <p>Demo: admin/admin123 or assistant/assist123</p>
             </div>
