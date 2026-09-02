@@ -27,6 +27,8 @@
 8. **Never hardcode hex, pixel, or font-size values.** Always use CSS variable tokens.
 9. **Use shadcn components** for all UI: Button, Input, Label, Card, Dialog, Table, Badge, Alert, Select, Textarea, Skeleton, Sidebar, Separator, Pagination, Progress, RadioGroup, etc. Never build custom components when shadcn provides them.
 10. **Follow `docs/comment_methods.md`** for all code comments. Explain *why*, not *what*. No redundant syntax restatements, no dead/commented-out code.
+11. **Write descriptive comment** when create a new .ts or .tsx as heading of that file .Use `docs\comment_method.md` as reference.
+12. **Write to do list of required unit or component tests** , so we can remember and later write it.
 
 ## Library & External Documentation Rule
 - Whenever working with a new library, an external framework (e.g., Tailwind CSS, shadcn/ui, Next.js), or when interacting with libraries after a long duration, you **MUST** use the `Context7 MCP server`  to check their latest official documentation first.

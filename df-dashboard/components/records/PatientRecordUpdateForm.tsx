@@ -35,6 +35,8 @@ interface FormErrors {
   patientId?: string;
   patientName?: string;
   diagnosis?: string;
+  caseType?: string;
+  teeth?: string;
   totalCost?: string;
   paid?: string;
 }
@@ -45,6 +47,8 @@ function getInitialForm(record: PatientRecord) {
     patientName: record.patient_name,
     address: record.address ?? "",
     diagnosis: record.diagnosis,
+    caseType: record.case_type ?? "",
+    teeth: record.teeth ?? "",
     totalCost: record.total_cost.toString(),
     labName: record.lab_name ?? "",
     labSendDate: record.lab_send_date ?? "",
@@ -129,8 +133,18 @@ export function PatientRecordUpdateForm({
     if (!form.patientName.trim()) {
       newErrors.patientName = "Patient name is required.";
     }
-    if (!form.diagnosis.trim()) {
-      newErrors.diagnosis = "Diagnosis is required.";
+
+    if (isCase) {
+      if (!form.caseType.trim()) {
+        newErrors.caseType = "Case type is required.";
+      }
+      if (!form.teeth.trim()) {
+        newErrors.teeth = "Select at least one tooth.";
+      }
+    } else {
+      if (!form.diagnosis.trim()) {
+        newErrors.diagnosis = "Diagnosis is required.";
+      }
     }
 
     const cost = parseFloat(form.totalCost);
@@ -163,11 +177,17 @@ export function PatientRecordUpdateForm({
       const cost = parseFloat(form.totalCost);
       const paidAmount = isCase ? parseFloat(form.paid) || 0 : cost;
 
+      const diagnosis = isCase
+        ? form.caseType + (form.teeth ? ` at ${form.teeth}` : "")
+        : form.diagnosis.trim();
+
       updateRecord(foundRecord.id, {
         patient_id: form.patientId.trim(),
         patient_name: form.patientName.trim(),
         address: form.address.trim() || undefined,
-        diagnosis: form.diagnosis.trim(),
+        diagnosis,
+        case_type: isCase ? form.caseType.trim() || undefined : undefined,
+        teeth: isCase ? form.teeth.trim() || undefined : undefined,
         total_cost: cost,
         lab_name: isCase && form.labName.trim() ? form.labName.trim() : undefined,
         lab_send_date: isCase && form.labSendDate ? form.labSendDate : undefined,

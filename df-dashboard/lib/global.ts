@@ -54,6 +54,11 @@ export interface Lab {
   lab_name: string;
 }
 
+export interface CaseType {
+  id: string;
+  name: string;
+}
+
 export interface PatientRecord {
   id: string;
   cycle_id: string;
@@ -63,6 +68,8 @@ export interface PatientRecord {
   address?: string;
   category: RecordCategory;
   diagnosis: string;
+  case_type?: string;
+  teeth?: string;
   total_cost: number;
   lab_name?: string;
   lab_send_date?: string;
@@ -128,6 +135,7 @@ export interface MockData {
   users: User[];
   monthly_cycles: MonthlyCycle[];
   labs: Lab[];
+  case_types: CaseType[];
   patient_records: PatientRecord[];
   case_payments: CasePayment[];
   monthly_financials: MonthlyFinancials[];

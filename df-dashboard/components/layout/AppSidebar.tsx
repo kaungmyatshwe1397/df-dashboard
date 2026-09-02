@@ -44,9 +44,9 @@ const assistantNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { title: "Records", href: "/admin/records", icon: TableProperties },
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { title: "Lab Reconciliation", href: "/admin-reconciliation", icon: FlaskConical },
-  { title: "Overhead", href: "/admin-overhead", icon: Calculator },
-  { title: "Closeout", href: "/admin-closeout", icon: CalendarCheck },
+  { title: "Lab Reconciliation", href: "/admin/reconciliation", icon: FlaskConical },
+  { title: "Overhead", href: "/admin/overhead", icon: Calculator },
+  { title: "Closeout", href: "/admin/closeout", icon: CalendarCheck },
 ];
 
 interface AppSidebarProps {

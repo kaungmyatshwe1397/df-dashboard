@@ -1,9 +1,12 @@
-// Case form fields — Patient ID, Name, Address, Diagnosis, Total Cost,
-// Lab Name, Lab Send Date, Delivery Date, Paid, Remaining.
+// Case form fields — Patient ID, Name, Address, Case Type, Tooth Numbers,
+// Total Cost, Lab Name, Lab Send Date, Delivery Date, Paid, Remaining.
+// Diagnosis is auto-generated from case type + teeth selection.
 
 import { Input } from "@/components/ui/input";
 import { RecordCategory } from "@/lib/global";
 import { FormField } from "./FormField";
+import { CaseTypeSelector } from "./CaseTypeSelector";
+import { ToothNumberGrid } from "./ToothNumberGrid";
 
 interface CaseFormFieldsProps {
   form: {
@@ -12,6 +15,8 @@ interface CaseFormFieldsProps {
     address: string;
     category: RecordCategory;
     diagnosis: string;
+    caseType: string;
+    teeth: string;
     totalCost: string;
     labName: string;
     labSendDate: string;
@@ -22,12 +27,20 @@ interface CaseFormFieldsProps {
     patientId?: string;
     patientName?: string;
     diagnosis?: string;
+    caseType?: string;
+    teeth?: string;
     totalCost?: string;
     paid?: string;
   };
   remaining: string;
   saving: boolean;
   updateField: (field: string, value: string) => void;
+}
+
+function generateDiagnosis(caseType: string, teeth: string): string {
+  if (!caseType) return "";
+  if (!teeth) return caseType;
+  return `${caseType} at ${teeth}`;
 }
 
 export function CaseFormFields({
@@ -37,6 +50,8 @@ export function CaseFormFields({
   saving,
   updateField,
 }: CaseFormFieldsProps) {
+  const generatedDiagnosis = generateDiagnosis(form.caseType, form.teeth);
+
   return (
     <>
       <FormField
@@ -87,20 +102,40 @@ export function CaseFormFields({
       </FormField>
 
       <FormField
-        label="Diagnosis & Treatment"
-        htmlFor="diagnosis"
+        label="Case Type"
+        htmlFor="caseType"
         required
-        error={errors.diagnosis}
+        error={errors.caseType}
       >
-        <Input
-          id="diagnosis"
-          placeholder="e.g. Fracture - left arm"
-          value={form.diagnosis}
-          onChange={(e) => updateField("diagnosis", e.target.value)}
-          aria-invalid={!!errors.diagnosis}
+        <CaseTypeSelector
+          value={form.caseType}
+          onChange={(val) => updateField("caseType", val)}
           disabled={saving}
         />
       </FormField>
+
+      <FormField
+        label="Tooth Numbers"
+        htmlFor="teeth"
+        required
+        error={errors.teeth}
+      >
+        <ToothNumberGrid
+          selected={form.teeth}
+          onChange={(val) => updateField("teeth", val)}
+          disabled={saving}
+        />
+      </FormField>
+
+      {generatedDiagnosis && (
+        <FormField label="Diagnosis (auto-generated)">
+          <Input
+            value={generatedDiagnosis}
+            disabled
+            className="bg-muted font-medium"
+          />
+        </FormField>
+      )}
 
       <FormField
         label="Total Cost"

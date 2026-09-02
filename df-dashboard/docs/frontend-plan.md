@@ -299,28 +299,68 @@
 
 ---
 
-## Task 8 — Admin Portal: Case & Lab Fee Reconciliation
+## Task 8 — Admin Portal: Case & Lab Fee Reconciliation (Completed 9/2/2026 10:30PM)
 
 **Title:** Build the lab fee assignment table for active Case treatments
 
 **Expected Outcome:** A table listing all active Case-type records with an inline input field for lab fee per case. Total lab fees auto-aggregate as fees are entered.
 
 **Things To Do:**
-- Create `app/admin/reconciliation/page.tsx`
-- Filter Case records from mock data context where `category = 'CASE'` and `balance > 0`
-- Build `components/LabReconciliationTable.tsx` using shadcn `Table`, `Input`, `Badge`, `Button`, `Skeleton`
-- Columns: Patient, Total Cost, Paid, Balance, Lab Fee (inline `Input`), Lab Status (`Badge`)
-- Inline editable lab fee `Input` — saves on blur or Enter key
-- Auto-aggregate total lab fees at the bottom of the table
-- Update `lab_fee` and `lab_payment_status` on the mock record via context state update
-- Validation: reject negative values, non-numeric input
-- Loading state: shadcn `Skeleton` row-level spinner while saving
-- Error state: inline error on the row, value preserved
-- Edge case: lab fee = 0 allowed, lab fee > total cost shows warning `Badge`
-- Empty state: "No active cases to reconcile"
-- After lab fee changes → Admin Dashboard (Task 7) recalculates automatically
+- ✅ Create `app/admin/reconciliation/page.tsx`
+- ✅ Filter Case records from mock data context where `category = 'CASE'`
+- ✅ Build `components/reconciliation/LabReconciliationTable.tsx` using shadcn `Table`, `Input`, `Badge`, `Button`, `Skeleton`
+- ✅ Columns: Patient, Total Cost, Paid, Balance, Lab Fee (inline `Input`), Lab Status (`Badge`)
+- ✅ Inline editable lab fee `Input` — saves on blur or Enter key
+- ✅ Auto-aggregate total lab fees at the bottom of the table
+- ✅ Update `lab_fee` and `lab_payment_status` on the mock record via context state update
+- ✅ Validation: reject negative values, non-numeric input
+- ✅ Loading state: shadcn `Skeleton` row-level spinner while saving
+- ✅ Error state: inline error on the row, value preserved
+- ✅ Edge case: lab fee = 0 allowed, lab fee > total cost shows warning `Badge` ("Over Cost")
+- ✅ Empty state: "No active cases to reconcile"
+- ✅ After lab fee changes → Admin Dashboard (Task 7) recalculates automatically
+- ✅ Fixed sidebar nav links to use `/admin/reconciliation` instead of `/admin-reconciliation`
+
+**Backend Plan Remarks:**
+- Mock `updateRecord()` patches `lab_fee` and `lab_payment_status` on record in context — replace with Supabase `update` on `patient_records` (columns `lab_fee`, `lab_payment_status`)
+- `lab_fee` is admin-entered per case — consider adding a `labs` table FK join for lab name resolution
+- `lab_payment_status` drives Dashboard (Task 7) commission formula — `total_lab_fees = sum(lab_fee)` where `category = 'CASE'`
+- Supabase RLS: only admin role can update `lab_fee` and `lab_payment_status` on `patient_records`
+- Total lab fees aggregation in Dashboard hook (`useDashboardKPIs.ts:43`) already reads `lab_fee` from records — no change needed
+- Consider adding a `lab_fees_audit` table for tracking who changed fees and when (optional for MVP)
 
 **Connection:** Depends on Task 4 (layout). Feeds into Task 7 (Dashboard recalculates commission).
+
+**Next Step →** Task 8.1
+
+---
+
+## Task 8.1 — Lab Reconciliation: Lab Assignment Toggle (Completed 9/2/2026 11:15PM)
+
+**Title:** Add lab selection (toggle buttons) to each Case row so admin assigns which lab handles the case
+
+**Expected Outcome:** Each Case row in the reconciliation table shows a toggle button group (Lab A / Lab B / Lab C). Selecting a lab updates `lab_id` and `lab_name` on the record. Admin can also reassign a case to a different lab at any time.
+
+**Things To Do:**
+- ✅ Read `MOCK_LABS` from `lib/mock-data.ts` for available lab options
+- ✅ Added `labs` to DataContext interface and exposed `MOCK_LABS` via provider
+- ✅ Built `LabSelector` component using shadcn `Button` (outline/default variant) placed in a new "Lab" column
+- ✅ Each row shows the currently assigned lab; clicking a different lab button updates the record via `updateRecord(recordId, { lab_id, lab_name })`
+- ✅ When no lab is selected, all buttons show outline (neutral state)
+- ✅ Toggle group disabled when cycle is locked
+- ✅ Synced `lab_name` from the lab lookup when `lab_id` changes
+- ✅ Loading state: skeleton rows with table structure
+- ✅ Error state: Alert with Retry button
+- ✅ Edge case: lab reassignment after lab fee already set — keeps the fee, just reassigns lab
+
+**Backend Plan Remarks:**
+- Mock `updateRecord()` patches `lab_id` and `lab_name` on record in context — replace with Supabase `update` on `patient_records` (columns `lab_id`, `lab_name`)
+- `MOCK_LABS` exposed via DataContext — replace with Supabase `select` on `labs` table
+- Supabase RLS: admin role can update `lab_id`/`lab_name`; assistant can read but not reassign
+- Consider adding a `lab_id` foreign key constraint on `patient_records` in Supabase schema
+- Lab reassignment is audit-trail friendly — add `lab_assigned_at` timestamp column if needed later
+
+**Connection:** Extends Task 8. No blockers. Read-only when cycle locked.
 
 **Next Step →** Task 9
 
@@ -417,7 +457,8 @@ Task 1 (Scaffolding)
 | 6.1 | Payment Installments & History | `/assistant` (modal + table) | Assistant | ✅ |
 | 6.2 | Admin Access to Record Table | `/admin/records` | Admin | ✅ |
 | 7 | Financial Dashboard | `/admin` | Admin | ✅ |
-| 8 | Lab Reconciliation | `/admin/reconciliation` | Admin |
+| 8 | Lab Reconciliation | `/admin/reconciliation` | Admin | ✅ |
+| 8.1 | Lab Assignment Toggle | `/admin/reconciliation` (Lab column) | Admin | ✅ |
 | 9 | Overhead & Expenses | `/admin/overhead` | Admin |
 | 10 | Month-End Closeout | `/admin/closeout` | Admin |
 

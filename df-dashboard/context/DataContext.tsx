@@ -6,6 +6,8 @@ import {
   PatientRecord,
   CasePayment,
   MonthlyFinancials,
+  Lab,
+  CaseType,
   CycleStatus,
   RecordCategory,
   PaymentStatus,
@@ -15,6 +17,8 @@ import {
   MOCK_PATIENT_RECORDS,
   MOCK_CASE_PAYMENTS,
   MOCK_MONTHLY_FINANCIALS,
+  MOCK_LABS,
+  MOCK_CASE_TYPES,
 } from "@/lib/mock-data";
 
 interface DataContextType {
@@ -22,6 +26,8 @@ interface DataContextType {
   records: PatientRecord[];
   payments: CasePayment[];
   financials: MonthlyFinancials | null;
+  labs: Lab[];
+  caseTypes: CaseType[];
   cycleLocked: boolean;
   loading: boolean;
   error: string | null;
@@ -178,6 +184,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         records: activeRecords,
         payments: allPayments,
         financials,
+        labs: MOCK_LABS,
+        caseTypes: MOCK_CASE_TYPES,
         cycleLocked,
         loading,
         error,

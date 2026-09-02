@@ -14,6 +14,7 @@ import {
   PaymentStatus,
   MonthlyFinancials,
   Lab,
+  CaseType,
   LabPaymentStatus,
   MockData,
 } from "./global";
@@ -45,6 +46,16 @@ export const MOCK_LABS: Lab[] = [
   { id: "lab-001", lab_name: "Central Lab" },
   { id: "lab-002", lab_name: "City Diagnostics" },
   { id: "lab-003", lab_name: "Health First Lab" },
+];
+
+// ------------------------------------------
+// Mock Case Types
+// ------------------------------------------
+
+export const MOCK_CASE_TYPES: CaseType[] = [
+  { id: "ct-001", name: "RPD" },
+  { id: "ct-002", name: "Crown" },
+  { id: "ct-003", name: "Bridge" },
 ];
 
 // ------------------------------------------
@@ -197,6 +208,7 @@ export const MOCK_DATA: MockData = {
   users: MOCK_USERS,
   monthly_cycles: MOCK_CYCLES,
   labs: MOCK_LABS,
+  case_types: MOCK_CASE_TYPES,
   patient_records: MOCK_PATIENT_RECORDS,
   case_payments: MOCK_CASE_PAYMENTS,
   monthly_financials: MOCK_MONTHLY_FINANCIALS,
