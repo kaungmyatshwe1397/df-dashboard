@@ -1,6 +1,7 @@
 "use client";
 
 import { PortalLayout } from "@/components/layout/PortalLayout";
+import { DashboardKPIs } from "@/components/dashboard/DashboardKPIs";
 
 export default function AdminPage() {
   return (
@@ -12,9 +13,7 @@ export default function AdminPage() {
             Live financial KPIs and clinic performance overview.
           </p>
         </div>
-        <div className="rounded-md border p-8 text-center text-muted-foreground">
-          Financial dashboard will be built in Task 7.
-        </div>
+        <DashboardKPIs />
       </div>
     </PortalLayout>
   );

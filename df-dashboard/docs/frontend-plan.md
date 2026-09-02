@@ -260,28 +260,38 @@
 
 ---
 
-## Task 7 — Admin Portal: Live Financial Dashboard
+## Task 7 — Admin Portal: Live Financial Dashboard (Completed 9/2/2026 9:15PM)
 
 **Title:** Build the admin dashboard with real-time KPI cards
 
 **Expected Outcome:** A dashboard showing all financial KPIs — Total GP Revenue, Total Case Revenue, Lab Deductions, Doctor Commission (40%), Operating Overhead, Net Profit/Loss — with correct formatting and color coding.
 
 **Things To Do:**
-- Create `app/admin/page.tsx` as the default admin view
-- Read all data from mock data context (patient records, case payments, monthly financials)
-- Build `components/KpiCard.tsx` using shadcn `Card`, `Badge`, `Separator` — reusable card with label, value, optional icon
-- Calculate per PRD formulas (computed from mock state, not Supabase queries):
+- ✅ Create `app/admin/page.tsx` as the default admin view
+- ✅ Read all data from mock data context (patient records, case payments, monthly financials)
+- ✅ Build `components/KpiCard.tsx` using shadcn `Card`, `Badge`, `Separator` — reusable card with label, value, optional icon
+- ✅ Calculate per PRD formulas (computed from mock state, not Supabase queries):
   - `Total GP Revenue` = sum of GP records total_cost
   - `Total Case Revenue` = sum of Case records paid amounts (cash flow)
-  - `Total Lab Fees` = sum of lab_fee from patient_records
+  - `Total Lab Fees` = sum of lab_fee from imput by admin manually.
   - `Doctor Commission` = (Gross Income - Lab Fees) * 0.40
-  - `Operating Overhead` = general_expenses + assistant_fee + bonus + building_rent + utility_costs
+  - `Operating Overhead` = general_expenses + assistant_fee + bonus + building_rent + utility_costs ( not only total , show each seaprate amount too)
   - `Net Profit/Loss` = Remaining Clinic Income - Operating Expenses
-- Color code using shadcn `Badge`: Net Profit = green, Net Loss = red, Zero = neutral
-- Format currency with thousands separators, 2 decimal places
-- Loading state: shadcn `Skeleton` KPI cards
-- Error state: per-card error with shadcn `Button` retry
-- Edge case: zero values show "0.00", large numbers don't break card width
+- ✅ Color code using shadcn `Badge`: Net Profit = green, Net Loss = red, Zero = neutral
+- ✅ Format currency with thousands separators, 2 decimal places
+- ✅ Loading state: shadcn `Skeleton` KPI cards
+- ✅ Error state: per-card error with shadcn `Button` retry
+- ✅ Edge case: zero values show "0.00", large numbers don't break card width
+
+**Backend Plan Remarks:**
+- `DashboardKPIs` computes all KPIs live from `records` and `payments` context — replace with Supabase queries using `select` with `eq` filter on `cycle_id`
+- GP Revenue uses `patient_records` where `category = 'GP'` — replace with Supabase query `select('total_cost').eq('category', 'GP').eq('cycle_id', cycleId)`
+- Case Revenue sums `case_payments.paid_amount` for case records in active cycle — replace with Supabase join or filtered select
+- Lab Fees sum `patient_records.lab_fee` for case records — replace with Supabase query on `patient_records` table
+- Operating Overhead reads from `monthly_financials` — replace with Supabase `select` on `monthly_financials` where `cycle_id` matches
+- Doctor Commission and Net Profit are derived values — computed client-side from the above queries
+- No RLS restrictions needed for dashboard reads — admin role already enforced by layout guard
+- `refreshData()` re-fetches all data — replace with Supabase query refetch
 
 **Connection:** Depends on Task 4 (layout) and Tasks 5–6 (data exists). Reads from same data Assistant entered.
 
@@ -406,7 +416,7 @@ Task 1 (Scaffolding)
 | 6 | Add/Edit Modal | `/assistant` (modal) | Assistant | ✅ |
 | 6.1 | Payment Installments & History | `/assistant` (modal + table) | Assistant | ✅ |
 | 6.2 | Admin Access to Record Table | `/admin/records` | Admin | ✅ |
-| 7 | Financial Dashboard | `/admin` | Admin |
+| 7 | Financial Dashboard | `/admin` | Admin | ✅ |
 | 8 | Lab Reconciliation | `/admin/reconciliation` | Admin |
 | 9 | Overhead & Expenses | `/admin/overhead` | Admin |
 | 10 | Month-End Closeout | `/admin/closeout` | Admin |
