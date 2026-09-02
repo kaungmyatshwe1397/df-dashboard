@@ -31,7 +31,9 @@ interface DataContextType {
   refreshData: () => void;
   addRecord: (record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward">, initialPayment?: number) => void;
   updateRecord: (recordId: string, updates: Partial<PatientRecord>) => void;
+  deleteRecord: (recordId: string) => void;
   addPayment: (payment: Omit<CasePayment, "id" | "payment_date">) => void;
+  findRecordByPatientId: (patientId: string, category?: RecordCategory) => PatientRecord | undefined;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -126,6 +128,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const deleteRecord = useCallback(
+    // Also removes associated payments to prevent orphaned records.
+    (recordId: string) => {
+      setAllRecords((prev) => prev.filter((r) => r.id !== recordId));
+      setAllPayments((prev) => prev.filter((p) => p.record_id !== recordId));
+    },
+    []
+  );
+
+  const findRecordByPatientId = useCallback(
+    // Search is scoped to category so GP and Case tabs don't cross-match
+    // when a patient has records in both types.
+    (patientId: string, category?: RecordCategory) =>
+      activeRecords.find(
+        (r) =>
+          r.patient_id === patientId.trim() &&
+          (category ? r.category === category : true)
+      ),
+    [activeRecords]
+  );
+
   const refreshData = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -150,7 +173,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         refreshData,
         addRecord,
         updateRecord,
+        deleteRecord,
         addPayment,
+        findRecordByPatientId,
       }}
     >
       {children}

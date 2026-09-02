@@ -26,12 +26,18 @@ erDiagram
     PATIENT_RECORDS {
         uuid id PK
         uuid cycle_id FK
+        string patient_id "unique per cycle, e.g. 0001/26"
         date entry_date
         string patient_name
         string address "optional"
         enum category "GP or CASE"
         string diagnosis
         decimal total_cost
+        string lab_name "CASE only, optional"
+        date lab_send_date "CASE only, optional"
+        date delivery_date "CASE only, optional"
+        decimal paid "CASE only, sum of payments"
+        decimal remaining "CASE only, total_cost - paid"
         uuid lab_id FK "FK to LABS, CASE only"
         decimal lab_fee "admin-assigned, CASE only"
         enum lab_payment_status "PAID or UNPAID, CASE only, admin-only"

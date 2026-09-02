@@ -153,33 +153,39 @@
 
 ---
 
-## Task 6 — Assistant Portal: Add/Edit Patient Record Modal (Completed 9/2/2026 12:30PM)
+## Task 6 — Assistant Portal: Add/Edit Patient Record (Completed 9/2/2026 12:30PM)
 
 **Title:** Build the modal form for creating and editing patient records
 
-**Expected Outcome:** A modal form that lets the assistant create new records and edit existing ones (when cycle is open). Validates all fields and handles all 5 UI states.
+**Expected Outcome:** Two separate forms (GP and Case) with a two-step lookup flow for editing. Validates all fields and handles all 5 UI states.
 
 **Things To Do:**
-- ✅ Create `components/PatientRecordModal.tsx` using shadcn `Dialog`, `Input`, `Label`, `Button`, `RadioGroup`, `Alert`
-- ✅ Fields: Patient Name (required), Address (optional), Category (GP/Case `RadioGroup`), Diagnosis (required), Total Cost (required, decimal), Amount Paid Today (required, decimal)
-- ✅ For Case category: show "Amount Paid Today" `Input` — system calculates remaining balance
-- ✅ For GP category: Amount Paid Today should equal Total Cost (validate or auto-fill)
-- ✅ Validation: Amount Paid Today <= Total Cost, required fields not empty, numeric values valid
-- ✅ Save via mock state update — push/patch record into React context (no Supabase insert)
-- ✅ Loading state: shadcn `Skeleton` spinner on save `Button`, dialog not closable mid-save
-- ✅ Error state: inline field errors, network error shadcn `Alert` inside dialog (preserve form data)
-- ✅ Edge case: Amount Paid = 0 (deposit), decimal costs (1500.50), long diagnosis text wraps
+- ✅ Create `components/records/RecordFormFields.tsx` — GP form (Patient ID, Name, Address, Diagnosis, Total Cost)
+- ✅ Create `components/records/CaseFormFields.tsx` — Case form (Patient ID, Name, Address, Diagnosis, Total Cost, Lab Name, Lab Send Date, Delivery Date, Paid, Remaining)
+- ✅ Create `components/records/PatientRecordUpdateForm.tsx` — Dialog with two-step lookup flow
+- ✅ Create `components/records/FormField.tsx` — Reusable Label + Input + error wrapper
+- ✅ Patient ID field added (format: `0001/26`) for both GP and Case
+- ✅ Category removed from form — determined by which tab the user opened from
+- ✅ Two-step edit flow: search by Patient ID → form appears pre-filled with record data
+- ✅ GP search only finds GP records, Case search only finds Case records (prevents cross-matching)
+- ✅ "Balance" renamed to "Remaining" in Case table for clarity
+- ✅ Delete functionality in edit mode removes record and associated payments
+- ✅ Validation: required fields, Paid <= Total Cost, numeric values valid
+- ✅ Save via context state update — `updateRecord()` for edits, `addRecord()` for new records
+- ✅ Loading state: spinner on save/search/delete buttons, dialog not closable mid-save
+- ✅ Error state: inline field errors, Patient ID not found message, network error alert
+- ✅ Edge case: Patient exists in both GP and Case tabs (separate records), decimals, long text wraps
 - ✅ When cycle is locked → dialog does not open, edit is blocked
-- ✅ After save → close dialog, refresh table (Task 5) via context state update
-- ✅ Edit mode — pencil icon on each row opens modal pre-filled with record data
+- ✅ Scrollable form container (`max-h-[60vh]`) for Case form's 10 fields
+- ✅ Wider dialog (`sm:max-w-lg`) to accommodate more fields
 
 **Backend Plan Remarks:**
-- Mock `addRecord()` in `DataContext` creates `PatientRecord` + initial `CasePayment` for CASE category — replace with Supabase `insert` into `patient_records` and `case_payments` tables
-- `entry_date` is auto-generated from `new Date()` — Supabase default will handle this via `NOW()`
-- `id` uses `rec-${Date.now()}` — replace with Supabase `uuid` generation
-- `updateRecord()` patches `PatientRecord` in context — replace with Supabase `update` on `patient_records`
-- `is_carried_forward` is always `false` on new records — closeout (Task 10) sets it
-- `lab_id`, `lab_fee`, `lab_payment_status` are left unset (admin-only fields) — populated by Task 8
+- Mock `addRecord()` creates `PatientRecord` + initial `CasePayment` for CASE — replace with Supabase `insert` into `patient_records` and `case_payments`
+- Mock `updateRecord()` patches record in context — replace with Supabase `update` on `patient_records`
+- Mock `deleteRecord()` removes record + payments — replace with Supabase `delete` with cascade or manual cleanup
+- Mock `findRecordByPatientId()` filters active records by `patient_id` and category — replace with Supabase `select` with `eq` filter
+- `patient_id` is user-entered (format `NNNN/YY`) — add unique constraint per cycle in Supabase
+- `lab_name`, `lab_send_date`, `delivery_date`, `paid`, `remaining` are new Case-only fields — map to `patient_records` columns
 - Form validation stays client-side — Supabase RLS + DB constraints provide server-side enforcement
 - Dialog uses `@base-ui/react` Dialog primitives (not Radix) — consistent with shadcn `base-nova` style
 

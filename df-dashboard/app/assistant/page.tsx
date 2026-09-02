@@ -17,9 +17,9 @@ export default function AssistantPage() {
     setModalOpen(true);
   }
 
-  function handleEdit(record: PatientRecord) {
+  function handleEdit(record: PatientRecord | null, category: RecordCategory) {
     setEditRecord(record);
-    setDefaultCategory(record.category);
+    setDefaultCategory(category);
     setModalOpen(true);
   }
 

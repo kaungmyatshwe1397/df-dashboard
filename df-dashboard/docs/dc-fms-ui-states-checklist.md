@@ -40,11 +40,11 @@ Use this to design each screen and to QA it before release.
 
 | State | Checklist |
 |---|---|
-| Ideal | - All fields present: Patient Name, Address (optional), Category (GP/Case), Diagnosis, Total Cost, Amount Paid Today<br>- Save button enabled once required fields are valid |
-| Empty | - Fresh "Add" form opens fully blank<br>- Address field clearly marked optional |
-| Loading | - Save button shows spinner and disables during submit<br>- Modal cannot be closed mid-save |
-| Error | - Required field missing → inline error under that field, not a generic alert<br>- Amount Paid Today > Total Cost → validation error<br>- Network/save failure → error banner inside modal, form data preserved (not lost) |
-| Edge case | - Amount Paid Today = 0 (deposit not yet made)<br>- Total Cost with decimals (e.g. 1500.50)<br>- Editing a record after cycle is locked → should be blocked with explanation<br>- Very long diagnosis text wraps properly, does not overflow modal |
+| Ideal | **Add mode:** Dialog opens with form fields matching the tab (GP or Case).<br>**Edit mode:** Two-step flow — first enter Patient ID to search, then form appears pre-filled.<br>GP fields: Patient ID, Patient Name, Address (optional), Diagnosis, Total Cost.<br>Case fields: Patient ID, Patient Name, Address (optional), Diagnosis, Total Cost, Lab Name, Lab Send Date, Delivery Date, Paid, Remaining (auto-calculated).<br>Save button enabled once required fields are valid. |
+| Empty | - Fresh "Add" form opens fully blank<br>- Address and Lab fields clearly marked optional<br>- Edit mode: empty Patient ID field with search button |
+| Loading | - Save button shows spinner and disables during submit<br>- Dialog cannot be closed mid-save<br>- Search button shows spinner while looking up patient |
+| Error | - Required field missing → inline error under that field, not a generic alert<br>- Paid > Total Cost → validation error<br>- Patient ID not found → inline error message under search field<br>- Network/save failure → error banner inside modal, form data preserved (not lost) |
+| Edge case | - Patient exists in both GP and Case tabs → search only finds records matching the current tab<br>- Paid = 0 (deposit not yet made)<br>- Total Cost with decimals (e.g. 1500.50)<br>- Editing a record after cycle is locked → should be blocked with explanation<br>- Very long diagnosis text wraps properly, does not overflow modal<br>- Delete button in edit mode removes record and closes dialog |
 
 ---
 

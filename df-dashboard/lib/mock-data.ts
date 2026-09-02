@@ -73,6 +73,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
   {
     id: "rec-001",
     cycle_id: "cycle-001",
+    patient_id: "0001/26",
     entry_date: "2026-09-01",
     patient_name: "John Doe",
     address: "123 Main St",
@@ -84,6 +85,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
   {
     id: "rec-002",
     cycle_id: "cycle-001",
+    patient_id: "0002/26",
     entry_date: "2026-09-02",
     patient_name: "Jane Smith",
     category: RecordCategory.CASE,
@@ -97,6 +99,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
   {
     id: "rec-003",
     cycle_id: "cycle-001",
+    patient_id: "0003/26",
     entry_date: "2026-09-03",
     patient_name: "Robert Johnson",
     address: "456 Oak Ave",
@@ -109,6 +112,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
   {
     id: "rec-004",
     cycle_id: "cycle-001",
+    patient_id: "0004/26",
     entry_date: "2026-08-25",
     patient_name: "Maria Garcia",
     category: RecordCategory.CASE,

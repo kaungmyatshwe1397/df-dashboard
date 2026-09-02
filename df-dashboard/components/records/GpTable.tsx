@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
-import { PatientRecord } from "@/lib/global";
+import { RecordCategory, PatientRecord } from "@/lib/global";
 import {
   ROWS_PER_PAGE,
   formatCurrency,
@@ -31,7 +31,7 @@ export function GpTable({
   records: PatientRecord[];
   cycleLocked: boolean;
   onAdd: () => void;
-  onEdit: (record: PatientRecord) => void;
+  onEdit: (record: PatientRecord | null, category: RecordCategory) => void;
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
@@ -55,10 +55,16 @@ export function GpTable({
           {records.length} record{records.length !== 1 ? "s" : ""}
         </p>
         {!cycleLocked && (
-          <Button onClick={onAdd} size="sm">
-            <Plus className="mr-1.5 h-4 w-4" />
-            Add GP Record
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => onEdit(null, RecordCategory.GP)} size="sm" variant="outline">
+              <Pencil className="mr-1.5 h-4 w-4" />
+              Update / Edit
+            </Button>
+            <Button onClick={onAdd} size="sm">
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add GP Record
+            </Button>
+          </div>
         )}
       </div>
 
@@ -66,16 +72,19 @@ export function GpTable({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Patient ID</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Patient Name</TableHead>
               <TableHead>Diagnosis</TableHead>
               <TableHead className="text-right">Total Cost</TableHead>
-              {!cycleLocked && <TableHead className="w-15" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedRecords.map((record) => (
               <TableRow key={record.id}>
+                <TableCell className="font-medium tabular-nums">
+                  {record.patient_id}
+                </TableCell>
                 <TableCell className="text-body-sm text-muted-foreground">
                   {formatDate(record.entry_date)}
                 </TableCell>
@@ -93,18 +102,6 @@ export function GpTable({
                 <TableCell className="text-right font-medium tabular-nums">
                   {formatCurrency(record.total_cost)}
                 </TableCell>
-                {!cycleLocked && (
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => onEdit(record)}
-                      aria-label={`Edit ${record.patient_name}`}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                )}
               </TableRow>
             ))}
           </TableBody>

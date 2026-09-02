@@ -57,12 +57,18 @@ export interface Lab {
 export interface PatientRecord {
   id: string;
   cycle_id: string;
+  patient_id: string;
   entry_date: string;
   patient_name: string;
   address?: string;
   category: RecordCategory;
   diagnosis: string;
   total_cost: number;
+  lab_name?: string;
+  lab_send_date?: string;
+  delivery_date?: string;
+  paid?: number;
+  remaining?: number;
   lab_id?: string;
   lab_fee?: number;
   lab_payment_status?: LabPaymentStatus;

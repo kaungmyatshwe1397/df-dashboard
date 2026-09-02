@@ -1,4 +1,5 @@
-// Case Records tab — multi-installment records with balance tracking.
+// Case Records tab — multi-installment records with remaining amount tracking.
+// "Remaining" is used instead of "Balance" for clarity with patients.
 
 "use client";
 
@@ -15,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
 import { useData } from "@/context/DataContext";
-import { PatientRecord } from "@/lib/global";
+import { RecordCategory, PatientRecord } from "@/lib/global";
 import {
   ROWS_PER_PAGE,
   formatCurrency,
@@ -33,7 +34,7 @@ export function CaseTable({
   records: PatientRecord[];
   cycleLocked: boolean;
   onAdd: () => void;
-  onEdit: (record: PatientRecord) => void;
+  onEdit: (record: PatientRecord | null, category: RecordCategory) => void;
 }) {
   const { getRecordBalance, getRecordTotalPaid } = useData();
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,10 +59,16 @@ export function CaseTable({
           {records.length} record{records.length !== 1 ? "s" : ""}
         </p>
         {!cycleLocked && (
-          <Button onClick={onAdd} size="sm">
-            <Plus className="mr-1.5 h-4 w-4" />
-            Add Case Record
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => onEdit(null, RecordCategory.CASE)} size="sm" variant="outline">
+              <Pencil className="mr-1.5 h-4 w-4" />
+              Update / Edit
+            </Button>
+            <Button onClick={onAdd} size="sm">
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add New Case
+            </Button>
+          </div>
         )}
       </div>
 
@@ -69,27 +76,30 @@ export function CaseTable({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Patient ID</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Patient Name</TableHead>
               <TableHead>Diagnosis</TableHead>
               <TableHead className="text-right">Total Cost</TableHead>
               <TableHead className="text-right">Paid</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
+              <TableHead className="text-right">Remaining</TableHead>
               <TableHead>Status</TableHead>
-              {!cycleLocked && <TableHead className="w-15" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedRecords.map((record) => {
-              const balance = getRecordBalance(record);
+              const remaining = getRecordBalance(record);
               const totalPaid = getRecordTotalPaid(record.id);
-              const isSettled = balance <= 0;
+              const isSettled = remaining <= 0;
 
               return (
                 <TableRow
                   key={record.id}
                   className={record.is_carried_forward ? "bg-muted/30" : ""}
                 >
+                  <TableCell className="font-medium tabular-nums">
+                    {record.patient_id}
+                  </TableCell>
                   <TableCell className="text-body-sm text-muted-foreground">
                     {formatDate(record.entry_date)}
                   </TableCell>
@@ -118,8 +128,8 @@ export function CaseTable({
                     {formatCurrency(totalPaid)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    <span className={balance > 0 ? "text-muted-foreground" : ""}>
-                      {formatCurrency(balance)}
+                    <span className={remaining > 0 ? "text-muted-foreground" : ""}>
+                      {formatCurrency(remaining)}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -129,22 +139,10 @@ export function CaseTable({
                       </Badge>
                     ) : (
                       <Badge variant="secondary" className="text-caption">
-                        In Progress
+                        Incomplete
                       </Badge>
                     )}
                   </TableCell>
-                  {!cycleLocked && (
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => onEdit(record)}
-                        aria-label={`Edit ${record.patient_name}`}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  )}
                 </TableRow>
               );
             })}

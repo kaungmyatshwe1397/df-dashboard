@@ -17,7 +17,7 @@ export function RecordTable({
   onEdit,
 }: {
   onAdd: (category: RecordCategory) => void;
-  onEdit: (record: PatientRecord) => void;
+  onEdit: (record: PatientRecord | null, category: RecordCategory) => void;
 }) {
   const { records, cycleLocked, loading, error, refreshData } = useData();
 
@@ -55,7 +55,7 @@ export function RecordTable({
             records={gpRecords}
             cycleLocked={cycleLocked}
             onAdd={() => onAdd(RecordCategory.GP)}
-            onEdit={onEdit}
+            onEdit={(record) => onEdit(record, RecordCategory.GP)}
           />
         </TabsContent>
 
@@ -64,7 +64,7 @@ export function RecordTable({
             records={caseRecords}
             cycleLocked={cycleLocked}
             onAdd={() => onAdd(RecordCategory.CASE)}
-            onEdit={onEdit}
+            onEdit={(record) => onEdit(record, RecordCategory.CASE)}
           />
         </TabsContent>
       </Tabs>
