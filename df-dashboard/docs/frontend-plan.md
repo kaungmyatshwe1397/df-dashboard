@@ -191,6 +191,71 @@
 
 **Connection:** Depends on Task 5 (table). Creates data that Task 7 (Admin Dashboard) reads.
 
+**Next Step →** Task 6.1
+
+---
+
+## Task 6.1 — Assistant Portal: Case Payment Installments & History (Completed 9/2/2026 6:16PM)
+
+**Title:** Add payment recording dialog, expandable payment history, and per-case payment flow
+
+**Expected Outcome:** A "Pay" button in each case row opens a separate payment dialog. Case rows expand to show full payment history. `addPayment()` syncs record totals. Case data remains editable via existing edit form.
+
+**Things To Do:**
+- ✅ Create `components/records/PaymentDialog.tsx` — dialog with fields: Payment Date (date picker, default today), Remaining Balance (read-only), Paid Amount (number, min=0, max=remaining), Note (optional text)
+- ✅ PaymentDialog validates: paid > 0, paid <= remaining, date required
+- ✅ PaymentDialog calls `addPayment()` from DataContext on save
+- ✅ Modify `components/records/CaseTable.tsx` — add "Pay" button (with `CircleDollarSign` icon) per row when `remaining > 0`
+- ✅ Add expand/collapse chevron icon per row to toggle payment history
+- ✅ Track expanded row state (single row expanded at a time)
+- ✅ Create `components/records/PaymentHistoryRow.tsx` — collapsible sub-row showing payment history table (Date, Amount, Note, Status columns)
+- ✅ PaymentHistoryRow reads from `getPaymentsForRecord()` via DataContext
+- ✅ Modify `context/DataContext.tsx` — after `addPayment()`, also update the parent record's `paid` and `remaining` fields so CaseTable reflects totals immediately
+- ✅ Verify existing edit flow in `PatientRecordUpdateForm.tsx` still works (already supports editing case records via Patient ID lookup)
+- ✅ Loading state: spinner on PaymentDialog save button, dialog not closable mid-save
+- ✅ Error state: inline error in PaymentDialog if save fails
+- ✅ Edge case: remaining = 0 → hide Pay button, show "Payment Complete" badge (already handled), no expand needed
+- ✅ Edge case: paid amount > remaining → validation error blocks save
+- ✅ Empty state: no payments yet → PaymentHistoryRow shows "No payments recorded"
+
+**Business Logic:**
+- When `remaining` becomes 0 after a payment, CaseTable badge changes to "Payment Complete"
+- When `remaining > 0`, badge stays "Incomplete" and "Pay" button remains enabled
+- Initial payment on record creation already works via `addRecord()` with `initialPayment` — this task handles subsequent installments
+- Payment history shows all installments chronologically per case
+
+**Backend Plan Remarks:**
+- Mock `addPayment()` creates `CasePayment` in context — replace with Supabase `insert` into `case_payments`
+- Updating parent record's `paid`/`remaining` after payment — replace with Supabase `update` on `patient_records` (or use a DB trigger/function)
+- `getPaymentsForRecord()` filters payments by `record_id` — replace with Supabase `select` with `eq` filter
+- Payment status `COMPLETED`/`INCOMPLETE` drives carry-forward logic in Task 10
+
+**Connection:** Depends on Task 6 (edit form exists). Enhances Task 5 (CaseTable). Feeds into Task 7 (Dashboard reads paid amounts) and Task 10 (Closeout uses payment status).
+
+**Next Step →** Task 6.2
+
+---
+
+## Task 6.2 — Shared Record Table: Admin Access to Assistant Portal (Completed 9/2/2026 6:16PM)
+
+**Title:** Make the Record Table and all its actions (Add, Edit, Pay, History) accessible to Admin role
+
+**Expected Outcome:** Admin sidebar includes a "Records" link. Clicking it opens the same Record Table with full Add/Edit/Pay/History capabilities. Admin has identical record management access as Assistant, plus admin-only modules.
+
+**Things To Do:**
+- ✅ Add "Records" nav item to `adminNavItems` in `components/layout/AppSidebar.tsx` — href: `/admin/records`, icon: `TableProperties`
+- ✅ Create `app/admin/records/page.tsx` — mirrors `app/assistant/page.tsx` structure (RecordTable + PatientRecordUpdateForm), uses `PortalLayout requiredRole="ADMIN"`
+- ✅ Ensure RecordTable, PatientRecordUpdateForm, CaseFormFields, PaymentDialog all work under admin layout (no role restrictions on record actions)
+- ✅ Cycle lock behavior consistent — admin sees same read-only state when cycle is locked
+- ✅ Verify Add, Edit, Pay, History actions all function identically for admin and assistant
+
+**Backend Plan Remarks:**
+- No new data operations — reuses existing context methods (`addRecord`, `updateRecord`, `addPayment`, etc.)
+- Admin access to records is already allowed in PRD Section 2 ("Full Access" for daily patient data entry)
+- RLS policies will grant admin full CRUD on `patient_records` and `case_payments`
+
+**Connection:** Depends on Tasks 5, 6, 6.1 (record table, edit form, payment flow all built). Provides shared access for Task 7 (Dashboard reads same data).
+
 **Next Step →** Task 7
 
 ---
@@ -319,7 +384,9 @@ Task 1 (Scaffolding)
             └→ Task 4 (Layouts)
                  ├→ Task 5 (Record Table)
                  │    └→ Task 6 (Add/Edit Modal)
-                 │         └→ Task 7 (Dashboard) ← reads data from 5,6
+                 │         └→ Task 6.1 (Payment Installments & History)
+                 │              └→ Task 6.2 (Admin Access to Record Table)
+                 │                   └→ Task 7 (Dashboard) ← reads data from 5,6,6.1
                  ├→ Task 8 (Lab Reconciliation) ─→ Task 7
                  ├→ Task 9 (Overhead) ─→ Task 7
                  └→ Task 10 (Closeout) ← depends on 5-9
@@ -337,6 +404,8 @@ Task 1 (Scaffolding)
 | 4 | Layout Shells | Sidebar/Layout | Both | ✅ |
 | 5 | Record Table | `/assistant` | Assistant | ✅ |
 | 6 | Add/Edit Modal | `/assistant` (modal) | Assistant | ✅ |
+| 6.1 | Payment Installments & History | `/assistant` (modal + table) | Assistant | ✅ |
+| 6.2 | Admin Access to Record Table | `/admin/records` | Admin | ✅ |
 | 7 | Financial Dashboard | `/admin` | Admin |
 | 8 | Lab Reconciliation | `/admin/reconciliation` | Admin |
 | 9 | Overhead & Expenses | `/admin/overhead` | Admin |

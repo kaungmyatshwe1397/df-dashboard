@@ -42,6 +42,7 @@ const assistantNavItems: NavItem[] = [
 ];
 
 const adminNavItems: NavItem[] = [
+  { title: "Records", href: "/admin/records", icon: TableProperties },
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { title: "Lab Reconciliation", href: "/admin-reconciliation", icon: FlaskConical },
   { title: "Overhead", href: "/admin-overhead", icon: Calculator },
@@ -87,7 +88,7 @@ export function AppSidebar({ cycleLocked = false }: AppSidebarProps) {
                 const isActive =
                   item.href === "/assistant" || item.href === "/admin"
                     ? pathname === item.href
-                    : pathname.startsWith(item.href);
+                    : pathname.startsWith(item.href + "/") || pathname === item.href;
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton

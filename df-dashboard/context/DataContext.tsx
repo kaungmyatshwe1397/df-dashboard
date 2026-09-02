@@ -124,6 +124,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
         payment_date: new Date().toISOString().split("T")[0],
       };
       setAllPayments((prev) => [...prev, newPayment]);
+
+      // Sync parent record's paid and remaining fields
+      setAllRecords((prev) =>
+        prev.map((r) => {
+          if (r.id !== paymentData.record_id) return r;
+          const newTotalPaid =
+            (r.paid ?? 0) + paymentData.paid_amount;
+          return {
+            ...r,
+            paid: newTotalPaid,
+            remaining: r.total_cost - newTotalPaid,
+          };
+        })
+      );
     },
     []
   );

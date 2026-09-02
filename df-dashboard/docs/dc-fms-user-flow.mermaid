@@ -1,42 +1,63 @@
 flowchart TD
     Start([User Opens App]) --> Login[Login Page]
-    Login --> RoleCheck{Role?}
+    Login --> Role{Role?}
 
-    %% ASSISTANT PATH
-    RoleCheck -->|Assistant| AssistPortal[Assistant Portal]
-    AssistPortal --> ViewTable[View Active Cycle Record Table]
-    AssistPortal --> AddEntry[Open: Add Patient Record Form]
+    %% ==============================
+    %% SHARED: RECORD TABLE
+    %% ==============================
+    Role -->|Assistant| Table[Record Table]
+    Role -->|Admin| Table
 
-    AddEntry --> FillForm[Enter Name, Category GP/Case,\nDiagnosis, Total Cost, Amount Paid Today]
-    FillForm --> SaveEntry[Save Entry]
-    SaveEntry --> ViewTable
+    subgraph RecordActions [Record Table Actions — Both Roles]
+        direction LR
+        Add[Add New Record]
+        Edit[Edit Record]
+        Pay[Record Payment]
+        History[View Payment History]
+    end
 
-    ViewTable --> CycleOpen{Cycle Locked?}
-    CycleOpen -->|No, Open| EditEntry[Edit Existing Record]
-    EditEntry --> SaveEntry
-    CycleOpen -->|Yes, Locked| ReadOnly[Read-Only View\nNo Edits Allowed]
+    Table --> RecordActions
 
-    %% ADMIN PATH
-    RoleCheck -->|Admin| AdminPortal[Admin Portal]
-    AdminPortal --> Dashboard[Live Financial Dashboard]
-    AdminPortal --> LabRecon[Case & Lab Fee Reconciliation]
-    AdminPortal --> Overhead[Monthly Overhead & Expenses Input]
-    AdminPortal --> Closeout[Month-End Closeout]
+    Add --> Form[Fill Form\nName, Diagnosis, Cost]
+    Form --> Save1[Save] --> Table
 
-    LabRecon --> AssignLab[Assign Lab Fee to Case]
-    AssignLab --> AutoAgg[Lab Fees Auto-Aggregate]
-    AutoAgg --> Dashboard
+    Edit --> Lookup[Search by Patient ID]
+    Lookup --> Prefill[Form Prefilled] --> Save2[Save] --> Table
 
-    Overhead --> EnterOverhead[Enter Salary, Bonus,\nRent, Utilities]
-    EnterOverhead --> Dashboard
+    Pay --> Dialog[Payment Dialog\nDate, Amount, Note]
+    Dialog --> Save3[Save Payment]
+    Save3 --> Sync[Sync Record Totals]
+    Sync --> Table
 
-    Dashboard --> ViewKPIs[View Revenue, Commission,\nNet Profit/Loss]
+    History --> Expand[Expand Row\nShow Installments] --> Table
 
-    Closeout --> ConfirmStep1[Confirmation Step 1]
-    ConfirmStep1 --> ConfirmStep2[Confirmation Step 2]
-    ConfirmStep2 --> Partition{Partition Records}
-    Partition -->|Balance = 0| HardDelete[Hard Delete\nSettled Records]
-    Partition -->|Balance > 0| Carryover[Carry Forward\nto New Cycle]
-    HardDelete --> NewCycle[New Monthly Cycle Opens]
-    Carryover --> NewCycle
-    NewCycle --> AssistPortal
+    Table --> Lock{Cycle Locked?}
+    Lock -->|No| RecordActions
+    Lock -->|Yes| ReadOnly[Read-Only View]
+
+    %% ==============================
+    %% ADMIN ONLY: EXTRA MODULES
+    %% ==============================
+    Role -->|Admin| AdminModules[Admin Modules]
+
+    subgraph AdminOnly [Admin Only]
+        direction LR
+        Dashboard[Dashboard]
+        LabRecon[Lab Reconciliation]
+        Overhead[Overhead Input]
+        Closeout[Month-End Closeout]
+    end
+
+    AdminModules --> AdminOnly
+
+    LabRecon --> Fees[Assign Lab Fees] --> Dashboard
+    Overhead --> Expenses[Enter Expenses] --> Dashboard
+    Dashboard --> KPIs[Revenue, Commission,\nProfit/Loss]
+
+    Closeout --> Step1[Preview] --> Step2[Confirm]
+    Step2 --> Partition{Settled?}
+    Partition -->|Yes| Delete[Hard Delete]
+    Partition -->|No| Carry[Carry Forward]
+    Delete --> NewCycle[New Cycle]
+    Carry --> NewCycle
+    NewCycle --> Table
