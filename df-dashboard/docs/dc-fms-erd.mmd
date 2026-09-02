@@ -1,8 +1,8 @@
 erDiagram
     USERS ||--o{ MONTHLY_CYCLES : "manages (admin)"
     MONTHLY_CYCLES ||--o{ PATIENT_RECORDS : "contains"
-    PATIENT_RECORDS ||--o{ CASE_PAYMENTS : "has installments"
-    PATIENT_RECORDS }o--|| LABS : "assigned to"
+    PATIENT_RECORDS ||--o{ CASE_PAYMENTS : "installments (CASE only)"
+    PATIENT_RECORDS }o--|| LABS : "assigned to (CASE only)"
     MONTHLY_CYCLES ||--|| MONTHLY_FINANCIALS : "summarized by"
 
     USERS {
@@ -15,7 +15,7 @@ erDiagram
     MONTHLY_CYCLES {
         uuid id PK
         string month_year
-        enum status "OPEN , CLOSED"
+        enum status "OPEN or CLOSED"
     }
 
     LABS {
@@ -32,10 +32,10 @@ erDiagram
         enum category "GP or CASE"
         string diagnosis
         decimal total_cost
-        uuid lab_id FK "FK to LABS, assistant can assign"
-        decimal lab_fee "admin-assigned"
-        enum lab_payment_status "PAID or UNPAID, admin-only"
-        boolean is_carried_forward
+        uuid lab_id FK "FK to LABS, CASE only"
+        decimal lab_fee "admin-assigned, CASE only"
+        enum lab_payment_status "PAID or UNPAID, CASE only, admin-only"
+        boolean is_carried_forward "CASE only, false for GP"
     }
 
     CASE_PAYMENTS {
@@ -44,7 +44,7 @@ erDiagram
         date payment_date
         decimal paid_amount
         string payment_note
-        enum payment_status "PAID or UNPAID - only for CASE patients, drives carry-forward"
+        enum payment_status "PAID or UNPAID, CASE only, drives carry-forward"
     }
 
     MONTHLY_FINANCIALS {
@@ -62,3 +62,10 @@ erDiagram
         decimal building_rent
         decimal net_profit
     }
+
+    %% UI Display Note:
+    %% Record table is split into two tabbed views:
+    %%   Tab 1: GP Records (entry_date, patient_name, diagnosis, total_cost)
+    %%   Tab 2: Case Records (entry_date, patient_name, diagnosis, total_cost, balance, status, carried-forward)
+    %% GP has no installments, no balance, no status column.
+    %% Case tracks installments via CASE_PAYMENTS, shows balance and status.

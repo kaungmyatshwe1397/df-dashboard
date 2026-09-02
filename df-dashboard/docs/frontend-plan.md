@@ -128,23 +128,24 @@
 
 **Title:** Build the main data entry table showing current cycle patient records
 
-**Expected Outcome:** A table listing all patient records for the active cycle, with carried-forward records visually flagged. Handles all 5 UI states. Read-only when cycle is locked.
+**Expected Outcome:** A tabbed table (GP Records | Case Records) showing current cycle patient records, with carried-forward records visually flagged. Handles all 5 UI states. Read-only when cycle is locked.
 
 **Things To Do:**
 - ✅ Create `app/assistant/page.tsx` as the default assistant view
 - ✅ Read patient records from mock data context (pre-seeded sample records for the active cycle)
-- ✅ Build `components/RecordTable.tsx` using shadcn `Table`, `Badge`, `Button`, `Card`, `Pagination`
-- ✅ Columns: Date, Patient Name, Category (GP/Case), Total Cost, Paid, Balance, Status
-- ✅ Flag carried-forward records with a shadcn `Badge` (`is_carried_forward = true`)
-- ✅ Show "Payment Complete" shadcn `Badge` when `balance = 0` for Case records
+- ✅ Build `components/RecordTable.tsx` with shadcn `Tabs` — two tabs: GP Records and Case Records
+- ✅ GP tab columns: Date, Patient Name, Diagnosis, Total Cost
+- ✅ Case tab columns: Date, Patient Name, Diagnosis, Total Cost, Paid, Balance, Status
+- ✅ Flag carried-forward records with a shadcn `Badge` (`is_carried_forward = true`) — Case tab only
+- ✅ Show "Payment Complete" shadcn `Badge` when `balance = 0` — Case tab only
+- ✅ GP records show no status column (single-session, no installments)
+- ✅ Each tab has its own "Add Record" shadcn `Button`
 - ✅ Implement shadcn `Skeleton` loading state
-- ✅ Implement empty state: "No entries yet this cycle" + shadcn `Button` Add
+- ✅ Implement empty state per tab: "No GP/Case records yet this cycle" + shadcn `Button` Add
 - ✅ Implement error state: shadcn `Button` retry
-- ✅ Implement edge case: long names truncate with ellipsis, large row count with `Pagination`
-- ✅ When cycle is locked → hide edit icons, show read-only indicator
-- ✅ Add "Add Record" shadcn `Button` that opens the modal (Task 6)
-- ✅ Created `context/DataContext.tsx` with active cycle records, payments, and balance helpers
-- ✅ Installed shadcn `Table` and `Pagination` components
+- ✅ Implement edge case: long names truncate with ellipsis, large row count with `Pagination` per tab
+- ✅ When cycle is locked → hide edit icons, show read-only indicator on both tabs
+- ✅ Installed shadcn `Tabs` component
 
 **Connection:** Depends on Task 4 (layout). Data source for Admin Dashboard (Task 7).
 

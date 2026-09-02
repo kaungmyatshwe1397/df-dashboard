@@ -1,15 +1,14 @@
 // ============================================
-// Component Tests — RecordTable
+// Component Tests — RecordTable (Tabbed)
 // ============================================
-// RecordTable uses useData() which needs DataProvider.
-// We wrap the component in DataProvider for tests.
+// RecordTable now has GP and Case tabs.
+// By default, the GP tab is active.
 
 import { describe, test, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { DataProvider } from "@/context/DataContext";
 import { RecordTable } from "../RecordTable";
 
-// Helper: wraps component in DataProvider
 function renderWithProvider(ui: React.ReactElement) {
   return render(<DataProvider>{ui}</DataProvider>);
 }
@@ -20,29 +19,28 @@ describe("RecordTable", () => {
     expect(screen.getByText("Patient Records")).toBeInTheDocument();
   });
 
-  test("renders patient names from mock data", () => {
+  test("shows GP and Case tabs", () => {
     renderWithProvider(<RecordTable onAdd={() => {}} />);
-    // Names appear in table cells (may have duplicates from title attribute)
-    expect(screen.getAllByText("John Doe").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Jane Smith").length).toBeGreaterThanOrEqual(1);
+    const gpTabs = screen.getAllByRole("tab", { name: "GP Records" });
+    const caseTabs = screen.getAllByRole("tab", { name: "Case Records" });
+    expect(gpTabs.length).toBeGreaterThanOrEqual(1);
+    expect(caseTabs.length).toBeGreaterThanOrEqual(1);
   });
 
-  test("shows GP and Case category badges", () => {
+  test("GP tab shows GP records by default", () => {
     renderWithProvider(<RecordTable onAdd={() => {}} />);
-    const gpBadges = screen.getAllByText("GP");
-    const caseBadges = screen.getAllByText("CASE");
-    expect(gpBadges.length).toBeGreaterThanOrEqual(1);
-    expect(caseBadges.length).toBeGreaterThanOrEqual(1);
+    // John Doe is a GP record — visible in default GP tab
+    expect(screen.getAllByText("John Doe").length).toBeGreaterThanOrEqual(1);
   });
 });
 
 // ------------------------------------------
 // TODO: Add these tests later
 // ------------------------------------------
-// - Test: shows "Carried forward" badge
-// - Test: shows "Payment Complete" badge when balance = 0
-// - Test: hides add button when cycle is locked
+// - Test: switching to Case tab shows case records
+// - Test: each tab has its own "Add Record" button
+// - Test: hides add buttons when cycle is locked
 // - Test: shows loading skeleton
 // - Test: shows error state with retry button
-// - Test: shows empty state when no records
-// - Test: pagination works with many records
+// - Test: shows empty state per tab
+// - Test: pagination works independently per tab
