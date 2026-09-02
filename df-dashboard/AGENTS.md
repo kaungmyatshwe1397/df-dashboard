@@ -13,6 +13,7 @@
 | `docs/prd.md` | Product requirements — business logic, roles, permissions, formulas. |
 | `docs/comment_methods.md` | Commenting standards — when to comment, when not to, formatting rules. |
 | `docs/testing-guide.md` | Testing guide — when to test, what type to use, how to write tests. |
+| `docs/task-completion-rule.md` | Task completion checklist — how to update the plan after finishing a task. |
 
 ## Rules
 
@@ -28,5 +29,8 @@
 10. **Follow `docs/comment_methods.md`** for all code comments. Explain *why*, not *what*. No redundant syntax restatements, no dead/commented-out code.
 
 ## Library & External Documentation Rule
-- Whenever working with a new library, an external framework (e.g., Tailwind CSS, shadcn/ui, Next.js), or when interacting with libraries after a long duration, you **MUST** use the Context7 MCP server  to check their latest official documentation first.
+- Whenever working with a new library, an external framework (e.g., Tailwind CSS, shadcn/ui, Next.js), or when interacting with libraries after a long duration, you **MUST** use the `Context7 MCP server`  to check their latest official documentation first.
 - Always retrieve up-to-date syntax, configuration rules, and breaking changes from Context7, and explicitly summarize those updates/changes before writing or modifying code.
+
+## Task Completion Rule
+After completing any task from `docs/frontend-plan.md`, follow the steps in [`docs/task-completion-rule.md`](docs/task-completion-rule.md) to update the plan file.

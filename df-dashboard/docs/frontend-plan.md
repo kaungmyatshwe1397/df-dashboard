@@ -153,24 +153,35 @@
 
 ---
 
-## Task 6 — Assistant Portal: Add/Edit Patient Record Modal
+## Task 6 — Assistant Portal: Add/Edit Patient Record Modal (Completed 9/2/2026 12:30PM)
 
 **Title:** Build the modal form for creating and editing patient records
 
 **Expected Outcome:** A modal form that lets the assistant create new records and edit existing ones (when cycle is open). Validates all fields and handles all 5 UI states.
 
 **Things To Do:**
-- Create `components/PatientRecordModal.tsx` using shadcn `Dialog`, `Input`, `Label`, `Button`, `RadioGroup`, `Alert`
-- Fields: Patient Name (required), Address (optional), Category (GP/Case `RadioGroup`), Diagnosis (required), Total Cost (required, decimal), Amount Paid Today (required, decimal)
-- For Case category: show "Amount Paid Today" `Input` — system calculates remaining balance
-- For GP category: Amount Paid Today should equal Total Cost (validate or auto-fill)
-- Validation: Amount Paid Today <= Total Cost, required fields not empty, numeric values valid
-- Save via mock state update — push/patch record into React context (no Supabase insert)
-- Loading state: shadcn `Skeleton` spinner on save `Button`, dialog not closable mid-save
-- Error state: inline field errors, network error shadcn `Alert` inside dialog (preserve form data)
-- Edge case: Amount Paid = 0 (deposit), decimal costs (1500.50), long diagnosis text wraps
-- When cycle is locked → dialog does not open, edit is blocked
-- After save → close dialog, refresh table (Task 5) via context state update
+- ✅ Create `components/PatientRecordModal.tsx` using shadcn `Dialog`, `Input`, `Label`, `Button`, `RadioGroup`, `Alert`
+- ✅ Fields: Patient Name (required), Address (optional), Category (GP/Case `RadioGroup`), Diagnosis (required), Total Cost (required, decimal), Amount Paid Today (required, decimal)
+- ✅ For Case category: show "Amount Paid Today" `Input` — system calculates remaining balance
+- ✅ For GP category: Amount Paid Today should equal Total Cost (validate or auto-fill)
+- ✅ Validation: Amount Paid Today <= Total Cost, required fields not empty, numeric values valid
+- ✅ Save via mock state update — push/patch record into React context (no Supabase insert)
+- ✅ Loading state: shadcn `Skeleton` spinner on save `Button`, dialog not closable mid-save
+- ✅ Error state: inline field errors, network error shadcn `Alert` inside dialog (preserve form data)
+- ✅ Edge case: Amount Paid = 0 (deposit), decimal costs (1500.50), long diagnosis text wraps
+- ✅ When cycle is locked → dialog does not open, edit is blocked
+- ✅ After save → close dialog, refresh table (Task 5) via context state update
+- ✅ Edit mode — pencil icon on each row opens modal pre-filled with record data
+
+**Backend Plan Remarks:**
+- Mock `addRecord()` in `DataContext` creates `PatientRecord` + initial `CasePayment` for CASE category — replace with Supabase `insert` into `patient_records` and `case_payments` tables
+- `entry_date` is auto-generated from `new Date()` — Supabase default will handle this via `NOW()`
+- `id` uses `rec-${Date.now()}` — replace with Supabase `uuid` generation
+- `updateRecord()` patches `PatientRecord` in context — replace with Supabase `update` on `patient_records`
+- `is_carried_forward` is always `false` on new records — closeout (Task 10) sets it
+- `lab_id`, `lab_fee`, `lab_payment_status` are left unset (admin-only fields) — populated by Task 8
+- Form validation stays client-side — Supabase RLS + DB constraints provide server-side enforcement
+- Dialog uses `@base-ui/react` Dialog primitives (not Radix) — consistent with shadcn `base-nova` style
 
 **Connection:** Depends on Task 5 (table). Creates data that Task 7 (Admin Dashboard) reads.
 
@@ -319,7 +330,7 @@ Task 1 (Scaffolding)
 | 3 | Auth & Login | `/login` | Both | ✅ |
 | 4 | Layout Shells | Sidebar/Layout | Both | ✅ |
 | 5 | Record Table | `/assistant` | Assistant | ✅ |
-| 6 | Add/Edit Modal | `/assistant` (modal) | Assistant |
+| 6 | Add/Edit Modal | `/assistant` (modal) | Assistant | ✅ |
 | 7 | Financial Dashboard | `/admin` | Admin |
 | 8 | Lab Reconciliation | `/admin/reconciliation` | Admin |
 | 9 | Overhead & Expenses | `/admin/overhead` | Admin |
