@@ -12,6 +12,7 @@
 | `dc-fms-ui-states-checklist.md` | UI states — every screen must handle ideal, empty, loading, error, edge case. |
 | `prd.md` | Product requirements — business logic, roles, permissions, formulas. |
 | `comment_methods.md` | Commenting standards — when to comment, when not to, formatting rules. |
+| `testing-guide.md` | Testing guide — when to test, what type to use, how to write tests. |
 
 ## Rules
 
