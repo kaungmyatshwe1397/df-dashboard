@@ -124,25 +124,27 @@
 
 ---
 
-## Task 5 — Assistant Portal: Active Cycle Record Table
+## Task 5 — Assistant Portal: Active Cycle Record Table (Completed 9/2/2026)
 
 **Title:** Build the main data entry table showing current cycle patient records
 
 **Expected Outcome:** A table listing all patient records for the active cycle, with carried-forward records visually flagged. Handles all 5 UI states. Read-only when cycle is locked.
 
 **Things To Do:**
-- Create `app/assistant/page.tsx` as the default assistant view
-- Read patient records from mock data context (pre-seeded sample records for the active cycle)
-- Build `components/RecordTable.tsx` using shadcn `Table`, `Badge`, `Button`, `Card`, `Pagination`
-- Columns: Date, Patient Name, Category (GP/Case), Total Cost, Paid, Balance, Status
-- Flag carried-forward records with a shadcn `Badge` (`is_carried_forward = true`)
-- Show "Payment Complete" shadcn `Badge` when `balance = 0` for Case records
-- Implement shadcn `Skeleton` loading state
-- Implement empty state: "No entries yet this cycle" + shadcn `Button` Add
-- Implement error state: shadcn `Button` retry
-- Implement edge case: long names truncate with ellipsis, large row count with `Pagination`
-- When cycle is locked → hide edit icons, show read-only indicator
-- Add "Add Record" shadcn `Button` that opens the modal (Task 6)
+- ✅ Create `app/assistant/page.tsx` as the default assistant view
+- ✅ Read patient records from mock data context (pre-seeded sample records for the active cycle)
+- ✅ Build `components/RecordTable.tsx` using shadcn `Table`, `Badge`, `Button`, `Card`, `Pagination`
+- ✅ Columns: Date, Patient Name, Category (GP/Case), Total Cost, Paid, Balance, Status
+- ✅ Flag carried-forward records with a shadcn `Badge` (`is_carried_forward = true`)
+- ✅ Show "Payment Complete" shadcn `Badge` when `balance = 0` for Case records
+- ✅ Implement shadcn `Skeleton` loading state
+- ✅ Implement empty state: "No entries yet this cycle" + shadcn `Button` Add
+- ✅ Implement error state: shadcn `Button` retry
+- ✅ Implement edge case: long names truncate with ellipsis, large row count with `Pagination`
+- ✅ When cycle is locked → hide edit icons, show read-only indicator
+- ✅ Add "Add Record" shadcn `Button` that opens the modal (Task 6)
+- ✅ Created `context/DataContext.tsx` with active cycle records, payments, and balance helpers
+- ✅ Installed shadcn `Table` and `Pagination` components
 
 **Connection:** Depends on Task 4 (layout). Data source for Admin Dashboard (Task 7).
 
@@ -315,7 +317,7 @@ Task 1 (Scaffolding)
 | 2 | TypeScript Types | — | — | ✅ |
 | 3 | Auth & Login | `/login` | Both | ✅ |
 | 4 | Layout Shells | Sidebar/Layout | Both | ✅ |
-| 5 | Record Table | `/assistant` | Assistant |
+| 5 | Record Table | `/assistant` | Assistant | ✅ |
 | 6 | Add/Edit Modal | `/assistant` (modal) | Assistant |
 | 7 | Financial Dashboard | `/admin` | Admin |
 | 8 | Lab Reconciliation | `/admin/reconciliation` | Admin |
