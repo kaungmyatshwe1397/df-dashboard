@@ -10,15 +10,18 @@ export default function AdminRecordsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [defaultCategory, setDefaultCategory] = useState<RecordCategory>(RecordCategory.GP);
   const [editRecord, setEditRecord] = useState<PatientRecord | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
 
   function handleAdd(category: RecordCategory) {
     setEditRecord(null);
+    setIsAdding(true);
     setDefaultCategory(category);
     setModalOpen(true);
   }
 
   function handleEdit(record: PatientRecord | null, category: RecordCategory) {
     setEditRecord(record);
+    setIsAdding(false);
     setDefaultCategory(category);
     setModalOpen(true);
   }
@@ -40,6 +43,7 @@ export default function AdminRecordsPage() {
         onOpenChange={setModalOpen}
         defaultCategory={defaultCategory}
         editRecord={editRecord}
+        isAdding={isAdding}
       />
     </PortalLayout>
   );

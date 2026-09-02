@@ -29,6 +29,7 @@ interface PatientRecordUpdateFormProps {
   onOpenChange: (open: boolean) => void;
   defaultCategory?: RecordCategory;
   editRecord?: PatientRecord | null;
+  isAdding?: boolean;
 }
 
 interface FormErrors {
@@ -62,24 +63,41 @@ export function PatientRecordUpdateForm({
   onOpenChange,
   defaultCategory = RecordCategory.GP,
   editRecord = null,
+  isAdding = false,
 }: PatientRecordUpdateFormProps) {
   const { addRecord, updateRecord, deleteRecord, findRecordByPatientId, cycleLocked } = useData();
   const isCase = defaultCategory === RecordCategory.CASE;
 
-  const isLookupMode = !editRecord;
+  const isLookupMode = !isAdding && !editRecord;
 
   const formKey = useMemo(
-    () => `${open}-${editRecord?.id ?? "new"}-${defaultCategory}`,
-    [open, editRecord?.id, defaultCategory]
+    () => `${open}-${isAdding ? "add" : editRecord?.id ?? "lookup"}-${defaultCategory}`,
+    [open, isAdding, editRecord?.id, defaultCategory]
   );
 
   const [lookupId, setLookupId] = useState("");
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [foundRecord, setFoundRecord] = useState<PatientRecord | null>(editRecord);
 
-  const [form, setForm] = useState(() =>
-    editRecord ? getInitialForm(editRecord) : null
-  );
+  const [form, setForm] = useState(() => {
+    if (editRecord) return getInitialForm(editRecord);
+    if (isAdding) {
+      return {
+        patientId: "",
+        patientName: "",
+        address: "",
+        diagnosis: "",
+        caseType: "",
+        teeth: "",
+        totalCost: "",
+        labName: "",
+        labSendDate: "",
+        deliveryDate: "",
+        paid: "",
+      };
+    }
+    return null;
+  });
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -166,7 +184,7 @@ export function PatientRecordUpdateForm({
   }
 
   async function handleSave() {
-    if (!validate() || !form || !foundRecord) return;
+    if (!validate() || !form) return;
 
     setSaving(true);
     setSubmitError(null);
@@ -181,7 +199,7 @@ export function PatientRecordUpdateForm({
         ? form.caseType + (form.teeth ? ` at ${form.teeth}` : "")
         : form.diagnosis.trim();
 
-      updateRecord(foundRecord.id, {
+      const recordData = {
         patient_id: form.patientId.trim(),
         patient_name: form.patientName.trim(),
         address: form.address.trim() || undefined,
@@ -194,11 +212,17 @@ export function PatientRecordUpdateForm({
         delivery_date: isCase && form.deliveryDate ? form.deliveryDate : undefined,
         paid: isCase ? paidAmount : undefined,
         remaining: isCase ? cost - paidAmount : undefined,
-      });
+        category: defaultCategory,
+      };
+
+      if (isAdding) {
+        await addRecord(recordData);
+      } else if (foundRecord) {
+        await updateRecord(foundRecord.id, recordData);
+      }
 
       setSaving(false);
       onOpenChange(false);
-      handleReset();
     } catch {
       setSaving(false);
       setSubmitError("Failed to save record. Please try again.");
@@ -227,7 +251,7 @@ export function PatientRecordUpdateForm({
 
   return (
     <Dialog open={open} onOpenChange={saving ? undefined : onOpenChange}>
-      <DialogContent className="sm:max-w-lg" showCloseButton={!saving}>
+      <DialogContent key={formKey} className="sm:max-w-lg" showCloseButton={!saving}>
         <DialogHeader>
           <DialogTitle>
             {isLookupMode && !foundRecord
@@ -283,10 +307,10 @@ export function PatientRecordUpdateForm({
               )}
             </div>
           </div>
-        ) : form && foundRecord ? (
+        ) : form ? (
           /* Form step — pre-filled with found record */
           <>
-            <div key={formKey} className="grid gap-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="grid gap-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
               {isCase ? (
                 <CaseFormFields
                   form={{ ...form, category: defaultCategory }}
@@ -306,7 +330,7 @@ export function PatientRecordUpdateForm({
             </div>
 
             <DialogFooter>
-              {isLookupMode && (
+              {foundRecord && (
                 <Button
                   variant="destructive"
                   onClick={handleDelete}
@@ -321,9 +345,11 @@ export function PatientRecordUpdateForm({
                   Delete
                 </Button>
               )}
-              <Button variant="outline" onClick={handleReset} disabled={saving}>
-                Back
-              </Button>
+              {isLookupMode && (
+                <Button variant="outline" onClick={handleReset} disabled={saving}>
+                  Back
+                </Button>
+              )}
               <Button onClick={handleSave} disabled={saving}>
                 {saving ? (
                   <>
@@ -331,7 +357,7 @@ export function PatientRecordUpdateForm({
                     Saving...
                   </>
                 ) : (
-                  "Save Changes"
+                  isAdding ? "Add Record" : "Save Changes"
                 )}
               </Button>
             </DialogFooter>

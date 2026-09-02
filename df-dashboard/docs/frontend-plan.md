@@ -299,68 +299,61 @@
 
 ---
 
-## Task 8 — Admin Portal: Case & Lab Fee Reconciliation (Completed 9/2/2026 10:30PM)
+## Task 8 — Admin Portal: Case & Lab Fee Reconciliation + Case Type Selector
 
-**Title:** Build the lab fee assignment table for active Case treatments
+**Title:** Build the lab reconciliation table with lab assignment, lab fee input, and structured Case Type + Tooth Number selector for Case records
 
-**Expected Outcome:** A table listing all active Case-type records with an inline input field for lab fee per case. Total lab fees auto-aggregate as fees are entered.
+**Expected Outcome:** A reconciliation table listing all active Case-type records with inline lab fee input, lab assignment toggle buttons, and total lab fee aggregation. Case records use a structured Case Type dropdown + Tooth Number checkbox grid instead of free-text Diagnosis.
 
 **Things To Do:**
-- ✅ Create `app/admin/reconciliation/page.tsx`
-- ✅ Filter Case records from mock data context where `category = 'CASE'`
+
+### Lab Reconciliation Table
+- ✅ Create `app/admin/reconciliation/page.tsx` with `PortalLayout` and `LabReconciliationTable`
 - ✅ Build `components/reconciliation/LabReconciliationTable.tsx` using shadcn `Table`, `Input`, `Badge`, `Button`, `Skeleton`
-- ✅ Columns: Patient, Total Cost, Paid, Balance, Lab Fee (inline `Input`), Lab Status (`Badge`)
+- ✅ Columns: Patient, Total Cost, Paid, Balance, Lab (toggle buttons), Lab Fee (inline input), Status (badge)
 - ✅ Inline editable lab fee `Input` — saves on blur or Enter key
-- ✅ Auto-aggregate total lab fees at the bottom of the table
-- ✅ Update `lab_fee` and `lab_payment_status` on the mock record via context state update
+- ✅ Auto-aggregate total lab fees in table footer
+- ✅ Update `lab_fee`, `lab_payment_status`, `lab_id`, `lab_name` via context state update
 - ✅ Validation: reject negative values, non-numeric input
-- ✅ Loading state: shadcn `Skeleton` row-level spinner while saving
-- ✅ Error state: inline error on the row, value preserved
-- ✅ Edge case: lab fee = 0 allowed, lab fee > total cost shows warning `Badge` ("Over Cost")
-- ✅ Empty state: "No active cases to reconcile"
-- ✅ After lab fee changes → Admin Dashboard (Task 7) recalculates automatically
+- ✅ Loading state: shadcn `Skeleton` rows
+- ✅ Error state: shadcn `Alert` with Retry button
+- ✅ Empty state: "No cases to reconcile" with dashed border
+- ✅ Edge case: lab fee > total cost shows "Over Cost" warning `Badge`
+
+### Lab Assignment Toggle
+- ✅ Added `labs: Lab[]` to DataContext interface, exposed `MOCK_LABS` via provider
+- ✅ Built `LabSelector` component — button group (outline/default variant) in "Lab" column
+- ✅ Each row shows currently assigned lab; clicking a different button updates `lab_id` and `lab_name`
+- ✅ No lab selected → all buttons outline (neutral state)
+- ✅ Disabled when cycle is locked
+- ✅ Lab reassignment after fee set — keeps fee, reassigns lab
+
+### Case Type + Tooth Number Selector (replaces free-text Diagnosis for Case records)
+- ✅ Added `CaseType` interface to `lib/global.ts`: `{ id: string; name: string }`
+- ✅ Added `case_type?: string` and `teeth?: string` (comma-separated) to `PatientRecord`
+- ✅ Added `MOCK_CASE_TYPES` to `lib/mock-data.ts`: RPD, Crown, Bridge
+- ✅ Exposed `caseTypes` from DataContext
+- ✅ Created `components/records/CaseTypeSelector.tsx` — shadcn `Select` dropdown
+- ✅ Created `components/records/ToothNumberGrid.tsx` — 4-row checkbox grid (11-18, 21-28, 31-38, 41-48)
+- ✅ Updated `CaseFormFields.tsx` — replaced free-text Diagnosis with CaseTypeSelector + ToothNumberGrid + auto-generated diagnosis display
+- ✅ Updated `PatientRecordUpdateForm.tsx` — added `caseType`/`teeth` to form state, auto-generates `diagnosis = "RPD at 41,42,43,44"` on save
+- ✅ GP records still use free-text Diagnosis (no regression)
+- ✅ Validation: case type required, at least 1 tooth required
+- ✅ Edit mode pre-selects stored case type and teeth
+
+### Misc
 - ✅ Fixed sidebar nav links to use `/admin/reconciliation` instead of `/admin-reconciliation`
 
 **Backend Plan Remarks:**
-- Mock `updateRecord()` patches `lab_fee` and `lab_payment_status` on record in context — replace with Supabase `update` on `patient_records` (columns `lab_fee`, `lab_payment_status`)
-- `lab_fee` is admin-entered per case — consider adding a `labs` table FK join for lab name resolution
-- `lab_payment_status` drives Dashboard (Task 7) commission formula — `total_lab_fees = sum(lab_fee)` where `category = 'CASE'`
-- Supabase RLS: only admin role can update `lab_fee` and `lab_payment_status` on `patient_records`
-- Total lab fees aggregation in Dashboard hook (`useDashboardKPIs.ts:43`) already reads `lab_fee` from records — no change needed
-- Consider adding a `lab_fees_audit` table for tracking who changed fees and when (optional for MVP)
-
-**Connection:** Depends on Task 4 (layout). Feeds into Task 7 (Dashboard recalculates commission).
-
-**Next Step →** Task 8.1
-
----
-
-## Task 8.1 — Lab Reconciliation: Lab Assignment Toggle (Completed 9/2/2026 11:15PM)
-
-**Title:** Add lab selection (toggle buttons) to each Case row so admin assigns which lab handles the case
-
-**Expected Outcome:** Each Case row in the reconciliation table shows a toggle button group (Lab A / Lab B / Lab C). Selecting a lab updates `lab_id` and `lab_name` on the record. Admin can also reassign a case to a different lab at any time.
-
-**Things To Do:**
-- ✅ Read `MOCK_LABS` from `lib/mock-data.ts` for available lab options
-- ✅ Added `labs` to DataContext interface and exposed `MOCK_LABS` via provider
-- ✅ Built `LabSelector` component using shadcn `Button` (outline/default variant) placed in a new "Lab" column
-- ✅ Each row shows the currently assigned lab; clicking a different lab button updates the record via `updateRecord(recordId, { lab_id, lab_name })`
-- ✅ When no lab is selected, all buttons show outline (neutral state)
-- ✅ Toggle group disabled when cycle is locked
-- ✅ Synced `lab_name` from the lab lookup when `lab_id` changes
-- ✅ Loading state: skeleton rows with table structure
-- ✅ Error state: Alert with Retry button
-- ✅ Edge case: lab reassignment after lab fee already set — keeps the fee, just reassigns lab
-
-**Backend Plan Remarks:**
-- Mock `updateRecord()` patches `lab_id` and `lab_name` on record in context — replace with Supabase `update` on `patient_records` (columns `lab_id`, `lab_name`)
+- Mock `updateRecord()` patches `lab_fee`, `lab_payment_status`, `lab_id`, `lab_name`, `case_type`, `teeth` on record — replace with Supabase `update` on `patient_records`
 - `MOCK_LABS` exposed via DataContext — replace with Supabase `select` on `labs` table
-- Supabase RLS: admin role can update `lab_id`/`lab_name`; assistant can read but not reassign
-- Consider adding a `lab_id` foreign key constraint on `patient_records` in Supabase schema
-- Lab reassignment is audit-trail friendly — add `lab_assigned_at` timestamp column if needed later
+- `MOCK_CASE_TYPES` exposed via DataContext — replace with Supabase `select` on `case_types` table
+- `case_type` and `teeth` stored on `patient_records` — add columns `case_type text`, `teeth text` (comma-separated or `text[]` array)
+- `diagnosis` auto-generated client-side from `case_type + " at " + teeth` — consider storing both raw and computed values
+- Supabase RLS: admin can update `lab_fee`/`lab_payment_status`/`lab_id`/`lab_name`; assistant can read but not reassign
+- Admin CRUD for case types (add/edit/delete) — future task, store in `case_types` table with RLS
 
-**Connection:** Extends Task 8. No blockers. Read-only when cycle locked.
+**Connection:** Depends on Task 4 (layout). Feeds into Task 7 (Dashboard recalculates commission). Read-only when cycle locked.
 
 **Next Step →** Task 9
 
@@ -437,7 +430,7 @@ Task 1 (Scaffolding)
                  │         └→ Task 6.1 (Payment Installments & History)
                  │              └→ Task 6.2 (Admin Access to Record Table)
                  │                   └→ Task 7 (Dashboard) ← reads data from 5,6,6.1
-                 ├→ Task 8 (Lab Reconciliation) ─→ Task 7
+                 ├→ Task 8 (Lab Reconciliation + Case Type Selector) ─→ Task 7
                  ├→ Task 9 (Overhead) ─→ Task 7
                  └→ Task 10 (Closeout) ← depends on 5-9
 ```
@@ -457,8 +450,7 @@ Task 1 (Scaffolding)
 | 6.1 | Payment Installments & History | `/assistant` (modal + table) | Assistant | ✅ |
 | 6.2 | Admin Access to Record Table | `/admin/records` | Admin | ✅ |
 | 7 | Financial Dashboard | `/admin` | Admin | ✅ |
-| 8 | Lab Reconciliation | `/admin/reconciliation` | Admin | ✅ |
-| 8.1 | Lab Assignment Toggle | `/admin/reconciliation` (Lab column) | Admin | ✅ |
+| 8 | Case & Lab Fee Reconciliation + Case Type Selector | `/admin/reconciliation` | Admin | 🔲 |
 | 9 | Overhead & Expenses | `/admin/overhead` | Admin |
 | 10 | Month-End Closeout | `/admin/closeout` | Admin |
 
