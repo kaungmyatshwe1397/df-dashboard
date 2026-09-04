@@ -23,6 +23,7 @@ const gpRecord: GPPatientRecordType = {
   category: RecordCategory.GP,
   diagnosis: "Common cold",
   total_cost: 50000,
+  month_label: "Sep 2026",
 };
 
 function renderWithProvider(ui: React.ReactElement) {

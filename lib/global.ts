@@ -14,7 +14,7 @@ export enum UserRole {
 
 export enum CycleStatus {
   OPEN = "OPEN",
-  CLOSED = "CLOSED",
+  LOCKED = "LOCKED",
 }
 
 export enum RecordCategory {
@@ -75,6 +75,7 @@ export interface PatientRecordBaseType {
   category: RecordCategory;
   diagnosis: string;
   total_cost: number;
+  month_label: string;
 }
 
 export interface GPPatientRecordType extends PatientRecordBaseType {
@@ -174,10 +175,4 @@ export interface DashboardKPIs {
   doctor_commission: number;
   operating_overhead: number;
   net_profit_loss: number;
-}
-
-export interface CloseoutPreview {
-  settled_count: number;
-  unsettled_count: number;
-  unsettled_cases: PatientRecord[];
 }

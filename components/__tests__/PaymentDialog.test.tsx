@@ -23,6 +23,7 @@ const mockRecord: CasePatientRecordType = {
   paid: 0,
   remaining: 200000,
   is_carried_forward: false,
+  month_label: "Sep 2026",
 };
 
 function renderWithProvider(ui: React.ReactElement) {

@@ -73,7 +73,7 @@ export const MOCK_CYCLES: MonthlyCycle[] = [
   {
     id: "cycle-002",
     month_year: "2026-08",
-    status: CycleStatus.CLOSED,
+    status: CycleStatus.LOCKED,
   },
 ];
 
@@ -93,6 +93,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
     category: RecordCategory.GP,
     diagnosis: "Common cold",
     total_cost: 50000,
+    month_label: "Sep 2026",
   } satisfies GPPatientRecordType,
   {
     id: "rec-002",
@@ -107,6 +108,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
     lab_fee: 30000,
     lab_payment_status: LabPaymentStatus.PAID,
     is_carried_forward: false,
+    month_label: "Sep 2026",
   } satisfies CasePatientRecordType,
   {
     id: "rec-003",
@@ -120,6 +122,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
     total_cost: 500000,
     lab_name: "City Diagnostics",
     is_carried_forward: false,
+    month_label: "Sep 2026",
   } satisfies CasePatientRecordType,
   // Carried forward from previous cycle
   {
@@ -135,6 +138,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
     lab_fee: 50000,
     lab_payment_status: LabPaymentStatus.UNPAID,
     is_carried_forward: true,
+    month_label: "Sep 2026",
   } satisfies CasePatientRecordType,
 ];
 

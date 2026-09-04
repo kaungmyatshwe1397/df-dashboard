@@ -1,10 +1,9 @@
-// Admin closeout page — 2-step wizard to close the current cycle.
-// Settled records are purged, unsettled cases carry forward to a new cycle.
+// Admin closeout page — lock cycle, carry forward, delete month.
 
 "use client";
 
 import { PortalLayout } from "@/components/layout/PortalLayout";
-import { CloseoutWizard } from "@/components/closeout/CloseoutWizard";
+import { CloseoutPanel } from "@/components/closeout/CloseoutPanel";
 
 export default function CloseoutPage() {
   return (
@@ -13,10 +12,10 @@ export default function CloseoutPage() {
         <div>
           <h1 className="text-2xl font-bold">Month-End Closeout</h1>
           <p className="text-muted-foreground">
-            Close the current cycle. Settled records are purged; unpaid cases carry forward.
+            Lock the cycle, carry forward unsettled cases, or delete month data.
           </p>
         </div>
-        <CloseoutWizard />
+        <CloseoutPanel />
       </div>
     </PortalLayout>
   );

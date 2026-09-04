@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
 import {
   MonthlyCycle,
   PatientRecord,
@@ -32,20 +32,38 @@ interface DataContextType {
   cycleLocked: boolean;
   loading: boolean;
   error: string | null;
+  allMonths: string[];
+  selectedMonth: string;
+  setSelectedMonth: (month: string) => void;
   getPaymentsForRecord: (recordId: string) => CasePayment[];
   getRecordBalance: (record: PatientRecord) => number;
   getRecordTotalPaid: (recordId: string) => number;
   refreshData: () => void;
-  addRecord: (record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward">, initialPayment?: number) => void;
+  addRecord: (record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">, initialPayment?: number) => void;
   updateRecord: (recordId: string, updates: Partial<PatientRecord>) => void;
   deleteRecord: (recordId: string) => void;
   addPayment: (payment: Omit<CasePayment, "id" | "payment_date">) => void;
   findRecordByPatientId: (patientId: string, category?: RecordCategory) => PatientRecord | undefined;
   updateFinancials: (updates: Partial<Omit<MonthlyFinancials, "id" | "cycle_id">>) => void;
-  closeoutCycle: () => { settledCount: number; unsettledCount: number };
+  toggleLock: () => void;
+  carryForward: () => { carriedCount: number };
+  deleteMonth: () => number;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
+
+function getMonthLabel(monthYear: string): string {
+  const [year, month] = monthYear.split("-");
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${months[parseInt(month, 10) - 1]} ${year}`;
+}
+
+function getNextMonthLabel(current: string): string {
+  const [year, month] = current.split("-").map(Number);
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  return `${nextYear}-${String(nextMonth).padStart(2, "0")}`;
+}
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
@@ -54,16 +72,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [allPayments, setAllPayments] = useState<CasePayment[]>(MOCK_CASE_PAYMENTS);
   const [allFinancials, setAllFinancials] = useState<MonthlyFinancials[]>(MOCK_MONTHLY_FINANCIALS);
   const [allCycles, setAllCycles] = useState<MonthlyCycle[]>(MOCK_CYCLES);
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
 
   const cycle = allCycles.find((c) => c.status === CycleStatus.OPEN) ?? null;
   const financials = cycle
     ? allFinancials.find((f) => f.cycle_id === cycle.id) ?? null
     : null;
-  const cycleLocked = cycle?.status === CycleStatus.CLOSED;
+  const cycleLocked = cycle?.status === CycleStatus.LOCKED;
 
-  const activeRecords = cycle
-    ? allRecords.filter((r) => r.cycle_id === cycle.id)
-    : [];
+  // All months that have records, sorted newest first.
+  const allMonths = useMemo(() => {
+    const months = new Set(allRecords.map((r) => r.month_label));
+    return Array.from(months).sort((a, b) => {
+      const [aYear, aMonth] = a.split(" ");
+      const [bYear, bMonth] = b.split(" ");
+      const monthOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const aIdx = monthOrder.indexOf(aMonth);
+      const bIdx = monthOrder.indexOf(bMonth);
+      if (aYear !== bYear) return parseInt(bYear) - parseInt(aYear);
+      return bIdx - aIdx;
+    });
+  }, [allRecords]);
+
+  // Set default selected month to current cycle's month if not set.
+  const effectiveMonth = selectedMonth || (cycle ? getMonthLabel(cycle.month_year) : allMonths[0] ?? "");
+
+  // Records filtered by selected month.
+  const activeRecords = useMemo(
+    () => allRecords.filter((r) => r.month_label === effectiveMonth),
+    [allRecords, effectiveMonth]
+  );
 
   const getPaymentsForRecord = useCallback(
     (recordId: string) => allPayments.filter((p) => p.record_id === recordId),
@@ -88,18 +126,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addRecord = useCallback(
     (
-      recordData: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward">,
+      recordData: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
       initialPayment?: number
     ) => {
       if (!cycle) return;
 
+      const monthLabel = getMonthLabel(cycle.month_year);
       const baseFields = {
         id: `rec-${Date.now()}`,
         cycle_id: cycle.id,
         entry_date: new Date().toISOString().split("T")[0],
+        month_label: monthLabel,
       };
 
-      // GP and Case have different shapes — conditionally add is_carried_forward.
       const newRecord = recordData.category === RecordCategory.CASE
         ? { ...recordData, ...baseFields, is_carried_forward: false }
         : { ...recordData, ...baseFields };
@@ -139,7 +178,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       };
       setAllPayments((prev) => [...prev, newPayment]);
 
-      // Sync parent record's paid and remaining fields (Case records only).
       setAllRecords((prev) =>
         prev.map((r) => {
           if (r.id !== paymentData.record_id) return r;
@@ -158,7 +196,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   );
 
   const deleteRecord = useCallback(
-    // Also removes associated payments to prevent orphaned records.
     (recordId: string) => {
       setAllRecords((prev) => prev.filter((r) => r.id !== recordId));
       setAllPayments((prev) => prev.filter((p) => p.record_id !== recordId));
@@ -177,7 +214,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
             f.cycle_id === cycle.id ? { ...f, ...updates } : f
           );
         }
-        // Create new record if none exists for this cycle
         const newFinancials: MonthlyFinancials = {
           id: `fin-${Date.now()}`,
           cycle_id: cycle.id,
@@ -201,8 +237,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   );
 
   const findRecordByPatientId = useCallback(
-    // Search is scoped to category so GP and Case tabs don't cross-match
-    // when a patient has records in both types.
     (patientId: string, category?: RecordCategory) =>
       activeRecords.find(
         (r) =>
@@ -212,65 +246,76 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [activeRecords]
   );
 
-  const closeoutCycle = useCallback(() => {
-    if (!cycle) return { settledCount: 0, unsettledCount: 0 };
-
-    // Partition records: settled = GP + fully paid Case, unsettled = Case with remaining balance
-    const settledRecords = activeRecords.filter(
-      (r) =>
-        r.category === RecordCategory.GP ||
-        (r.category === RecordCategory.CASE && (r.remaining ?? 0) <= 0)
+  // Toggle cycle between OPEN and LOCKED.
+  const toggleLock = useCallback(() => {
+    if (!cycle) return;
+    setAllCycles((prev) =>
+      prev.map((c) =>
+        c.id === cycle.id
+          ? { ...c, status: c.status === CycleStatus.OPEN ? CycleStatus.LOCKED : CycleStatus.OPEN }
+          : c
+      )
     );
+  }, [cycle]);
+
+  // Move unsettled cases to next month.
+  const carryForward = useCallback(() => {
+    if (!cycle) return { carriedCount: 0 };
+
     const unsettledRecords = activeRecords.filter(
-      (r) =>
-        r.category === RecordCategory.CASE && (r.remaining ?? 0) > 0
+      (r) => r.category === RecordCategory.CASE && (r.remaining ?? 0) > 0
     );
 
-    const settledIds = new Set(settledRecords.map((r) => r.id));
+    if (unsettledRecords.length === 0) return { carriedCount: 0 };
 
-    // Remove settled records and their associated payments
-    setAllRecords((prev) => prev.filter((r) => !settledIds.has(r.id)));
-    setAllPayments((prev) => prev.filter((p) => !settledIds.has(p.record_id)));
+    const nextMonthYear = getNextMonthLabel(cycle.month_year);
+    const nextMonthLabel = getMonthLabel(nextMonthYear);
 
-    // Compute next month for new cycle (increment month by 1)
-    const [year, month] = cycle.month_year.split("-").map(Number);
-    const nextMonth = month === 12 ? 1 : month + 1;
-    const nextYear = month === 12 ? year + 1 : year;
-    const newCycleId = `cycle-${Date.now()}`;
-    const newCycle: MonthlyCycle = {
-      id: newCycleId,
-      month_year: `${nextYear}-${String(nextMonth).padStart(2, "0")}`,
-      status: CycleStatus.OPEN,
-    };
+    // Check if next month's cycle exists, create if not.
+    let nextCycle = allCycles.find((c) => c.month_year === nextMonthYear);
+    if (!nextCycle) {
+      nextCycle = {
+        id: `cycle-${Date.now()}`,
+        month_year: nextMonthYear,
+        status: CycleStatus.OPEN,
+      };
+      setAllCycles((prev) => [...prev, nextCycle!]);
+    }
 
-    // Migrate unsettled cases to new cycle and mark as carried forward
     const unsettledIds = new Set(unsettledRecords.map((r) => r.id));
     setAllRecords((prev) =>
       prev.map((r) => {
         if (!unsettledIds.has(r.id)) return r;
-        return { ...r, cycle_id: newCycleId, is_carried_forward: true };
-      })
-    );
-    setAllPayments((prev) =>
-      prev.map((p) => {
-        if (!unsettledIds.has(p.record_id)) return p;
-        return p;
+        return {
+          ...r,
+          cycle_id: nextCycle!.id,
+          month_label: nextMonthLabel,
+          is_carried_forward: true,
+        };
       })
     );
 
-    // Close old cycle and add new cycle
-    setAllCycles((prev) => [
-      ...prev.map((c) =>
-        c.id === cycle.id ? { ...c, status: CycleStatus.CLOSED } : c
-      ),
-      newCycle,
-    ]);
+    return { carriedCount: unsettledRecords.length };
+  }, [cycle, activeRecords, allCycles]);
 
-    return {
-      settledCount: settledRecords.length,
-      unsettledCount: unsettledRecords.length,
-    };
-  }, [cycle, activeRecords]);
+  // Hard delete all records + payments for the selected month, then lock the cycle.
+  const deleteMonth = useCallback(() => {
+    if (!cycle) return 0;
+
+    const monthRecords = allRecords.filter((r) => r.month_label === effectiveMonth);
+    const recordIds = new Set(monthRecords.map((r) => r.id));
+    const count = monthRecords.length;
+
+    setAllRecords((prev) => prev.filter((r) => !recordIds.has(r.id)));
+    setAllPayments((prev) => prev.filter((p) => !recordIds.has(p.record_id)));
+    setAllCycles((prev) =>
+      prev.map((c) =>
+        c.id === cycle.id ? { ...c, status: CycleStatus.LOCKED } : c
+      )
+    );
+
+    return count;
+  }, [cycle, allRecords, effectiveMonth]);
 
   const refreshData = useCallback(() => {
     setLoading(true);
@@ -292,6 +337,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         cycleLocked,
         loading,
         error,
+        allMonths,
+        selectedMonth: effectiveMonth,
+        setSelectedMonth,
         getPaymentsForRecord,
         getRecordBalance,
         getRecordTotalPaid,
@@ -302,7 +350,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         addPayment,
         findRecordByPatientId,
         updateFinancials,
-        closeoutCycle,
+        toggleLock,
+        carryForward,
+        deleteMonth,
       }}
     >
       {children}
