@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 import { UserRole } from "@/lib/global";
-import { AuthUser, authenticateUser } from "@/lib/mock-data";
+import { AuthUser } from "@/lib/mock-data";
+import { useData } from "@/context/DataContext";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -17,11 +18,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const { users } = useData();
 
   const login = (username: string, password: string): boolean => {
-    const authUser = authenticateUser(username, password);
-    if (authUser) {
-      setUser(authUser);
+    const found = users.find(
+      (u) =>
+        u.username.toLowerCase() === username.toLowerCase() &&
+        u.password_hash === password
+    );
+    if (found) {
+      setUser({
+        id: found.id,
+        username: found.username,
+        role: found.role,
+      });
       return true;
     }
     return false;

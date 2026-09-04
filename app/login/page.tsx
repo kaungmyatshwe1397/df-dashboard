@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -132,8 +133,11 @@ export default function LoginPage() {
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
 
-            <div className="text-body-sm text-text-secondary text-center">
+            <div className="text-body-sm text-text-secondary text-center space-y-1">
               <p>Demo: admin/admin123 or assistant/assist123</p>
+              <Link href="/signup" className="text-primary hover:underline">
+                Don&apos;t have an account? Sign up
+              </Link>
             </div>
           </form>
         </CardContent>

@@ -6,7 +6,7 @@
 
 import { Input } from "@/components/ui/input";
 import { RecordCategory } from "@/lib/global";
-import { FormField } from "@/components/shared/FormField";
+import { FormField } from "@/components/shared/formField";
 import { CaseTypeSelector } from "./CaseTypeSelector";
 import { ToothNumberGrid } from "./ToothNumberGrid";
 import { LabSelector } from "./LabSelector";

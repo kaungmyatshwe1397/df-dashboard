@@ -7,9 +7,10 @@ erDiagram
 
     USERS {
         uuid id PK
-        string username
-        string password_hash
+        string username "unique, min 3 chars"
+        string password_hash "min 6 chars, plaintext in mock"
         enum role "ADMIN or ASSISTANT"
+        timestamp created_at "account creation date"
     }
 
     MONTHLY_CYCLES {

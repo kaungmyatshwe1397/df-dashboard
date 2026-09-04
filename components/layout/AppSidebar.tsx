@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,12 +12,15 @@ import {
   CalendarCheck,
   Lock,
   LogOut,
+  Users,
+  Key,
 } from "lucide-react";
 import { UserRole } from "@/lib/global";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { PasswordChangeDialog } from "@/components/users-table/passwordChangeDialog";
 import {
   Sidebar,
   SidebarContent,
@@ -47,6 +51,7 @@ const adminNavItems: NavItem[] = [
   { title: "Lab Reconciliation", href: "/admin/reconciliation", icon: FlaskConical },
   { title: "Overhead", href: "/admin/overhead", icon: Calculator },
   { title: "Closeout", href: "/admin/closeout", icon: CalendarCheck },
+  { title: "Users", href: "/admin/users", icon: Users },
 ];
 
 interface AppSidebarProps {
@@ -58,6 +63,7 @@ export function AppSidebar({ cycleLocked = false }: AppSidebarProps) {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === UserRole.ADMIN;
   const navItems = isAdmin ? adminNavItems : assistantNavItems;
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
 
   return (
     <Sidebar>
@@ -136,18 +142,33 @@ export function AppSidebar({ cycleLocked = false }: AppSidebarProps) {
                   {user?.role}
                 </Badge>
               </div>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={logout}
-                title="Log out"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setPasswordDialogOpen(true)}
+                  title="Change password"
+                >
+                  <Key className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={logout}
+                  title="Log out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarFooter>
+
+      <PasswordChangeDialog
+        open={passwordDialogOpen}
+        onOpenChange={setPasswordDialogOpen}
+      />
     </Sidebar>
   );
 }

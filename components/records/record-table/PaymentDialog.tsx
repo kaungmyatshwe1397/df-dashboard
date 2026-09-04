@@ -18,7 +18,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { useData } from "@/context/DataContext";
 import { CasePatientRecordType, PaymentStatus } from "@/lib/global";
-import { FormField } from "@/components/shared/FormField";
+import { FormField } from "@/components/shared/formField";
 import { formatCurrency } from "./RecordTableHelpers";
 
 interface PaymentDialogProps {

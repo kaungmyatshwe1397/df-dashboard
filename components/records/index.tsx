@@ -3,4 +3,4 @@
 
 export { PatientRecordUpdateForm } from "./patient-record-update-form";
 export { RecordTable } from "./record-table";
-export { FormField } from "../shared/FormField";
+export { FormField } from "../shared/formField";

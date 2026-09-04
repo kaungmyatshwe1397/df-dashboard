@@ -1,5 +1,8 @@
 flowchart TD
     Start([User Opens App]) --> Login[Login Page]
+    Login --> Signup[Sign Up Page]
+    Signup --> Login
+
     Login --> Role{Role?}
 
     %% ==============================
@@ -46,6 +49,8 @@ flowchart TD
         LabRecon[Lab Reconciliation]
         Overhead[Overhead Input]
         Closeout[Month-End Closeout]
+        UserMgmt[User Management]
+        ChangePw[Change Password]
     end
 
     AdminModules --> AdminOnly
@@ -61,3 +66,7 @@ flowchart TD
     Delete --> NewCycle[New Cycle]
     Carry --> NewCycle
     NewCycle --> Table
+
+    UserMgmt --> EditUser[Edit Username/Password]
+    UserMgmt --> DeleteAssistant[Delete Assistant Account]
+    ChangePw --> VerifyCurrent[Verify Current Password] --> SetNew[Set New Password]

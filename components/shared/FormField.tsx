@@ -1,5 +1,4 @@
-// Reusable form field wrapper — Label + input slot + error message.
-// Keeps form markup consistent and eliminates repetitive Label/Input/error patterns.
+// formField — reusable form field wrapper with label, input slot, and error message.
 
 import { Label } from "@/components/ui/label";
 import { ReactNode } from "react";

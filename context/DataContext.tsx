@@ -8,6 +8,8 @@ import {
   MonthlyFinancials,
   Lab,
   CaseType,
+  User,
+  UserRole,
   CycleStatus,
   RecordCategory,
   PaymentStatus,
@@ -20,6 +22,7 @@ import {
   MOCK_MONTHLY_FINANCIALS,
   MOCK_LABS,
   MOCK_CASE_TYPES,
+  MOCK_USERS,
 } from "@/lib/mock-data";
 
 interface DataContextType {
@@ -29,6 +32,7 @@ interface DataContextType {
   financials: MonthlyFinancials | null;
   labs: Lab[];
   caseTypes: CaseType[];
+  users: User[];
   cycleLocked: boolean;
   loading: boolean;
   error: string | null;
@@ -48,6 +52,9 @@ interface DataContextType {
   toggleLock: () => void;
   carryForward: () => { carriedCount: number };
   deleteMonth: () => number;
+  addUser: (user: { username: string; password: string; role: UserRole }) => boolean;
+  updateUser: (userId: string, updates: { username?: string; password?: string }) => boolean;
+  deleteUser: (userId: string) => boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -72,6 +79,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [allPayments, setAllPayments] = useState<CasePayment[]>(MOCK_CASE_PAYMENTS);
   const [allFinancials, setAllFinancials] = useState<MonthlyFinancials[]>(MOCK_MONTHLY_FINANCIALS);
   const [allCycles, setAllCycles] = useState<MonthlyCycle[]>(MOCK_CYCLES);
+  const [users, setUsers] = useState<User[]>(MOCK_USERS.map((u) => ({ ...u })));
   const [selectedMonth, setSelectedMonth] = useState<string>("");
 
   const cycle = allCycles.find((c) => c.status === CycleStatus.OPEN) ?? null;
@@ -317,6 +325,71 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return count;
   }, [cycle, allRecords, effectiveMonth]);
 
+  // ------------------------------------------
+  // User Management
+  // ------------------------------------------
+
+  const addUser = useCallback(
+    (userData: { username: string; password: string; role: UserRole }): boolean => {
+      const duplicate = users.find(
+        (u) => u.username.toLowerCase() === userData.username.toLowerCase()
+      );
+      if (duplicate) return false;
+
+      const newUser: User = {
+        id: `user-${Date.now()}`,
+        username: userData.username,
+        password_hash: userData.password,
+        role: userData.role,
+      };
+      setUsers((prev) => [...prev, newUser]);
+      return true;
+    },
+    [users]
+  );
+
+  const updateUser = useCallback(
+    (userId: string, updates: { username?: string; password?: string }): boolean => {
+      if (updates.username) {
+        const duplicate = users.find(
+          (u) =>
+            u.id !== userId &&
+            u.username.toLowerCase() === updates.username!.toLowerCase()
+        );
+        if (duplicate) return false;
+      }
+
+      let changed = false;
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.id !== userId) return u;
+          changed = true;
+          return {
+            ...u,
+            ...(updates.username && { username: updates.username }),
+            ...(updates.password && { password_hash: updates.password }),
+          };
+        })
+      );
+      return changed;
+    },
+    [users]
+  );
+
+  const deleteUser = useCallback(
+    (userId: string): boolean => {
+      let deleted = false;
+      setUsers((prev) => {
+        const target = prev.find((u) => u.id === userId);
+        if (!target || target.role === UserRole.ADMIN) return prev;
+        deleted = true;
+        return prev.filter((u) => u.id !== userId);
+      });
+      return deleted;
+    },
+    []
+  );
+
   const refreshData = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -334,6 +407,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         financials,
         labs: MOCK_LABS,
         caseTypes: MOCK_CASE_TYPES,
+        users,
         cycleLocked,
         loading,
         error,
@@ -353,6 +427,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         toggleLock,
         carryForward,
         deleteMonth,
+        addUser,
+        updateUser,
+        deleteUser,
       }}
     >
       {children}

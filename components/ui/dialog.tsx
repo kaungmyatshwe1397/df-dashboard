@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
 interface DialogContextValue {
-  onOpenChange?: (open: boolean) => void
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onOpenChange?: (...args: any[]) => void
 }
 
 const DialogContext = React.createContext<DialogContextValue>({})

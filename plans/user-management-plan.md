@@ -1,6 +1,6 @@
 # DC-FMS User Management Plan
 
-> **Status:** Ready for Implementation
+> **Status:** Implementation Complete
 > **Reference:** `prd.md` · `dc-fms-erd.mmd` · `backend-draft-plan.md`
 > **Frontend:** Build UI with mock state first; Supabase integration replaces mocks later.
 > **Depends On:** Frontend Tasks 1–10 (all complete)
@@ -17,7 +17,7 @@ No signup, no password change, no user deletion. This plan adds user management 
 
 ---
 
-## U-1 — Admin: User Management Page
+## U-1 — Admin: User Management Page (Completed 9/5/2026)
 
 **Title:** Build admin page to view, edit, and delete user accounts
 
@@ -83,7 +83,7 @@ No signup, no password change, no user deletion. This plan adds user management 
 
 ---
 
-## U-2 — Assistant: Sign Up Page
+## U-2 — Assistant: Sign Up Page (Completed 9/5/2026)
 
 **Title:** Build a signup page for assistants to create their own account
 
@@ -120,7 +120,7 @@ No signup, no password change, no user deletion. This plan adds user management 
 
 ---
 
-## U-3 — Admin: Change Own Password
+## U-3 — Admin: Change Own Password (Completed 9/5/2026)
 
 **Title:** Add password change capability to admin profile
 
@@ -167,11 +167,11 @@ U-1 must be done first since U-2 and U-3 depend on the DataContext operations it
 
 ## Task Summary
 
-| # | Task | Page/Component | Role | Priority |
-|---|------|----------------|------|----------|
-| U-1 | Admin User Management | `/admin/users` | Admin | Required |
-| U-2 | Assistant Signup | `/signup` | Assistant | Required |
-| U-3 | Admin Change Password | Sidebar dialog | Admin | Required |
+| # | Task | Page/Component | Role | Priority | Status |
+|---|------|----------------|------|----------|--------|
+| U-1 | Admin User Management | `/admin/users` | Admin | Required | ✅ |
+| U-2 | Assistant Signup | `/signup` | Assistant | Required | ✅ |
+| U-3 | Admin Change Password | Sidebar dialog | Admin | Required | ✅ |
 
 ---
 
@@ -186,6 +186,52 @@ All user operations use React context state initialized from `MOCK_USERS`. This 
 | `deleteUser()` | `supabase.auth.admin.deleteUser()` + `delete` from `users` table |
 | `authenticateUser()` | `supabase.auth.signInWithPassword()` |
 | `users` state read | `supabase.from('users').select('*')` |
+
+---
+
+## Test Todo List
+
+> Write these tests before Supabase integration. Use `docs/testing-guide.md` as reference.
+
+### U-1 — Admin User Management
+- [ ] `UserTable.test.tsx` — renders all users from DataContext
+- [ ] `UserTable.test.tsx` — shows edit button for each row
+- [ ] `UserTable.test.tsx` — hides delete button for ADMIN role rows
+- [ ] `UserTable.test.tsx` — shows "You" badge for current user
+- [ ] `UserEditDialog.test.tsx` — pre-fills username from selected user
+- [ ] `UserEditDialog.test.tsx` — shows error for username < 3 characters
+- [ ] `UserEditDialog.test.tsx` — shows error for taken username
+- [ ] `UserEditDialog.test.tsx` — shows error for password < 6 characters
+- [ ] `UserEditDialog.test.tsx` — saves without password when password field is blank
+- [ ] `UserDeleteDialog.test.tsx` — shows confirmation prompt with username
+- [ ] `UserDeleteDialog.test.tsx` — blocks deletion of current user (shows message, no delete button)
+- [ ] `UserDeleteDialog.test.tsx` — calls deleteUser on confirm
+
+### U-2 — Assistant Signup
+- [ ] `SignupPage.test.tsx` — renders username, password, confirm password fields
+- [ ] `SignupPage.test.tsx` — shows error for username < 3 characters
+- [ ] `SignupPage.test.tsx` — shows error for non-alphanumeric username
+- [ ] `SignupPage.test.tsx` — shows error for password < 6 characters
+- [ ] `SignupPage.test.tsx` — shows error when passwords don't match
+- [ ] `SignupPage.test.tsx` — shows error for taken username
+- [ ] `SignupPage.test.tsx` — redirects to /login on success
+- [ ] `LoginPage.test.tsx` — has link to /signup
+
+### U-3 — Admin Change Password
+- [ ] `PasswordChangeDialog.test.tsx` — shows error for wrong current password
+- [ ] `PasswordChangeDialog.test.tsx` — shows error for password < 6 characters
+- [ ] `PasswordChangeDialog.test.tsx` — shows error when new password equals current
+- [ ] `PasswordChangeDialog.test.tsx` — shows error when confirm doesn't match
+- [ ] `PasswordChangeDialog.test.tsx` — shows success message after save
+
+### DataContext User Operations
+- [ ] `DataContext.test.tsx` — addUser returns true for new username
+- [ ] `DataContext.test.tsx` — addUser returns false for duplicate username (case-insensitive)
+- [ ] `DataContext.test.tsx` — updateUser patches username
+- [ ] `DataContext.test.tsx` — updateUser patches password
+- [ ] `DataContext.test.tsx` — updateUser returns false for taken username
+- [ ] `DataContext.test.tsx` — deleteUser removes user
+- [ ] `DataContext.test.tsx` — deleteUser blocks ADMIN role deletion
 
 ---
 
