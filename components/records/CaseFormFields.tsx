@@ -1,12 +1,16 @@
 // Case form fields — Patient ID, Name, Address, Case Type, Tooth Numbers,
-// Total Cost, Lab Name, Lab Send Date, Delivery Date, Paid, Remaining.
+// Total Cost, Lab Name (required Select), Lab Send Date, Delivery Date, Paid, Remaining.
 // Diagnosis is auto-generated from case type + teeth selection.
+
+"use client";
 
 import { Input } from "@/components/ui/input";
 import { RecordCategory } from "@/lib/global";
 import { FormField } from "./FormField";
 import { CaseTypeSelector } from "./CaseTypeSelector";
 import { ToothNumberGrid } from "./ToothNumberGrid";
+import { LabSelector } from "./LabSelector";
+import { useData } from "@/context/DataContext";
 
 interface CaseFormFieldsProps {
   form: {
@@ -30,6 +34,7 @@ interface CaseFormFieldsProps {
     caseType?: string;
     teeth?: string;
     totalCost?: string;
+    labName?: string;
     paid?: string;
   };
   remaining: string;
@@ -159,13 +164,12 @@ export function CaseFormFields({
       <FormField
         label="Lab Name"
         htmlFor="labName"
-        hint="(optional)"
+        required
+        error={errors.labName}
       >
-        <Input
-          id="labName"
-          placeholder="e.g. Central Lab"
+        <LabSelector
           value={form.labName}
-          onChange={(e) => updateField("labName", e.target.value)}
+          onChange={(val) => updateField("labName", val)}
           disabled={saving}
         />
       </FormField>

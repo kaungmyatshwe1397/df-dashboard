@@ -26,6 +26,14 @@ export default function AssistantPage() {
     setModalOpen(true);
   }
 
+  function handleModalOpenChange(open: boolean) {
+    setModalOpen(open);
+    if (!open) {
+      setEditRecord(null);
+      setIsAdding(false);
+    }
+  }
+
   return (
     <PortalLayout requiredRole="ASSISTANT">
       <div className="flex flex-col gap-6">
@@ -40,7 +48,7 @@ export default function AssistantPage() {
 
       <PatientRecordUpdateForm
         open={modalOpen}
-        onOpenChange={setModalOpen}
+        onOpenChange={handleModalOpenChange}
         defaultCategory={defaultCategory}
         editRecord={editRecord}
         isAdding={isAdding}

@@ -1,6 +1,8 @@
 // ============================================
 // Lab Reconciliation Table
-// Admin portal — lab assignment + lab fee input per Case record
+// Admin portal — lab fee input per Case record
+// Columns: Patient Name, Date, Diagnosis, Lab, Lab Fee
+// Lab name is read-only — assigned during case patient creation.
 // ============================================
 
 "use client";
@@ -15,50 +17,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableFooter,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
-function formatCurrency(amount: number): string {
-  return amount.toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
-}
-
-// ------------------------------------------
-// Lab Selector — toggle buttons for lab assignment
-// ------------------------------------------
-
-interface LabSelectorProps {
-  record: PatientRecord;
-  labs: { id: string; lab_name: string }[];
-  onSelect: (recordId: string, labId: string, labName: string) => void;
-  disabled: boolean;
-}
-
-function LabSelector({ record, labs, onSelect, disabled }: LabSelectorProps) {
-  return (
-    <div className="flex flex-wrap gap-1">
-      {labs.map((lab) => (
-        <Button
-          key={lab.id}
-          variant={record.lab_id === lab.id ? "default" : "outline"}
-          size="sm"
-          className="h-7 px-2 text-xs"
-          disabled={disabled}
-          onClick={() => onSelect(record.id, lab.id, lab.lab_name)}
-        >
-          {lab.lab_name}
-        </Button>
-      ))}
-    </div>
-  );
 }
 
 // ------------------------------------------
@@ -132,24 +104,12 @@ interface LabReconciliationTableProps {
 }
 
 export function LabReconciliationTable({ cycleLocked }: LabReconciliationTableProps) {
-  const { records, labs, loading, error, refreshData, updateRecord } = useData();
+  const { records, loading, error, refreshData, updateRecord } = useData();
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const caseRecords = useMemo(
     () => records.filter((r) => r.category === RecordCategory.CASE),
     [records]
-  );
-
-  const totalLabFees = useMemo(
-    () => caseRecords.reduce((sum, r) => sum + (r.lab_fee ?? 0), 0),
-    [caseRecords]
-  );
-
-  const handleLabSelect = useCallback(
-    (recordId: string, labId: string, labName: string) => {
-      updateRecord(recordId, { lab_id: labId, lab_name: labName });
-    },
-    [updateRecord]
   );
 
   const handleFeeSave = useCallback(
@@ -172,25 +132,21 @@ export function LabReconciliationTable({ cycleLocked }: LabReconciliationTablePr
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Patient</TableHead>
-              <TableHead className="text-right">Total Cost</TableHead>
-              <TableHead className="text-right">Paid</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
+              <TableHead>Patient Name</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Diagnosis</TableHead>
               <TableHead>Lab</TableHead>
               <TableHead className="text-right">Lab Fee</TableHead>
-              <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.from({ length: 3 }).map((_, i) => (
               <TableRow key={i}>
                 <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-                <TableCell><Skeleton className="h-7 w-40" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-8 w-28 ml-auto" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-14" /></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -225,19 +181,15 @@ export function LabReconciliationTable({ cycleLocked }: LabReconciliationTablePr
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Patient</TableHead>
-            <TableHead className="text-right">Total Cost</TableHead>
-            <TableHead className="text-right">Paid</TableHead>
-            <TableHead className="text-right">Balance</TableHead>
+            <TableHead>Patient Name</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Diagnosis</TableHead>
             <TableHead>Lab</TableHead>
             <TableHead className="text-right">Lab Fee</TableHead>
-            <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {caseRecords.map((record) => {
-            const paid = record.paid ?? 0;
-            const balance = record.remaining ?? record.total_cost - paid;
             const isSaving = savingId === record.id;
 
             return (
@@ -245,22 +197,18 @@ export function LabReconciliationTable({ cycleLocked }: LabReconciliationTablePr
                 <TableCell className="font-medium max-w-[160px] truncate">
                   {record.patient_name}
                 </TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(record.total_cost)}
+                <TableCell className="whitespace-nowrap">
+                  {formatDate(record.entry_date)}
                 </TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(paid)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(balance)}
+                <TableCell className="max-w-[200px] truncate">
+                  {record.diagnosis}
                 </TableCell>
                 <TableCell>
-                  <LabSelector
-                    record={record}
-                    labs={labs}
-                    onSelect={handleLabSelect}
-                    disabled={cycleLocked}
-                  />
+                  {record.lab_name ? (
+                    <span className="text-sm">{record.lab_name}</span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground italic">Not assigned</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <LabFeeInput
@@ -270,30 +218,10 @@ export function LabReconciliationTable({ cycleLocked }: LabReconciliationTablePr
                     cycleLocked={cycleLocked}
                   />
                 </TableCell>
-                <TableCell>
-                  {(record.lab_fee ?? 0) > record.total_cost ? (
-                    <Badge variant="destructive">Over Cost</Badge>
-                  ) : (record.lab_fee ?? 0) > 0 ? (
-                    <Badge variant="default">Assigned</Badge>
-                  ) : (
-                    <Badge variant="secondary">Unassigned</Badge>
-                  )}
-                </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TableCell colSpan={4} className="text-right font-semibold">
-              Total Lab Fees
-            </TableCell>
-            <TableCell colSpan={2} className="text-right font-semibold">
-              {formatCurrency(totalLabFees)}
-            </TableCell>
-            <TableCell />
-          </TableRow>
-        </TableFooter>
       </Table>
     </div>
   );

@@ -3,21 +3,16 @@
   "mcp": {
     "shadcn": {
       "type": "local",
-      "command": [
-        "npx",
-        "shadcn@latest",
-        "mcp"
-      ],
+      "command": ["npx", "shadcn@latest", "mcp"],
       "enabled": true
     },
-     "context7": {
-    "type": "remote",
-    "url": "https://mcp.context7.com/mcp",
-    "headers": {
-      "Authorization": "Bearer ${CONTEXT7_API_KEY}"
-    },
-    "enabled": true
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${CONTEXT7_API_KEY}"
+      },
+      "enabled": true
+    }
   }
-  }
-  
 }

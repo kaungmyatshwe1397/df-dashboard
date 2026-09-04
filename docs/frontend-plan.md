@@ -303,22 +303,27 @@
 
 **Title:** Build the lab reconciliation table with lab assignment, lab fee input, and structured Case Type + Tooth Number selector for Case records
 
-**Expected Outcome:** A reconciliation table listing all active Case-type records with inline lab fee input, lab assignment toggle buttons, and total lab fee aggregation. Case records use a structured Case Type dropdown + Tooth Number checkbox grid instead of free-text Diagnosis.
+**Expected Outcome:** A reconciliation table listing all active Case-type records with patient info pulled directly from the PatientRecord table (name, date, diagnosis), inline lab fee input, and lab assignment toggle buttons. Case records use a structured Case Type dropdown + Tooth Number checkbox grid instead of free-text Diagnosis.
 
 **Things To Do:**
 
 ### Lab Reconciliation Table
 - ✅ Create `app/admin/reconciliation/page.tsx` with `PortalLayout` and `LabReconciliationTable`
 - ✅ Build `components/reconciliation/LabReconciliationTable.tsx` using shadcn `Table`, `Input`, `Badge`, `Button`, `Skeleton`
-- ✅ Columns: Patient, Total Cost, Paid, Balance, Lab (toggle buttons), Lab Fee (inline input), Status (badge)
-- ✅ Inline editable lab fee `Input` — saves on blur or Enter key
-- ✅ Auto-aggregate total lab fees in table footer
-- ✅ Update `lab_fee`, `lab_payment_status`, `lab_id`, `lab_name` via context state update
+- 🔲 **Restructure columns to: Patient Name, Date, Diagnosis, Lab (toggle buttons), Lab Fee (inline input)**
+  - Patient Name → `record.patient_name`
+  - Date → `record.entry_date` (formatted)
+  - Diagnosis → `record.diagnosis`
+  - Lab → `LabSelector` toggle buttons (unchanged)
+  - Lab Fee → `LabFeeInput` inline input (unchanged)
+- 🔲 Remove old columns: Total Cost, Paid, Balance, Status
+- 🔲 Remove `TableFooter` total lab fees aggregation row
+- 🔲 Remove `formatCurrency` helper (no longer needed)
+- 🔲 Update loading skeleton to match new 5-column layout
 - ✅ Validation: reject negative values, non-numeric input
 - ✅ Loading state: shadcn `Skeleton` rows
 - ✅ Error state: shadcn `Alert` with Retry button
 - ✅ Empty state: "No cases to reconcile" with dashed border
-- ✅ Edge case: lab fee > total cost shows "Over Cost" warning `Badge`
 
 ### Lab Assignment Toggle
 - ✅ Added `labs: Lab[]` to DataContext interface, exposed `MOCK_LABS` via provider
@@ -352,6 +357,7 @@
 - `diagnosis` auto-generated client-side from `case_type + " at " + teeth` — consider storing both raw and computed values
 - Supabase RLS: admin can update `lab_fee`/`lab_payment_status`/`lab_id`/`lab_name`; assistant can read but not reassign
 - Admin CRUD for case types (add/edit/delete) — future task, store in `case_types` table with RLS
+- Table now reads `entry_date` and `diagnosis` directly from `patient_records` — no joins needed
 
 **Connection:** Depends on Task 4 (layout). Feeds into Task 7 (Dashboard recalculates commission). Read-only when cycle locked.
 

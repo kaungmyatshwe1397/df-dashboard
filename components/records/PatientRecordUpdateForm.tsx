@@ -39,6 +39,7 @@ interface FormErrors {
   caseType?: string;
   teeth?: string;
   totalCost?: string;
+  labName?: string;
   paid?: string;
 }
 
@@ -159,6 +160,9 @@ export function PatientRecordUpdateForm({
       if (!form.teeth.trim()) {
         newErrors.teeth = "Select at least one tooth.";
       }
+      if (!form.labName.trim()) {
+        newErrors.labName = "Lab name is required.";
+      }
     } else {
       if (!form.diagnosis.trim()) {
         newErrors.diagnosis = "Diagnosis is required.";
@@ -207,7 +211,7 @@ export function PatientRecordUpdateForm({
         case_type: isCase ? form.caseType.trim() || undefined : undefined,
         teeth: isCase ? form.teeth.trim() || undefined : undefined,
         total_cost: cost,
-        lab_name: isCase && form.labName.trim() ? form.labName.trim() : undefined,
+        lab_name: isCase ? form.labName.trim() : undefined,
         lab_send_date: isCase && form.labSendDate ? form.labSendDate : undefined,
         delivery_date: isCase && form.deliveryDate ? form.deliveryDate : undefined,
         paid: isCase ? paidAmount : undefined,

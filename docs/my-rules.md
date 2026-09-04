@@ -1,0 +1,1 @@
+1. **Type Naming Convection** When you create a new interface , use word Type in the end of name **e.g. export interface MonthlyFinancialsType** .So , i can easily know that this is type defining for what.
