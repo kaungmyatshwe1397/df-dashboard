@@ -6,11 +6,10 @@
 
 import { Input } from "@/components/ui/input";
 import { RecordCategory } from "@/lib/global";
-import { FormField } from "./FormField";
+import { FormField } from "@/components/shared/FormField";
 import { CaseTypeSelector } from "./CaseTypeSelector";
 import { ToothNumberGrid } from "./ToothNumberGrid";
 import { LabSelector } from "./LabSelector";
-import { useData } from "@/context/DataContext";
 
 interface CaseFormFieldsProps {
   form: {

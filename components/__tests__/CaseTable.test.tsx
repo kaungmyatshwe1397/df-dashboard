@@ -6,7 +6,7 @@
 import { describe, test, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { DataProvider } from "@/context/DataContext";
-import { CaseTable } from "../records/CaseTable";
+import { CaseTable } from "../records/record-table/CaseTable";
 
 function renderWithProvider(ui: React.ReactElement) {
   return render(<DataProvider>{ui}</DataProvider>);

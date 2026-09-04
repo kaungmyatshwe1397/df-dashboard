@@ -1,7 +1,7 @@
 "use client";
 
 import { PortalLayout } from "@/components/layout/PortalLayout";
-import { LabReconciliationTable } from "@/components/reconciliation/LabReconciliationTable";
+import { LabReconciliationTable } from "@/components/reconciliation";
 import { useData } from "@/context/DataContext";
 
 export default function ReconciliationPage() {

@@ -10,7 +10,7 @@
 import { describe, test, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { DataProvider } from "@/context/DataContext";
-import { PatientRecordUpdateForm } from "../PatientRecordUpdateForm";
+import { PatientRecordUpdateForm } from "../patient-record-update-form";
 import { RecordCategory, GPPatientRecordType } from "@/lib/global";
 
 const gpRecord: GPPatientRecordType = {

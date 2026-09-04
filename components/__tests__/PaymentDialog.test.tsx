@@ -7,7 +7,7 @@
 import { describe, test, expect } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { DataProvider } from "@/context/DataContext";
-import { PaymentDialog } from "../records/PaymentDialog";
+import { PaymentDialog } from "../records/record-table/PaymentDialog";
 import { CasePatientRecordType, RecordCategory } from "@/lib/global";
 
 const mockRecord: CasePatientRecordType = {

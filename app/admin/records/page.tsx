@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
-import { RecordTable } from "@/components/records/RecordTable";
-import { PatientRecordUpdateForm } from "@/components/records/PatientRecordUpdateForm";
+import { RecordTable } from "@/components/records/record-table";
+import { PatientRecordUpdateForm } from "@/components/records/patient-record-update-form";
 import { RecordCategory, PatientRecord } from "@/lib/global";
 
 export default function AdminRecordsPage() {

@@ -20,46 +20,14 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Search, Trash2 } from "lucide-react";
 import { useData } from "@/context/DataContext";
-import { RecordCategory, PatientRecord, CasePatientRecordType } from "@/lib/global";
+import { RecordCategory, PatientRecord } from "@/lib/global";
 import { RecordFormFields } from "./RecordFormFields";
 import { CaseFormFields } from "./CaseFormFields";
-
-interface PatientRecordUpdateFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  defaultCategory?: RecordCategory;
-  editRecord?: PatientRecord | null;
-  isAdding?: boolean;
-}
-
-interface FormErrors {
-  patientId?: string;
-  patientName?: string;
-  diagnosis?: string;
-  caseType?: string;
-  teeth?: string;
-  totalCost?: string;
-  labName?: string;
-  paid?: string;
-}
-
-function getInitialForm(record: PatientRecord) {
-  const isCase = record.category === RecordCategory.CASE;
-  const caseRecord = isCase ? (record as CasePatientRecordType) : null;
-  return {
-    patientId: record.patient_id,
-    patientName: record.patient_name,
-    address: record.address ?? "",
-    diagnosis: record.diagnosis,
-    caseType: caseRecord?.case_type ?? "",
-    teeth: caseRecord?.teeth ?? "",
-    totalCost: record.total_cost.toString(),
-    labName: caseRecord?.lab_name ?? "",
-    labSendDate: caseRecord?.lab_send_date ?? "",
-    deliveryDate: caseRecord?.delivery_date ?? "",
-    paid: caseRecord?.paid?.toString() ?? "",
-  };
-}
+import {
+  PatientRecordUpdateFormProps,
+  FormErrors,
+  getInitialForm,
+} from "./Types";
 
 export function PatientRecordUpdateForm({
   open,

@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { RecordCategory } from "@/lib/global";
-import { FormField } from "./FormField";
+import { FormField } from "@/components/shared/FormField";
 
 interface RecordFormFieldsProps {
   form: {

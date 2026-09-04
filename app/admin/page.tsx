@@ -1,7 +1,7 @@
 "use client";
 
 import { PortalLayout } from "@/components/layout/PortalLayout";
-import { DashboardKPIs } from "@/components/dashboard/DashboardKPIs";
+import { DashboardKPIs } from "@/components/dashboard";
 
 export default function AdminPage() {
   return (
