@@ -4,8 +4,9 @@
 
 | File | Purpose |
 |------|---------|
-| `docs/frontend-plan.md` | Frontend build plan — 10 tasks with mock state, pure UI development. |
-| `docs/backend-draft-plan.md` | Backend draft plan — Supabase setup, schema, RLS, client config. |
+| `plans/frontend-plan.md` | Frontend build plan — 10 tasks with mock state, pure UI development. |
+| `plans/backend-draft-plan.md` | Backend draft plan — Supabase setup, schema, RLS, client config. |
+| `plans/user-management-plan.md` | User management plan — admin user CRUD, assistant signup, password change. |
 | `docs/tokens.md` | Design tokens — spacing, typography, colors. Use these, never hardcode values. |
 | `docs/dc-fms-user-flow.mermaid` | Information architecture — all screens and navigation paths. |
 | `docs/dc-fms-erd.mmd` | Database schema — types for all Supabase tables and relationships. |
@@ -36,4 +37,4 @@
 - Always retrieve up-to-date syntax, configuration rules, and breaking changes from Context7, and explicitly summarize those updates/changes before writing or modifying code.
 
 ## Task Completion Rule
-After completing any task from `docs/frontend-plan.md`, follow the steps in [`docs/task-completion-rule.md`](docs/task-completion-rule.md) to update the plan file.
+After completing any task from `plans/frontend-plan.md`, follow the steps in [`docs/task-completion-rule.md`](docs/task-completion-rule.md) to update the plan file.

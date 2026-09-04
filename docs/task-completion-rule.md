@@ -1,6 +1,6 @@
 # Task Completion Rule
 
-After completing any task from `docs/frontend-plan.md`, update the plan file as follows:
+After completing any task from `plans/frontend-plan.md`, update the plan file as follows:
 
 1. **Timestamp** — Update the task header to include `(Completed <date> <time>)` — e.g. `(Completed 9/2/2026 12:30PM)`.
 2. **Checkboxes** — Mark all "Things To Do" items with ✅.
