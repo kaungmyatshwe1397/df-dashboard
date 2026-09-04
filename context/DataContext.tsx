@@ -40,6 +40,7 @@ interface DataContextType {
   deleteRecord: (recordId: string) => void;
   addPayment: (payment: Omit<CasePayment, "id" | "payment_date">) => void;
   findRecordByPatientId: (patientId: string, category?: RecordCategory) => PatientRecord | undefined;
+  updateFinancials: (updates: Partial<Omit<MonthlyFinancials, "id" | "cycle_id">>) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -49,10 +50,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [allRecords, setAllRecords] = useState<PatientRecord[]>(MOCK_PATIENT_RECORDS);
   const [allPayments, setAllPayments] = useState<CasePayment[]>(MOCK_CASE_PAYMENTS);
+  const [allFinancials, setAllFinancials] = useState<MonthlyFinancials[]>(MOCK_MONTHLY_FINANCIALS);
 
   const cycle = MOCK_CYCLES.find((c) => c.status === CycleStatus.OPEN) ?? null;
   const financials = cycle
-    ? MOCK_MONTHLY_FINANCIALS.find((f) => f.cycle_id === cycle.id) ?? null
+    ? allFinancials.find((f) => f.cycle_id === cycle.id) ?? null
     : null;
   const cycleLocked = cycle?.status === CycleStatus.CLOSED;
 
@@ -157,6 +159,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const updateFinancials = useCallback(
+    (updates: Partial<Omit<MonthlyFinancials, "id" | "cycle_id">>) => {
+      if (!cycle) return;
+
+      setAllFinancials((prev) => {
+        const existing = prev.find((f) => f.cycle_id === cycle.id);
+        if (existing) {
+          return prev.map((f) =>
+            f.cycle_id === cycle.id ? { ...f, ...updates } : f
+          );
+        }
+        // Create new record if none exists for this cycle
+        const newFinancials: MonthlyFinancials = {
+          id: `fin-${Date.now()}`,
+          cycle_id: cycle.id,
+          total_gp: 0,
+          total_case: 0,
+          gross_income: 0,
+          lab_fee: 0,
+          relieving_fee: 0,
+          general_expenses: 0,
+          assistant_fee: 0,
+          bonus: 0,
+          utility_costs: 0,
+          building_rent: 0,
+          net_profit: 0,
+          ...updates,
+        };
+        return [...prev, newFinancials];
+      });
+    },
+    [cycle]
+  );
+
   const findRecordByPatientId = useCallback(
     // Search is scoped to category so GP and Case tabs don't cross-match
     // when a patient has records in both types.
@@ -198,6 +234,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         deleteRecord,
         addPayment,
         findRecordByPatientId,
+        updateFinancials,
       }}
     >
       {children}

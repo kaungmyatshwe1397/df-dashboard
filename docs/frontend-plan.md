@@ -299,7 +299,7 @@
 
 ---
 
-## Task 8 — Admin Portal: Case & Lab Fee Reconciliation + Case Type Selector
+## Task 8 — Admin Portal: Case & Lab Fee Reconciliation + Case Type Selector (Completed 9/4/2026)
 
 **Title:** Build the lab reconciliation table with lab assignment, lab fee input, and structured Case Type + Tooth Number selector for Case records
 
@@ -310,16 +310,16 @@
 ### Lab Reconciliation Table
 - ✅ Create `app/admin/reconciliation/page.tsx` with `PortalLayout` and `LabReconciliationTable`
 - ✅ Build `components/reconciliation/LabReconciliationTable.tsx` using shadcn `Table`, `Input`, `Badge`, `Button`, `Skeleton`
-- 🔲 **Restructure columns to: Patient Name, Date, Diagnosis, Lab (toggle buttons), Lab Fee (inline input)**
+- ✅ **Restructure columns to: Patient Name, Date, Diagnosis, Lab (toggle buttons), Lab Fee (inline input)**
   - Patient Name → `record.patient_name`
   - Date → `record.entry_date` (formatted)
   - Diagnosis → `record.diagnosis`
   - Lab → `LabSelector` toggle buttons (unchanged)
   - Lab Fee → `LabFeeInput` inline input (unchanged)
-- 🔲 Remove old columns: Total Cost, Paid, Balance, Status
-- 🔲 Remove `TableFooter` total lab fees aggregation row
-- 🔲 Remove `formatCurrency` helper (no longer needed)
-- 🔲 Update loading skeleton to match new 5-column layout
+- ✅ Remove old columns: Total Cost, Paid, Balance, Status
+- ✅ Remove `TableFooter` total lab fees aggregation row
+- ✅ Remove `formatCurrency` helper (no longer needed)
+- ✅ Update loading skeleton to match new 5-column layout
 - ✅ Validation: reject negative values, non-numeric input
 - ✅ Loading state: shadcn `Skeleton` rows
 - ✅ Error state: shadcn `Alert` with Retry button
@@ -365,24 +365,30 @@
 
 ---
 
-## Task 9 — Admin Portal: Monthly Overhead & Expenses
+## Task 9 — Admin Portal: Monthly Overhead & Expenses (Completed 9/4/2026)
 
 **Title:** Build the overhead input form for monthly operating expenses
 
 **Expected Outcome:** A single form where the admin enters General Expense, Assistant Salary, Bonus, Rent, and Utilities. Saving updates the dashboard totals immediately.
 
 **Things To Do:**
-- Create `app/admin/overhead/page.tsx`
-- Build `components/OverheadForm.tsx` using shadcn `Card`, `Input`, `Label`, `Button`, `Alert`
-- Fields: General Expense, Assistant Salary, Bonus, Building Rent, Utility Costs (all `Input`)
-- Load existing values from mock data context for the active cycle (pre-fill if already saved)
-- Save via mock state update — patch `monthly_financials` in context (no Supabase upsert)
-- Validation: reject negative values with inline shadcn `Alert` error
-- Loading state: shadcn `Skeleton` spinner on save `Button`
-- Error state: shadcn `Alert` error banner, form values preserved
-- Edge case: all fields zero, re-editing after dashboard already calculated → confirm recalculation
-- Empty state: all fields blank (0), not last month's values
-- After save → Admin Dashboard (Task 7) shows updated overhead and net profit
+- ✅ Create `app/admin/overhead/page.tsx`
+- ✅ Build `components/overhead/OverheadForm.tsx` using shadcn `Card`, `Input`, `Label`, `Button`, `Alert`
+- ✅ Fields: General Expense, Assistant Salary, Bonus, Building Rent, Utility Costs (all `Input`)
+- ✅ Load existing values from mock data context for the active cycle (pre-fill if already saved)
+- ✅ Save via mock state update — patch `monthly_financials` in context (no Supabase upsert)
+- ✅ Validation: reject negative values with inline shadcn `Alert` error
+- ✅ Loading state: shadcn `Skeleton` spinner on save `Button`
+- ✅ Error state: shadcn `Alert` error banner, form values preserved
+- ✅ Edge case: all fields zero, re-editing after dashboard already calculated → confirm recalculation
+- ✅ Empty state: all fields blank (0), not last month's values
+- ✅ After save → Admin Dashboard (Task 7) shows updated overhead and net profit
+
+**Backend Plan Remarks:**
+- Mock `updateFinancials()` patches `monthly_financials` in context — replace with Supabase `upsert` on `monthly_financials` where `cycle_id` matches
+- `financials` state is now `useState<MonthlyFinancials[]>` in DataContext — swap with Supabase query on mount
+- Form pre-fills from context on initial render — replace with Supabase select on page load
+- No RLS restrictions needed for overhead writes — admin role enforced by layout guard
 
 **Connection:** Depends on Task 4 (layout). Provides expense data for Task 7 (Dashboard).
 
@@ -456,8 +462,8 @@ Task 1 (Scaffolding)
 | 6.1 | Payment Installments & History | `/assistant` (modal + table) | Assistant | ✅ |
 | 6.2 | Admin Access to Record Table | `/admin/records` | Admin | ✅ |
 | 7 | Financial Dashboard | `/admin` | Admin | ✅ |
-| 8 | Case & Lab Fee Reconciliation + Case Type Selector | `/admin/reconciliation` | Admin | 🔲 |
-| 9 | Overhead & Expenses | `/admin/overhead` | Admin |
+| 8 | Case & Lab Fee Reconciliation + Case Type Selector | `/admin/reconciliation` | Admin | ✅ |
+| 9 | Overhead & Expenses | `/admin/overhead` | Admin | ✅ |
 | 10 | Month-End Closeout | `/admin/closeout` | Admin |
 
 ---

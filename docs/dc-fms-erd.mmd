@@ -41,6 +41,8 @@ erDiagram
         uuid lab_id FK "FK to LABS, CASE only"
         decimal lab_fee "admin-assigned, CASE only"
         enum lab_payment_status "PAID or UNPAID, CASE only, admin-only"
+        string case_type "CASE only, e.g. RPD, Crown, Bridge"
+        string teeth "CASE only, comma-separated tooth numbers"
         boolean is_carried_forward "CASE only, false for GP"
     }
 
