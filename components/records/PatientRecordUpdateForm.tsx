@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Search, Trash2 } from "lucide-react";
 import { useData } from "@/context/DataContext";
-import { RecordCategory, PatientRecord } from "@/lib/global";
+import { RecordCategory, PatientRecord, CasePatientRecordType } from "@/lib/global";
 import { RecordFormFields } from "./RecordFormFields";
 import { CaseFormFields } from "./CaseFormFields";
 
@@ -44,18 +44,20 @@ interface FormErrors {
 }
 
 function getInitialForm(record: PatientRecord) {
+  const isCase = record.category === RecordCategory.CASE;
+  const caseRecord = isCase ? (record as CasePatientRecordType) : null;
   return {
     patientId: record.patient_id,
     patientName: record.patient_name,
     address: record.address ?? "",
     diagnosis: record.diagnosis,
-    caseType: record.case_type ?? "",
-    teeth: record.teeth ?? "",
+    caseType: caseRecord?.case_type ?? "",
+    teeth: caseRecord?.teeth ?? "",
     totalCost: record.total_cost.toString(),
-    labName: record.lab_name ?? "",
-    labSendDate: record.lab_send_date ?? "",
-    deliveryDate: record.delivery_date ?? "",
-    paid: record.paid?.toString() ?? "",
+    labName: caseRecord?.lab_name ?? "",
+    labSendDate: caseRecord?.lab_send_date ?? "",
+    deliveryDate: caseRecord?.delivery_date ?? "",
+    paid: caseRecord?.paid?.toString() ?? "",
   };
 }
 
@@ -70,11 +72,6 @@ export function PatientRecordUpdateForm({
   const isCase = defaultCategory === RecordCategory.CASE;
 
   const isLookupMode = !isAdding && !editRecord;
-
-  const formKey = useMemo(
-    () => `${open}-${isAdding ? "add" : editRecord?.id ?? "lookup"}-${defaultCategory}`,
-    [open, isAdding, editRecord?.id, defaultCategory]
-  );
 
   const [lookupId, setLookupId] = useState("");
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -102,6 +99,38 @@ export function PatientRecordUpdateForm({
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Sync internal state when mode/category props change (add → edit → lookup).
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (isAdding) {
+      setFoundRecord(null);
+      setForm({
+        patientId: "",
+        patientName: "",
+        address: "",
+        diagnosis: "",
+        caseType: "",
+        teeth: "",
+        totalCost: "",
+        labName: "",
+        labSendDate: "",
+        deliveryDate: "",
+        paid: "",
+      });
+    } else if (editRecord) {
+      setFoundRecord(editRecord);
+      setForm(getInitialForm(editRecord));
+    } else {
+      setFoundRecord(null);
+      setForm(null);
+    }
+    setLookupId("");
+    setLookupError(null);
+    setErrors({});
+    setSubmitError(null);
+  }, [isAdding, editRecord, defaultCategory]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const totalCost = form ? parseFloat(form.totalCost) || 0 : 0;
   const paid = form ? parseFloat(form.paid) || 0 : 0;
@@ -255,7 +284,7 @@ export function PatientRecordUpdateForm({
 
   return (
     <Dialog open={open} onOpenChange={saving ? undefined : onOpenChange}>
-      <DialogContent key={formKey} className="sm:max-w-lg" showCloseButton={!saving}>
+      <DialogContent className="sm:max-w-lg" showCloseButton={!saving}>
         <DialogHeader>
           <DialogTitle>
             {isLookupMode && !foundRecord

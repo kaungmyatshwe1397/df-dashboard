@@ -59,7 +59,13 @@ export interface CaseType {
   name: string;
 }
 
-export interface PatientRecord {
+// ------------------------------------------
+// Patient Record Types
+// Split into GP and Case to enforce correct field usage at compile time.
+// GP = single-session, Case = multi-installment with lab assignment.
+// ------------------------------------------
+
+export interface PatientRecordBaseType {
   id: string;
   cycle_id: string;
   patient_id: string;
@@ -68,10 +74,18 @@ export interface PatientRecord {
   address?: string;
   category: RecordCategory;
   diagnosis: string;
+  total_cost: number;
+}
+
+export interface GPPatientRecordType extends PatientRecordBaseType {
+  category: RecordCategory.GP;
+}
+
+export interface CasePatientRecordType extends PatientRecordBaseType {
+  category: RecordCategory.CASE;
   case_type?: string;
   teeth?: string;
-  total_cost: number;
-  lab_name?: string;
+  lab_name: string;
   lab_send_date?: string;
   delivery_date?: string;
   paid?: number;
@@ -81,6 +95,8 @@ export interface PatientRecord {
   lab_payment_status?: LabPaymentStatus;
   is_carried_forward: boolean;
 }
+
+export type PatientRecord = GPPatientRecordType | CasePatientRecordType;
 
 export interface CasePayment {
   id: string;
@@ -111,11 +127,11 @@ export interface MonthlyFinancials {
 // Relationship Types
 // ------------------------------------------
 
-export interface PatientRecordWithPayments extends PatientRecord {
+export interface PatientRecordWithPayments extends CasePatientRecordType {
   case_payments: CasePayment[];
 }
 
-export interface PatientRecordWithLab extends PatientRecord {
+export interface PatientRecordWithLab extends CasePatientRecordType {
   lab?: Lab;
 }
 

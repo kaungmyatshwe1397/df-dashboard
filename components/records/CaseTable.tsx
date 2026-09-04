@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, CircleDollarSign, ChevronRight, ChevronDown } from "lucide-react";
 import { useData } from "@/context/DataContext";
-import { RecordCategory, PatientRecord } from "@/lib/global";
+import { RecordCategory, CasePatientRecordType } from "@/lib/global";
 import {
   ROWS_PER_PAGE,
   formatCurrency,
@@ -34,15 +34,15 @@ export function CaseTable({
   onAdd,
   onEdit,
 }: {
-  records: PatientRecord[];
+  records: CasePatientRecordType[];
   cycleLocked: boolean;
   onAdd: () => void;
-  onEdit: (record: PatientRecord | null, category: RecordCategory) => void;
+  onEdit: (record: CasePatientRecordType | null, category: RecordCategory) => void;
 }) {
   const { getRecordBalance, getRecordTotalPaid } = useData();
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
-  const [payRecord, setPayRecord] = useState<PatientRecord | null>(null);
+  const [payRecord, setPayRecord] = useState<CasePatientRecordType | null>(null);
 
   const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
   const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
@@ -91,6 +91,7 @@ export function CaseTable({
               <TableHead>Date</TableHead>
               <TableHead>Patient Name</TableHead>
               <TableHead>Diagnosis</TableHead>
+              <TableHead>Lab</TableHead>
               <TableHead className="text-right">Total Cost</TableHead>
               <TableHead className="text-right">Paid</TableHead>
               <TableHead className="text-right">Remaining</TableHead>
@@ -152,14 +153,14 @@ function PaymentRow({
   onToggleExpand,
   onPay,
 }: {
-  record: PatientRecord;
+  record: CasePatientRecordType;
   remaining: number;
   totalPaid: number;
   isSettled: boolean;
   isExpanded: boolean;
   cycleLocked: boolean;
   onToggleExpand: (id: string) => void;
-  onPay: (record: PatientRecord) => void;
+  onPay: (record: CasePatientRecordType) => void;
 }) {
   return (
     <>
@@ -204,6 +205,9 @@ function PaymentRow({
         <TableCell className="text-body-sm text-muted-foreground max-w-50 truncate">
           {record.diagnosis}
         </TableCell>
+        <TableCell className="text-body-sm text-muted-foreground">
+          {record.lab_name}
+        </TableCell>
         <TableCell className="text-right font-medium tabular-nums">
           {formatCurrency(record.total_cost)}
         </TableCell>
@@ -240,7 +244,7 @@ function PaymentRow({
         </TableCell>
       </TableRow>
       {isExpanded && (
-        <PaymentHistoryRow recordId={record.id} colSpan={10} />
+        <PaymentHistoryRow recordId={record.id} colSpan={11} />
       )}
     </>
   );

@@ -7,8 +7,18 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
-function Dialog({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+interface DialogContextValue {
+  onOpenChange?: (open: boolean) => void
+}
+
+const DialogContext = React.createContext<DialogContextValue>({})
+
+function Dialog({ onOpenChange, ...props }: DialogPrimitive.Root.Props) {
+  return (
+    <DialogContext.Provider value={{ onOpenChange }}>
+      <DialogPrimitive.Root data-slot="dialog" onOpenChange={onOpenChange} {...props} />
+    </DialogContext.Provider>
+  )
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
@@ -47,6 +57,8 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
+  const { onOpenChange } = React.useContext(DialogContext)
+
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -60,20 +72,16 @@ function DialogContent({
       >
         {children}
         {showCloseButton && (
-          <DialogPrimitive.Close
+          <Button
             data-slot="dialog-close"
-            render={
-              <Button
-                variant="ghost"
-                className="absolute top-2 right-2"
-                size="icon-sm"
-              />
-            }
+            variant="ghost"
+            className="absolute top-2 right-2"
+            size="icon-sm"
+            onClick={() => onOpenChange?.(false)}
           >
-            <XIcon
-            />
+            <XIcon />
             <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
+          </Button>
         )}
       </DialogPrimitive.Popup>
     </DialogPortal>
@@ -98,6 +106,8 @@ function DialogFooter({
 }: React.ComponentProps<"div"> & {
   showCloseButton?: boolean
 }) {
+  const { onOpenChange } = React.useContext(DialogContext)
+
   return (
     <div
       data-slot="dialog-footer"
@@ -109,9 +119,9 @@ function DialogFooter({
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close render={<Button variant="outline" />}>
+        <Button variant="outline" onClick={() => onOpenChange?.(false)}>
           Close
-        </DialogPrimitive.Close>
+        </Button>
       )}
     </div>
   )

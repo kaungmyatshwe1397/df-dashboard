@@ -74,6 +74,7 @@ erDiagram
     %% UI Display Note:
     %% Record table is split into two tabbed views:
     %%   Tab 1: GP Records (entry_date, patient_name, diagnosis, total_cost)
-    %%   Tab 2: Case Records (entry_date, patient_name, diagnosis, total_cost, balance, status, carried-forward)
+    %%   Tab 2: Case Records (entry_date, patient_name, diagnosis, lab, total_cost, balance, status, carried-forward)
     %% GP has no installments, no balance, no status column.
     %% Case tracks installments via CASE_PAYMENTS, shows balance and status.
+    %% Lab Reconciliation groups case records by lab with a filter selector.

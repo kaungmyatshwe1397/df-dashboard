@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Lock } from "lucide-react";
 import { useData } from "@/context/DataContext";
-import { RecordCategory, PatientRecord } from "@/lib/global";
+import { RecordCategory, PatientRecord, GPPatientRecordType, CasePatientRecordType } from "@/lib/global";
 import { TableSkeleton, TableError } from "./RecordTableHelpers";
 import { GpTable } from "./GpTable";
 import { CaseTable } from "./CaseTable";
@@ -21,8 +21,8 @@ export function RecordTable({
 }) {
   const { records, cycleLocked, loading, error, refreshData } = useData();
 
-  const gpRecords = records.filter((r) => r.category === RecordCategory.GP);
-  const caseRecords = records.filter((r) => r.category === RecordCategory.CASE);
+  const gpRecords = records.filter((r) => r.category === RecordCategory.GP) as GPPatientRecordType[];
+  const caseRecords = records.filter((r) => r.category === RecordCategory.CASE) as CasePatientRecordType[];
 
   if (loading) {
     return <TableSkeleton columns={7} />;

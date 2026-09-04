@@ -8,9 +8,9 @@ import { describe, test, expect } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { DataProvider } from "@/context/DataContext";
 import { PaymentDialog } from "../records/PaymentDialog";
-import { PatientRecord, RecordCategory } from "@/lib/global";
+import { CasePatientRecordType, RecordCategory } from "@/lib/global";
 
-const mockRecord: PatientRecord = {
+const mockRecord: CasePatientRecordType = {
   id: "rec-test-1",
   cycle_id: "cycle-001",
   patient_id: "0099/26",
@@ -19,6 +19,7 @@ const mockRecord: PatientRecord = {
   category: RecordCategory.CASE,
   diagnosis: "Test diagnosis",
   total_cost: 200000,
+  lab_name: "Test Lab",
   paid: 0,
   remaining: 200000,
   is_carried_forward: false,

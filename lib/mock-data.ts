@@ -8,6 +8,8 @@ import {
   UserRole,
   MonthlyCycle,
   CycleStatus,
+  GPPatientRecordType,
+  CasePatientRecordType,
   PatientRecord,
   RecordCategory,
   CasePayment,
@@ -91,8 +93,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
     category: RecordCategory.GP,
     diagnosis: "Common cold",
     total_cost: 50000,
-    is_carried_forward: false,
-  },
+  } satisfies GPPatientRecordType,
   {
     id: "rec-002",
     cycle_id: "cycle-001",
@@ -102,11 +103,11 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
     category: RecordCategory.CASE,
     diagnosis: "Fracture - left arm",
     total_cost: 250000,
-    lab_id: "lab-001",
+    lab_name: "Central Lab",
     lab_fee: 30000,
     lab_payment_status: LabPaymentStatus.PAID,
     is_carried_forward: false,
-  },
+  } satisfies CasePatientRecordType,
   {
     id: "rec-003",
     cycle_id: "cycle-001",
@@ -117,8 +118,9 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
     category: RecordCategory.CASE,
     diagnosis: "Appendectomy",
     total_cost: 500000,
+    lab_name: "City Diagnostics",
     is_carried_forward: false,
-  },
+  } satisfies CasePatientRecordType,
   // Carried forward from previous cycle
   {
     id: "rec-004",
@@ -129,11 +131,11 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
     category: RecordCategory.CASE,
     diagnosis: "Knee surgery",
     total_cost: 800000,
-    lab_id: "lab-002",
+    lab_name: "Health First Lab",
     lab_fee: 50000,
     lab_payment_status: LabPaymentStatus.UNPAID,
     is_carried_forward: true,
-  },
+  } satisfies CasePatientRecordType,
 ];
 
 // ------------------------------------------
@@ -250,7 +252,7 @@ export function getActiveCycle(): MonthlyCycle | undefined {
 }
 
 export function getRecordsByCycle(cycleId: string): PatientRecord[] {
-  return MOCK_PATIENT_RECORDS.filter((r) => r.cycle_id === cycleId);
+  return MOCK_PATIENT_RECORDS.filter((r) => r.cycle_id === cycleId) as PatientRecord[];
 }
 
 export function getPaymentsByRecord(recordId: string): CasePayment[] {

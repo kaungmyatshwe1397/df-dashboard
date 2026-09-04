@@ -17,14 +17,14 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { useData } from "@/context/DataContext";
-import { PatientRecord, PaymentStatus } from "@/lib/global";
+import { CasePatientRecordType, PaymentStatus } from "@/lib/global";
 import { FormField } from "./FormField";
 import { formatCurrency } from "./RecordTableHelpers";
 
 interface PaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  record: PatientRecord;
+  record: CasePatientRecordType;
 }
 
 export function PaymentDialog({

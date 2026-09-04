@@ -11,6 +11,7 @@ import {
   CycleStatus,
   RecordCategory,
   PaymentStatus,
+  CasePatientRecordType,
 } from "@/lib/global";
 import {
   MOCK_CYCLES,
@@ -92,15 +93,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     ) => {
       if (!cycle) return;
 
-      const newRecord: PatientRecord = {
-        ...recordData,
+      const baseFields = {
         id: `rec-${Date.now()}`,
         cycle_id: cycle.id,
         entry_date: new Date().toISOString().split("T")[0],
-        is_carried_forward: false,
       };
 
-      setAllRecords((prev) => [...prev, newRecord]);
+      // GP and Case have different shapes — conditionally add is_carried_forward.
+      const newRecord = recordData.category === RecordCategory.CASE
+        ? { ...recordData, ...baseFields, is_carried_forward: false }
+        : { ...recordData, ...baseFields };
+
+      setAllRecords((prev) => [...prev, newRecord as PatientRecord]);
 
       if (recordData.category === RecordCategory.CASE && initialPayment !== undefined && initialPayment > 0) {
         const newPayment: CasePayment = {
@@ -120,7 +124,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const updateRecord = useCallback(
     (recordId: string, updates: Partial<PatientRecord>) => {
       setAllRecords((prev) =>
-        prev.map((r) => (r.id === recordId ? { ...r, ...updates } : r))
+        prev.map((r) => (r.id === recordId ? { ...r, ...updates } as PatientRecord : r))
       );
     },
     []
@@ -135,16 +139,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       };
       setAllPayments((prev) => [...prev, newPayment]);
 
-      // Sync parent record's paid and remaining fields
+      // Sync parent record's paid and remaining fields (Case records only).
       setAllRecords((prev) =>
         prev.map((r) => {
           if (r.id !== paymentData.record_id) return r;
-          const newTotalPaid =
-            (r.paid ?? 0) + paymentData.paid_amount;
+          if (r.category !== RecordCategory.CASE) return r;
+          const caseRec = r as CasePatientRecordType;
+          const newTotalPaid = (caseRec.paid ?? 0) + paymentData.paid_amount;
           return {
-            ...r,
+            ...caseRec,
             paid: newTotalPaid,
-            remaining: r.total_cost - newTotalPaid,
+            remaining: caseRec.total_cost - newTotalPaid,
           };
         })
       );

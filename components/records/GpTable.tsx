@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
-import { RecordCategory, PatientRecord } from "@/lib/global";
+import { RecordCategory, GPPatientRecordType } from "@/lib/global";
 import {
   ROWS_PER_PAGE,
   formatCurrency,
@@ -28,10 +28,10 @@ export function GpTable({
   onAdd,
   onEdit,
 }: {
-  records: PatientRecord[];
+  records: GPPatientRecordType[];
   cycleLocked: boolean;
   onAdd: () => void;
-  onEdit: (record: PatientRecord | null, category: RecordCategory) => void;
+  onEdit: (record: GPPatientRecordType | null, category: RecordCategory) => void;
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
