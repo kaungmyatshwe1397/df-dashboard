@@ -41,6 +41,7 @@ interface DataContextType {
   addPayment: (payment: Omit<CasePayment, "id" | "payment_date">) => void;
   findRecordByPatientId: (patientId: string, category?: RecordCategory) => PatientRecord | undefined;
   updateFinancials: (updates: Partial<Omit<MonthlyFinancials, "id" | "cycle_id">>) => void;
+  closeoutCycle: () => { settledCount: number; unsettledCount: number };
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -51,8 +52,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [allRecords, setAllRecords] = useState<PatientRecord[]>(MOCK_PATIENT_RECORDS);
   const [allPayments, setAllPayments] = useState<CasePayment[]>(MOCK_CASE_PAYMENTS);
   const [allFinancials, setAllFinancials] = useState<MonthlyFinancials[]>(MOCK_MONTHLY_FINANCIALS);
+  const [allCycles, setAllCycles] = useState<MonthlyCycle[]>(MOCK_CYCLES);
 
-  const cycle = MOCK_CYCLES.find((c) => c.status === CycleStatus.OPEN) ?? null;
+  const cycle = allCycles.find((c) => c.status === CycleStatus.OPEN) ?? null;
   const financials = cycle
     ? allFinancials.find((f) => f.cycle_id === cycle.id) ?? null
     : null;
@@ -205,6 +207,66 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [activeRecords]
   );
 
+  const closeoutCycle = useCallback(() => {
+    if (!cycle) return { settledCount: 0, unsettledCount: 0 };
+
+    // Partition records: settled = GP + fully paid Case, unsettled = Case with remaining balance
+    const settledRecords = activeRecords.filter(
+      (r) =>
+        r.category === RecordCategory.GP ||
+        (r.category === RecordCategory.CASE && (r.remaining ?? 0) <= 0)
+    );
+    const unsettledRecords = activeRecords.filter(
+      (r) =>
+        r.category === RecordCategory.CASE && (r.remaining ?? 0) > 0
+    );
+
+    const settledIds = new Set(settledRecords.map((r) => r.id));
+
+    // Remove settled records and their associated payments
+    setAllRecords((prev) => prev.filter((r) => !settledIds.has(r.id)));
+    setAllPayments((prev) => prev.filter((p) => !settledIds.has(p.record_id)));
+
+    // Compute next month for new cycle (increment month by 1)
+    const [year, month] = cycle.month_year.split("-").map(Number);
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const newCycleId = `cycle-${Date.now()}`;
+    const newCycle: MonthlyCycle = {
+      id: newCycleId,
+      month_year: `${nextYear}-${String(nextMonth).padStart(2, "0")}`,
+      status: CycleStatus.OPEN,
+    };
+
+    // Migrate unsettled cases to new cycle and mark as carried forward
+    const unsettledIds = new Set(unsettledRecords.map((r) => r.id));
+    setAllRecords((prev) =>
+      prev.map((r) => {
+        if (!unsettledIds.has(r.id)) return r;
+        return { ...r, cycle_id: newCycleId, is_carried_forward: true };
+      })
+    );
+    setAllPayments((prev) =>
+      prev.map((p) => {
+        if (!unsettledIds.has(p.record_id)) return p;
+        return p;
+      })
+    );
+
+    // Close old cycle and add new cycle
+    setAllCycles((prev) => [
+      ...prev.map((c) =>
+        c.id === cycle.id ? { ...c, status: CycleStatus.CLOSED } : c
+      ),
+      newCycle,
+    ]);
+
+    return {
+      settledCount: settledRecords.length,
+      unsettledCount: unsettledRecords.length,
+    };
+  }, [cycle, activeRecords]);
+
   const refreshData = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -235,6 +297,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         addPayment,
         findRecordByPatientId,
         updateFinancials,
+        closeoutCycle,
       }}
     >
       {children}

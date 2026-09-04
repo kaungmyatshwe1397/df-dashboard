@@ -74,7 +74,7 @@ function LabFeeInput({ record, onSave, saving, cycleLocked }: LabFeeInputProps) 
       <Input
         type="number"
         min={0}
-        step="any"
+        step="1"
         value={value}
         onChange={(e) => {
           setValue(e.target.value);

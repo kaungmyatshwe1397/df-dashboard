@@ -396,33 +396,40 @@
 
 ---
 
-## Task 10 — Admin Portal: Month-End Closeout
+## Task 10 — Admin Portal: Month-End Closeout (Completed 9/4/2026)
 
 **Title:** Build the 2-step closeout workflow with record partitioning
 
 **Expected Outcome:** A two-step confirmation flow that previews what will be purged vs. carried forward, then executes state transition on settled records and migrates unsettled cases to the new cycle.
 
 **Things To Do:**
-- Create `app/admin/closeout/page.tsx`
-- Build `components/CloseoutWizard.tsx` using shadcn `Card`, `Button`, `Alert`, `Badge`, `Progress`, `Separator`
-- Step 1 — Preview:
-  - Read all records in active cycle from mock context
-  - Partition: settled (GP + Case with balance=0) vs. unsettled (Case with balance>0)
-  - Display summary using shadcn `Card`: "X records will be purged, Y cases will carry forward"
-  - List unsettled cases with their remaining balances using shadcn `Badge`
-- Step 2 — Confirm:
-  - Final warning with destructive styling (red shadcn `Button`)
-  - Block double-submit (disable after first click)
-- Execution logic (mock state transition — no Supabase calls):
-  - Remove settled records from context state
-  - Set `is_carried_forward = true` on unsettled cases in context
-  - Create new cycle object in context with status OPEN
-  - Link unsettled cases to new cycle
-  - Set old cycle status to CLOSED in context
-- Loading state: shadcn `Progress` blocking indicator during execution (not interruptible)
-- Error state: shadcn `Alert` clear failure message, no broken state
-- Edge case: no records to close (all zeros), very large cycle with progress indicator
-- Empty state: closeout still allowed, summary shows zeros
+- ✅ Create `app/admin/closeout/page.tsx`
+- ✅ Build `components/closeout/CloseoutWizard.tsx` using shadcn `Card`, `Button`, `Alert`, `Badge`, `Progress`, `Separator`
+- ✅ Step 1 — Preview:
+  - ✅ Read all records in active cycle from mock context
+  - ✅ Partition: settled (GP + Case with balance=0) vs. unsettled (Case with balance>0)
+  - ✅ Display summary using shadcn `Card`: "X records will be purged, Y cases will carry forward"
+  - ✅ List unsettled cases with their remaining balances using shadcn `Badge`
+- ✅ Step 2 — Confirm:
+  - ✅ Final warning with destructive styling (red shadcn `Button`)
+  - ✅ Block double-submit (disable after first click)
+- ✅ Execution logic (mock state transition — no Supabase calls):
+  - ✅ Remove settled records from context state
+  - ✅ Set `is_carried_forward = true` on unsettled cases in context
+  - ✅ Create new cycle object in context with status OPEN
+  - ✅ Link unsettled cases to new cycle
+  - ✅ Set old cycle status to CLOSED in context
+- ✅ Loading state: shadcn `Progress` blocking indicator during execution (not interruptible)
+- ✅ Error state: shadcn `Alert` clear failure message, no broken state
+- ✅ Edge case: no records to close (all zeros), very large cycle with progress indicator
+- ✅ Empty state: closeout still allowed, summary shows zeros
+
+**Backend Plan Remarks:**
+- `closeoutCycle()` mutates context state — replace with Supabase transaction: delete settled `patient_records` + `case_payments`, update unsettled records with new `cycle_id` + `is_carried_forward = true`, close old `monthly_cycles` row, insert new `monthly_cycles` row
+- `allCycles` is now `useState<MonthlyCycle[]>` — swap with Supabase query on mount
+- New cycle `month_year` is computed as current month + 1 — consider server-side for timezone safety
+- Closed cycle financials remain linked to old `cycle_id` — no re-linking needed
+- RLS: only admin can trigger closeout — enforce server-side, not just layout guard
 
 **Connection:** Depends on Tasks 5–9 (all data exists). Final task in the workflow — resets cycle for new month.
 
@@ -464,7 +471,7 @@ Task 1 (Scaffolding)
 | 7 | Financial Dashboard | `/admin` | Admin | ✅ |
 | 8 | Case & Lab Fee Reconciliation + Case Type Selector | `/admin/reconciliation` | Admin | ✅ |
 | 9 | Overhead & Expenses | `/admin/overhead` | Admin | ✅ |
-| 10 | Month-End Closeout | `/admin/closeout` | Admin |
+| 10 | Month-End Closeout | `/admin/closeout` | Admin | ✅ |
 
 ---
 

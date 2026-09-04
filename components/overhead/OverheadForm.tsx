@@ -138,6 +138,7 @@ export function OverheadForm() {
                 type="number"
                 placeholder="0"
                 min={0}
+                step="1"
                 value={fields[key]}
                 onChange={(e) => handleChange(key, e.target.value)}
                 disabled={saving || cycleLocked}

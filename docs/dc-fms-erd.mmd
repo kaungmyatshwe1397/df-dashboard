@@ -32,14 +32,14 @@ erDiagram
         string address "optional"
         enum category "GP or CASE"
         string diagnosis
-        decimal total_cost
-        string lab_name "CASE only, optional"
-        date lab_send_date "CASE only, optional"
-        date delivery_date "CASE only, optional"
-        decimal paid "CASE only, sum of payments"
-        decimal remaining "CASE only, total_cost - paid"
+        integer total_cost
+        string lab_name "CASE only"
+        date lab_send_date "CASE only"
+        date delivery_date "CASE only"
+        integer paid "CASE only, sum of payments"
+        integer remaining "CASE only, total_cost - paid"
         uuid lab_id FK "FK to LABS, CASE only"
-        decimal lab_fee "admin-assigned, CASE only"
+        integer lab_fee "admin-assigned, CASE only"
         enum lab_payment_status "PAID or UNPAID, CASE only, admin-only"
         string case_type "CASE only, e.g. RPD, Crown, Bridge"
         string teeth "CASE only, comma-separated tooth numbers"
@@ -50,7 +50,7 @@ erDiagram
         uuid id PK
         uuid record_id FK
         date payment_date
-        decimal paid_amount
+        integer paid_amount
         string payment_note
         enum payment_status "PAID or UNPAID, CASE only, drives carry-forward"
     }
@@ -58,17 +58,17 @@ erDiagram
     MONTHLY_FINANCIALS {
         uuid id PK
         uuid cycle_id FK
-        decimal total_gp
-        decimal total_case
-        decimal gross_income
-        decimal lab_fee
-        decimal relieving_fee
-        decimal general_expenses
-        decimal assistant_fee
-        decimal bonus
-        decimal utility_costs
-        decimal building_rent
-        decimal net_profit
+        integer total_gp
+        integer total_case
+        integer gross_income
+        integer lab_fee
+        integer relieving_fee
+        integer general_expenses
+        integer assistant_fee
+        integer bonus
+        integer utility_costs
+        integer building_rent
+        integer net_profit
     }
 
     %% UI Display Note:

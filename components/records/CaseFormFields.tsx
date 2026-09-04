@@ -152,7 +152,7 @@ export function CaseFormFields({
           id="totalCost"
           type="number"
           min="0"
-          step="0.01"
+          step="1"
           placeholder="e.g. 250000"
           value={form.totalCost}
           onChange={(e) => updateField("totalCost", e.target.value)}
@@ -212,7 +212,7 @@ export function CaseFormFields({
           id="paid"
           type="number"
           min="0"
-          step="0.01"
+          step="1"
           placeholder="e.g. 150000"
           value={form.paid}
           onChange={(e) => updateField("paid", e.target.value)}
