@@ -90,7 +90,7 @@ function UserEditForm({
       return;
     }
 
-    const success = updateUser(user.id, updates);
+    const success = await updateUser(user.id, updates);
     setSaving(false);
 
     if (success) {

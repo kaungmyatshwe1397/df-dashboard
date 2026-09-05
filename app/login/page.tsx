@@ -50,7 +50,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMessage("");
 
-    const success = login(username, password);
+    const success = await login(username, password);
 
     if (!success) {
       setErrorMessage("Invalid username or password");
@@ -58,8 +58,7 @@ export default function LoginPage() {
       return;
     }
 
-    // Success: isLoading stays true (skeleton shows while redirect fires)
-    // The useEffect above handles redirect when isAuthenticated flips to true
+    // Success: isLoading stays true while onAuthStateChange fires and useEffect handles redirect
   };
 
   if (isLoading) {

@@ -5,7 +5,7 @@
 // By default, the GP tab is active.
 
 import { describe, test, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { DataProvider } from "@/context/DataContext";
 import { RecordTable } from "../records/record-table";
 
@@ -14,23 +14,29 @@ function renderWithProvider(ui: React.ReactElement) {
 }
 
 describe("RecordTable", () => {
-  test("renders the table heading", () => {
+  test("renders the table heading", async () => {
     renderWithProvider(<RecordTable onAdd={() => {}} onEdit={() => {}} />);
-    expect(screen.getByText("Patient Records")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Patient Records")).toBeInTheDocument();
+    });
   });
 
-  test("shows GP and Case tabs", () => {
+  test("shows GP and Case tabs", async () => {
     renderWithProvider(<RecordTable onAdd={() => {}} onEdit={() => {}} />);
+    await waitFor(() => {
+      expect(screen.getByText("Patient Records")).toBeInTheDocument();
+    });
     const gpTabs = screen.getAllByRole("tab", { name: "GP Records" });
     const caseTabs = screen.getAllByRole("tab", { name: "Case Records" });
     expect(gpTabs.length).toBeGreaterThanOrEqual(1);
     expect(caseTabs.length).toBeGreaterThanOrEqual(1);
   });
 
-  test("GP tab shows GP records by default", () => {
+  test("GP tab shows GP records by default", async () => {
     renderWithProvider(<RecordTable onAdd={() => {}} onEdit={() => {}} />);
-    // John Doe is a GP record — visible in default GP tab
-    expect(screen.getAllByText("John Doe").length).toBeGreaterThanOrEqual(1);
+    await waitFor(() => {
+      expect(screen.getAllByText("John Doe").length).toBeGreaterThanOrEqual(1);
+    });
   });
 });
 

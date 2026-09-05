@@ -1,5 +1,5 @@
 // passwordChangeDialog — change the current user's own password.
-// Requires current password verification before setting a new one.
+// Uses Supabase Auth reauthentication + updateUser.
 
 "use client";
 
@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle2 } from "lucide-react";
-import { useData } from "@/context/DataContext";
+import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { PasswordField } from "@/components/shared/passwordField";
 
@@ -28,7 +28,6 @@ export function PasswordChangeDialog({
   open,
   onOpenChange,
 }: PasswordChangeDialogProps) {
-  const { users, updateUser } = useData();
   const { user: currentUser } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -58,14 +57,8 @@ export function PasswordChangeDialog({
       confirmPassword?: string;
     } = {};
 
-    const userRecord = users.find((u) => u.id === currentUser?.id);
-    if (!userRecord) {
-      setSubmitError("User not found.");
-      return false;
-    }
-
-    if (currentPassword !== userRecord.password_hash) {
-      newErrors.currentPassword = "Current password is incorrect.";
+    if (!currentPassword) {
+      newErrors.currentPassword = "Current password is required.";
     }
 
     if (!newPassword) {
@@ -90,19 +83,35 @@ export function PasswordChangeDialog({
     setSaving(true);
     setSubmitError(null);
 
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    const supabase = createClient();
 
-    const success_ = updateUser(currentUser.id, { password: newPassword });
+    // Reauthenticate with current password
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: `${currentUser.username}@dc-fms.local`,
+      password: currentPassword,
+    });
+
+    if (authError) {
+      setSaving(false);
+      setSubmitError("Current password is incorrect.");
+      return;
+    }
+
+    // Update to new password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
     setSaving(false);
 
-    if (success_) {
+    if (updateError) {
+      setSubmitError("Failed to update password. Please try again.");
+    } else {
       setSuccess(true);
       setTimeout(() => {
         onOpenChange(false);
         resetForm();
       }, 1500);
-    } else {
-      setSubmitError("Failed to update password. Please try again.");
     }
   }
 

@@ -23,36 +23,30 @@ export function CloseoutPanel() {
   const totalCount = records.length;
   const unsettledCount = unsettledRecords.length;
 
-  function handleToggleLock() {
+  async function handleToggleLock() {
     setLoading("lock");
     setResult(null);
-    setTimeout(() => {
-      toggleLock();
-      setLoading(null);
-      setResult(cycleLocked ? "Cycle unlocked." : "Cycle locked. Assistant has read-only access.");
-    }, 300);
+    await toggleLock();
+    setLoading(null);
+    setResult(cycleLocked ? "Cycle unlocked." : "Cycle locked. Assistant has read-only access.");
   }
 
-  function handleCarryForward() {
+  async function handleCarryForward() {
     setLoading("carry");
     setResult(null);
-    setTimeout(() => {
-      const { carriedCount } = carryForward();
-      setLoading(null);
-      setResult(carriedCount > 0
-        ? `${carriedCount} case(s) carried forward to next month.`
-        : "No unsettled cases to carry forward.");
-    }, 300);
+    const { carriedCount } = await carryForward();
+    setLoading(null);
+    setResult(carriedCount > 0
+      ? `${carriedCount} case(s) carried forward to next month.`
+      : "No unsettled cases to carry forward.");
   }
 
-  function handleDeleteMonth() {
+  async function handleDeleteMonth() {
     setLoading("delete");
     setResult(null);
-    setTimeout(() => {
-      const count = deleteMonth();
-      setLoading(null);
-      setResult(`${count} record(s) for ${selectedMonth} permanently deleted.`);
-    }, 300);
+    const count = await deleteMonth();
+    setLoading(null);
+    setResult(`${count} record(s) for ${selectedMonth} permanently deleted.`);
   }
 
   return (

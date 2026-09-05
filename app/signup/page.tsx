@@ -70,7 +70,7 @@ export default function SignupPage() {
 
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    const success_ = addUser({
+    const success_ = await addUser({
       username: username.trim(),
       password,
       role: UserRole.ASSISTANT,

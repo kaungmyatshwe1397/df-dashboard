@@ -5,7 +5,8 @@
 | File | Purpose |
 |------|---------|
 | `plans/frontend-plan.md` | Frontend build plan — 10 tasks with mock state, pure UI development. |
-| `plans/backend-draft-plan.md` | Backend draft plan — Supabase setup, schema, RLS, client config. |
+| `plans/backend-plan.md` | Backend integration plan — Supabase setup, schema, auth, RLS, client config, DataContext migration. |
+| `plans/backend-draft-plan.md` | Backend draft plan — original draft, superseded by backend-plan.md. |
 | `plans/user-management-plan.md` | User management plan — admin user CRUD, assistant signup, password change. |
 | `docs/tokens.md` | Design tokens — spacing, typography, colors. Use these, never hardcode values. |
 | `docs/dc-fms-user-flow.mermaid` | Information architecture — all screens and navigation paths. |

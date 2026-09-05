@@ -5,7 +5,7 @@
 // getRecordBalance, getRecordTotalPaid.
 
 import { describe, test, expect } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 import { DataProvider, useData } from "../DataContext";
 import { PaymentStatus } from "@/lib/global";
@@ -16,10 +16,13 @@ function wrapper({ children }: { children: ReactNode }) {
 
 describe("DataContext — Payment Logic", () => {
   describe("addPayment", () => {
-    test("adds a payment and updates record paid/remaining", () => {
+    test("adds a payment and updates record paid/remaining", async () => {
       const { result } = renderHook(() => useData(), { wrapper });
 
-      // Use rec-003 (Robert Johnson) — partial payment, remaining > 0
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       const caseRecord = result.current.records.find(
         (r) => r.id === "rec-003"
       );
@@ -30,8 +33,8 @@ describe("DataContext — Payment Logic", () => {
 
       const payAmount = 50000;
 
-      act(() => {
-        result.current.addPayment({
+      await act(async () => {
+        await result.current.addPayment({
           record_id: caseRecord!.id,
           paid_amount: payAmount,
           payment_note: "Test installment",
@@ -39,15 +42,17 @@ describe("DataContext — Payment Logic", () => {
         });
       });
 
-      // Balance should decrease
       const newBalance = result.current.getRecordBalance(caseRecord!);
       expect(newBalance).toBe(previousBalance - payAmount);
     });
 
-    test("sets payment status to COMPLETED when fully paid", () => {
+    test("sets payment status to COMPLETED when fully paid", async () => {
       const { result } = renderHook(() => useData(), { wrapper });
 
-      // Find rec-003 (Robert Johnson) — partial payment (200000 of 500000)
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       const caseRecord = result.current.records.find(
         (r) => r.id === "rec-003"
       );
@@ -56,8 +61,8 @@ describe("DataContext — Payment Logic", () => {
       const remaining = result.current.getRecordBalance(caseRecord!);
       expect(remaining).toBeGreaterThan(0);
 
-      act(() => {
-        result.current.addPayment({
+      await act(async () => {
+        await result.current.addPayment({
           record_id: caseRecord!.id,
           paid_amount: remaining,
           payment_note: "Final payment",
@@ -69,8 +74,12 @@ describe("DataContext — Payment Logic", () => {
       expect(newBalance).toBe(0);
     });
 
-    test("creates payment record with correct fields", () => {
+    test("creates payment record with correct fields", async () => {
       const { result } = renderHook(() => useData(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       const caseRecord = result.current.records.find(
         (r) => r.id === "rec-003"
@@ -79,8 +88,8 @@ describe("DataContext — Payment Logic", () => {
 
       const paymentsBefore = result.current.getPaymentsForRecord(caseRecord!.id).length;
 
-      act(() => {
-        result.current.addPayment({
+      await act(async () => {
+        await result.current.addPayment({
           record_id: caseRecord!.id,
           paid_amount: 25000,
           payment_note: "Note test",
@@ -99,38 +108,54 @@ describe("DataContext — Payment Logic", () => {
   });
 
   describe("getRecordBalance", () => {
-    test("returns remaining balance for unpaid record", () => {
+    test("returns remaining balance for unpaid record", async () => {
       const { result } = renderHook(() => useData(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       const record = result.current.records.find((r) => r.id === "rec-003");
       expect(record).toBeDefined();
 
       const balance = result.current.getRecordBalance(record!);
-      // rec-003: total_cost=500000, paid=200000 → balance=300000
       expect(balance).toBe(300000);
     });
 
-    test("returns zero for fully paid record", () => {
+    test("returns zero for fully paid record", async () => {
       const { result } = renderHook(() => useData(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       const record = result.current.records.find((r) => r.id === "rec-002");
       expect(record).toBeDefined();
 
       const balance = result.current.getRecordBalance(record!);
-      // rec-002: total_cost=250000, paid=150000+100000=250000 → balance=0
       expect(balance).toBe(0);
     });
   });
 
   describe("getRecordTotalPaid", () => {
-    test("returns sum of all payments for a record", () => {
+    test("returns sum of all payments for a record", async () => {
       const { result } = renderHook(() => useData(), { wrapper });
-      // rec-002 has 2 payments: 150000 + 100000 = 250000
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       const totalPaid = result.current.getRecordTotalPaid("rec-002");
       expect(totalPaid).toBe(250000);
     });
 
-    test("returns 0 for record with no payments", () => {
+    test("returns 0 for record with no payments", async () => {
       const { result } = renderHook(() => useData(), { wrapper });
-      // rec-001 is a GP record with no payments
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       const totalPaid = result.current.getRecordTotalPaid("rec-001");
       expect(totalPaid).toBe(0);
     });

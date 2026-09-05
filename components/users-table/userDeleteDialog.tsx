@@ -50,7 +50,7 @@ export function UserDeleteDialog({
 
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    const success = deleteUser(user.id);
+    const success = await deleteUser(user.id);
     setSaving(false);
 
     if (success) {
