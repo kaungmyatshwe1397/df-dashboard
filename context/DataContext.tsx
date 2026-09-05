@@ -6,6 +6,7 @@ import {
   PatientRecord,
   CasePayment,
   MonthlyFinancials,
+  CustomOverhead,
   Lab,
   CaseType,
   User,
@@ -49,6 +50,8 @@ interface DataContextType {
   addPayment: (payment: Omit<CasePayment, "id" | "payment_date">) => void;
   findRecordByPatientId: (patientId: string, category?: RecordCategory) => PatientRecord | undefined;
   updateFinancials: (updates: Partial<Omit<MonthlyFinancials, "id" | "cycle_id">>) => void;
+  addCustomOverhead: (item: Omit<CustomOverhead, "id">) => void;
+  removeCustomOverhead: (itemId: string) => void;
   toggleLock: () => void;
   carryForward: () => { carriedCount: number };
   deleteMonth: () => number;
@@ -236,10 +239,66 @@ export function DataProvider({ children }: { children: ReactNode }) {
           utility_costs: 0,
           building_rent: 0,
           net_profit: 0,
+          custom_overheads: [],
           ...updates,
         };
         return [...prev, newFinancials];
       });
+    },
+    [cycle]
+  );
+
+  const addCustomOverhead = useCallback(
+    (item: Omit<CustomOverhead, "id">) => {
+      if (!cycle) return;
+
+      const newItem: CustomOverhead = {
+        ...item,
+        id: `co-${Date.now()}`,
+      };
+
+      setAllFinancials((prev) => {
+        const existing = prev.find((f) => f.cycle_id === cycle.id);
+        if (existing) {
+          return prev.map((f) =>
+            f.cycle_id === cycle.id
+              ? { ...f, custom_overheads: [...f.custom_overheads, newItem] }
+              : f
+          );
+        }
+        const newFinancials: MonthlyFinancials = {
+          id: `fin-${Date.now()}`,
+          cycle_id: cycle.id,
+          total_gp: 0,
+          total_case: 0,
+          gross_income: 0,
+          lab_fee: 0,
+          relieving_fee: 0,
+          general_expenses: 0,
+          assistant_fee: 0,
+          bonus: 0,
+          utility_costs: 0,
+          building_rent: 0,
+          net_profit: 0,
+          custom_overheads: [newItem],
+        };
+        return [...prev, newFinancials];
+      });
+    },
+    [cycle]
+  );
+
+  const removeCustomOverhead = useCallback(
+    (itemId: string) => {
+      if (!cycle) return;
+
+      setAllFinancials((prev) =>
+        prev.map((f) =>
+          f.cycle_id === cycle.id
+            ? { ...f, custom_overheads: f.custom_overheads.filter((c) => c.id !== itemId) }
+            : f
+        )
+      );
     },
     [cycle]
   );
@@ -424,6 +483,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         addPayment,
         findRecordByPatientId,
         updateFinancials,
+        addCustomOverhead,
+        removeCustomOverhead,
         toggleLock,
         carryForward,
         deleteMonth,

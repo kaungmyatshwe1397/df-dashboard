@@ -10,7 +10,7 @@ export default function AdminUsersPage() {
         <div>
           <h1 className="text-2xl font-bold">User Management</h1>
           <p className="text-muted-foreground">
-            Manage user accounts. Edit usernames, change passwords, or remove assistant access.
+            View assistant accounts and manage their access.
           </p>
         </div>
         <UserTable />

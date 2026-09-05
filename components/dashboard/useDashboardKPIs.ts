@@ -13,6 +13,7 @@ export interface DashboardKPIsData {
   bonus: number;
   buildingRent: number;
   utilityCosts: number;
+  customOverheads: { name: string; amount: number }[];
   totalOverhead: number;
   netProfitLoss: number;
 }
@@ -55,8 +56,13 @@ export function useDashboardKPIs(): DashboardKPIsData {
     const bonus = financials?.bonus ?? 0;
     const buildingRent = financials?.building_rent ?? 0;
     const utilityCosts = financials?.utility_costs ?? 0;
+    const customOverheads = financials?.custom_overheads ?? [];
+    const customOverheadTotal = customOverheads.reduce(
+      (sum, item) => sum + item.amount,
+      0
+    );
     const totalOverhead =
-      generalExpenses + assistantFee + bonus + buildingRent + utilityCosts;
+      generalExpenses + assistantFee + bonus + buildingRent + utilityCosts + customOverheadTotal;
 
     // Remaining clinic income = gross - lab fees - doctor commission.
     const remainingIncome = grossIncome - totalLabFees - doctorCommission;
@@ -73,6 +79,7 @@ export function useDashboardKPIs(): DashboardKPIsData {
       bonus,
       buildingRent,
       utilityCosts,
+      customOverheads: customOverheads.map((c) => ({ name: c.name, amount: c.amount })),
       totalOverhead,
       netProfitLoss,
     };

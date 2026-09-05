@@ -203,6 +203,7 @@ export const MOCK_MONTHLY_FINANCIALS: MonthlyFinancials[] = [
     utility_costs: 30000,
     building_rent: 150000,
     net_profit: 90000,
+    custom_overheads: [],
   },
 ];
 

@@ -33,6 +33,14 @@ export function OverheadSection({ kpis, formatCurrency }: OverheadSectionProps) 
                 </span>
               </Fragment>
             ))}
+            {kpis.customOverheads.map((item) => (
+              <Fragment key={item.name}>
+                <span>{item.name}</span>
+                <span className="text-right font-medium text-foreground">
+                  {formatCurrency(item.amount)}
+                </span>
+              </Fragment>
+            ))}
           </div>
         }
       />

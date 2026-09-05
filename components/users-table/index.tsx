@@ -1,4 +1,4 @@
-// UserTable — displays all user accounts with edit/delete actions.
+// UserTable — displays all user accounts with delete action.
 // Admin-only. Delete is blocked for admin role rows and the current user.
 
 "use client";
@@ -14,17 +14,15 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
 import { User, UserRole } from "@/lib/global";
-import { UserEditDialog } from "./userEditDialog";
 import { UserDeleteDialog } from "./userDeleteDialog";
 
 export function UserTable() {
   const { users } = useData();
   const { user: currentUser } = useAuth();
-  const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteUserTarget, setDeleteUserTarget] = useState<User | null>(null);
 
   return (
@@ -62,14 +60,6 @@ export function UserTable() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => setEditUser(u)}
-                        title="Edit user"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
                       {u.role !== UserRole.ADMIN && (
                         <Button
                           variant="ghost"
@@ -89,14 +79,6 @@ export function UserTable() {
           </TableBody>
         </Table>
       </div>
-
-      <UserEditDialog
-        open={!!editUser}
-        onOpenChange={(open) => {
-          if (!open) setEditUser(null);
-        }}
-        user={editUser}
-      />
 
       <UserDeleteDialog
         open={!!deleteUserTarget}

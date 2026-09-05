@@ -1,6 +1,8 @@
 // Types and helpers for OverheadForm.
 // Extracted to keep the main form component focused on UI logic.
 
+import { CustomOverhead } from "@/lib/global";
+
 export interface OverheadFields {
   general_expenses: string;
   assistant_fee: string;
@@ -39,4 +41,22 @@ export function financialsToFields(f: {
     building_rent: f.building_rent > 0 ? String(f.building_rent) : "",
     utility_costs: f.utility_costs > 0 ? String(f.utility_costs) : "",
   };
+}
+
+// Custom overhead form item — name and amount as strings for input fields.
+export interface CustomOverheadFormItem {
+  name: string;
+  amount: string;
+}
+
+export interface CustomOverheadFormErrors {
+  [index: number]: { name?: string; amount?: string } | undefined;
+}
+
+// Convert stored CustomOverhead to form-ready strings.
+export function customOverheadsToForm(items: CustomOverhead[]): CustomOverheadFormItem[] {
+  return items.map((item) => ({
+    name: item.name,
+    amount: item.amount > 0 ? String(item.amount) : "",
+  }));
 }

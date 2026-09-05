@@ -108,6 +108,12 @@ export interface CasePayment {
   payment_status: PaymentStatus;
 }
 
+export interface CustomOverhead {
+  id: string;
+  name: string;
+  amount: number;
+}
+
 export interface MonthlyFinancials {
   id: string;
   cycle_id: string;
@@ -122,6 +128,7 @@ export interface MonthlyFinancials {
   utility_costs: number;
   building_rent: number;
   net_profit: number;
+  custom_overheads: CustomOverhead[];
 }
 
 // ------------------------------------------
