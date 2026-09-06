@@ -47,7 +47,7 @@ interface DataContextType {
   toggleLock: () => void;
   carryForward: () => Promise<{ carriedCount: number }>;
   deleteMonth: () => Promise<number>;
-  addUser: (user: { username: string; password: string; role: UserRole }) => Promise<boolean>;
+  addUser: (user: { email: string; username: string; password: string; role: UserRole }) => Promise<boolean>;
   updateUser: (userId: string, updates: { username?: string; password?: string }) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;
 }
@@ -176,7 +176,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         supabaseRef.current.from("monthly_financials").select("*"),
         supabaseRef.current.from("labs").select("*").order("lab_name"),
         supabaseRef.current.from("case_types").select("*").order("name"),
-        supabaseRef.current.from("profiles").select("id, username, role"),
+        supabaseRef.current.from("profiles").select("id, username, email, role"),
       ]);
 
       if (cyclesRes.error) throw cyclesRes.error;
@@ -228,6 +228,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setUsers(
         (usersRes.data ?? []).map((u: Record<string, unknown>) => ({
           id: u.id as string,
+          email: u.email as string,
           username: u.username as string,
           password_hash: "",
           role: u.role as UserRole,
@@ -690,9 +691,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // ------------------------------------------
 
   const addUser = useCallback(
-    async (userData: { username: string; password: string; role: UserRole }): Promise<boolean> => {
+    async (userData: { email: string; username: string; password: string; role: UserRole }): Promise<boolean> => {
       const { data: authData, error: authError } = await supabaseRef.current.auth.signUp({
-        email: `${userData.username}@dc-fms.local`,
+        email: userData.email,
         password: userData.password,
         options: {
           data: { username: userData.username, role: userData.role },
@@ -704,8 +705,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
+      // Insert profile manually (trigger on auth.users is unreliable on hosted Supabase)
+      const { error: profileError } = await supabaseRef.current
+        .from("profiles")
+        .insert({
+          id: authData.user.id,
+          username: userData.username,
+          email: userData.email,
+          role: userData.role,
+        });
+
+      if (profileError) {
+        console.error("Failed to create profile:", profileError);
+        return false;
+      }
+
       const newUser: User = {
         id: authData.user.id,
+        email: userData.email,
         username: userData.username,
         password_hash: "",
         role: userData.role,

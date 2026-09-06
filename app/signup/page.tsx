@@ -20,10 +20,12 @@ export default function SignupPage() {
   const router = useRouter();
   const { addUser } = useData();
 
+  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<{
+    email?: string;
     username?: string;
     password?: string;
     confirmPassword?: string;
@@ -34,10 +36,17 @@ export default function SignupPage() {
 
   function validate(): boolean {
     const newErrors: {
+      email?: string;
       username?: string;
       password?: string;
       confirmPassword?: string;
     } = {};
+
+    if (!email.trim()) {
+      newErrors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = "Please enter a valid email address.";
+    }
 
     if (!username.trim()) {
       newErrors.username = "Username is required.";
@@ -71,6 +80,7 @@ export default function SignupPage() {
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     const success_ = await addUser({
+      email: email.trim(),
       username: username.trim(),
       password,
       role: UserRole.ASSISTANT,
@@ -82,7 +92,7 @@ export default function SignupPage() {
       setSuccess(true);
       setTimeout(() => router.push("/login"), 1500);
     } else {
-      setSubmitError("Username is already taken. Please choose another.");
+      setSubmitError("Email is already registered. Please use another email.");
     }
   }
 
@@ -119,6 +129,28 @@ export default function SignupPage() {
                 <AlertDescription>{submitError}</AlertDescription>
               </Alert>
             )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">
+                Email <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="e.g. assistant@clinic.com"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
+                aria-invalid={!!errors.email}
+                disabled={saving}
+                maxLength={50}
+              />
+              {errors.email && (
+                <p className="text-caption text-destructive">{errors.email}</p>
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="username">

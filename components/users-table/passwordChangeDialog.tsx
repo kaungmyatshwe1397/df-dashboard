@@ -87,7 +87,7 @@ export function PasswordChangeDialog({
 
     // Reauthenticate with current password
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email: `${currentUser.username}@dc-fms.local`,
+      email: currentUser.email,
       password: currentPassword,
     });
 

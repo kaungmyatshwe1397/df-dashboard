@@ -28,12 +28,14 @@ import {
 export const MOCK_USERS: User[] = [
   {
     id: "user-001",
+    email: "admin@test.com",
     username: "admin",
     password_hash: "admin123",
     role: UserRole.ADMIN,
   },
   {
     id: "user-002",
+    email: "assistant@test.com",
     username: "assistant",
     password_hash: "assist123",
     role: UserRole.ASSISTANT,

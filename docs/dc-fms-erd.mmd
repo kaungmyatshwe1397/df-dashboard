@@ -7,8 +7,9 @@ erDiagram
 
     USERS {
         uuid id PK
-        string username "unique, min 3 chars"
-        string password_hash "min 6 chars, plaintext in mock"
+        string email "unique, used for auth"
+        string username "display name, unique"
+        string password_hash "managed by Supabase Auth"
         enum role "ADMIN or ASSISTANT"
         timestamp created_at "account creation date"
     }

@@ -16,10 +16,10 @@ Use this to design each screen and to QA it before release.
 
 | State | Checklist |
 |---|---|
-| Ideal | - Username + password fields visible<br>- "Log in" button enabled once both fields are filled |
+| Ideal | - Email + password fields visible<br>- "Log in" button enabled once both fields are filled |
 | Empty | - Fields empty on first load<br>- Button disabled or shows inline validation on submit attempt |
 | Loading | - Button shows a spinner and disables itself while checking credentials<br>- Fields lock during check |
-| Error | - Wrong username/password shows a clear inline message (not a raw server error)<br>- Message does not reveal whether it was the username or password that was wrong (security) |
+| Error | - Wrong email/password shows a clear inline message (not a raw server error)<br>- Message does not reveal whether it was the email or password that was wrong (security) |
 | Edge case | - Caps Lock warning (optional)<br>- Very long username/password does not break the layout<br>- Repeated failed attempts — decide if lockout is needed |
 
 ---

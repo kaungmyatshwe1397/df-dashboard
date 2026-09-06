@@ -110,6 +110,16 @@ function UserEditForm({
 
       <div className="grid gap-4 py-2">
         <div className="space-y-2">
+          <Label htmlFor="edit-email">Email</Label>
+          <Input
+            id="edit-email"
+            value={user.email}
+            disabled
+            className="text-muted-foreground"
+          />
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="edit-username">
             Username <span className="text-destructive">*</span>
           </Label>

@@ -11,12 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
+import { PasswordField } from "@/components/shared/passwordField";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, isAdmin } = useAuth();
 
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -31,7 +32,9 @@ export default function LoginPage() {
 
   // Stable ref for caps lock handler to avoid re-registering listener
   const handleCapsLock = useCallback((e: KeyboardEvent) => {
-    setCapsLockOn(e.getModifierState("CapsLock"));
+    if (typeof e.getModifierState === "function") {
+      setCapsLockOn(e.getModifierState("CapsLock"));
+    }
   }, []);
 
   useEffect(() => {
@@ -42,18 +45,18 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!username.trim() || !password.trim()) {
-      setErrorMessage("Please enter both username and password");
+    if (!email.trim() || !password.trim()) {
+      setErrorMessage("Please enter both email and password");
       return;
     }
 
     setIsLoading(true);
     setErrorMessage("");
 
-    const success = await login(username, password);
+    const success = await login(email, password);
 
     if (!success) {
-      setErrorMessage("Invalid username or password");
+      setErrorMessage("Invalid email or password");
       setIsLoading(false);
       return;
     }
@@ -103,37 +106,32 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                type="text"
-                placeholder="Enter username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="Enter email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
                 maxLength={50}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-                maxLength={50}
-              />
-            </div>
+            <PasswordField
+              label="Password"
+              htmlFor="password"
+              value={password}
+              onChange={setPassword}
+              placeholder="Enter password"
+              disabled={isLoading}
+            />
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
 
-            <div className="text-body-sm text-text-secondary text-center space-y-1">
-              <p>Demo: admin/admin123 or assistant/assist123</p>
+            <div className="text-body-sm text-text-secondary text-center">
               <Link href="/signup" className="text-primary hover:underline">
                 Don&apos;t have an account? Sign up
               </Link>

@@ -59,8 +59,8 @@ const SEED_CASE_TYPES = [
 ];
 
 const SEED_PROFILES = [
-  { id: "user-001", username: "admin", role: "ADMIN" },
-  { id: "user-002", username: "assistant", role: "ASSISTANT" },
+  { id: "user-001", username: "admin", email: "admin@test.com", role: "ADMIN" },
+  { id: "user-002", username: "assistant", email: "assistant@test.com", role: "ASSISTANT" },
 ];
 
 // ──────────────────────────────────────────────

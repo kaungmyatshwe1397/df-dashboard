@@ -223,7 +223,7 @@ test("assistant can log in and see records", async ({ page }) => {
   await page.goto("/login");
 
   // 2. Fill in credentials
-  await page.fill('input[name="username"]', "assistant");
+  await page.fill('input[name="email"]', "assistant@test.com");
   await page.fill('input[name="password"]', "assist123");
 
   // 3. Click login

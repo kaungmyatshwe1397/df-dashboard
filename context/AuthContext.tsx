@@ -15,7 +15,7 @@ interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -79,9 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    // Supabase Auth uses email, so we construct it from username
-    const email = `${username}@dc-fms.local`;
+  const login = async (email: string, password: string): Promise<boolean> => {
     const { error } = await supabaseRef.current.auth.signInWithPassword({
       email,
       password,

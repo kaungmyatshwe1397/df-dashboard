@@ -32,6 +32,7 @@ export function UserTable() {
           <TableHeader>
             <TableRow>
               <TableHead>Username</TableHead>
+              <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
@@ -52,6 +53,11 @@ export function UserTable() {
                         </Badge>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="max-w-[200px] truncate text-muted-foreground" title={u.email}>
+                      {u.email}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <Badge variant={u.role === UserRole.ADMIN ? "default" : "secondary"}>

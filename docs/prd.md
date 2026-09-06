@@ -114,7 +114,7 @@ Doctor Commission Fee = Commission Base × 40% (0.40)
 
 | Table Name | Key Attributes | Functional Purpose |
 |---|---|---|
-| users | id, username, password_hash, role (ADMIN/ASSISTANT) | User credentials and RBAC enforcement |
+| users | id, email, username, password_hash, role (ADMIN/ASSISTANT) | User credentials and RBAC enforcement. Email used for auth, username is display name. |
 | monthly_cycles | id, month_year, status (ACTIVE/LOCKED/CLOSED) | Billing period demarcation and cycle state |
 | patient_records | id, cycle_id, entry_date, patient_name, category, total_cost, lab_fee, payment_status, is_carried_forward | Patient treatments and lab fee assignments |
 | case_payments | id, record_id, payment_date, paid_amount, payment_note | Timestamped installment payment tracking |
