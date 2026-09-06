@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { updateUserAction, deleteUserAction } from "@/app/admin/actions";
 import {
   MonthlyCycle,
   PatientRecord,
@@ -757,13 +758,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       if (updates.password) {
-        const { error: pwError } = await supabaseRef.current.auth.admin.updateUserById(userId, {
-          password: updates.password,
-        });
-        if (pwError) {
-          console.error("Failed to update password:", pwError);
-          return false;
-        }
+        const success = await updateUserAction(userId, { password: updates.password });
+        if (!success) return false;
       }
 
       return true;
@@ -773,11 +769,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const deleteUser = useCallback(
     async (userId: string): Promise<boolean> => {
-      const { error: deleteError } = await supabaseRef.current.auth.admin.deleteUser(userId);
-      if (deleteError) {
-        console.error("Failed to delete user:", deleteError);
-        return false;
-      }
+      const success = await deleteUserAction(userId);
+      if (!success) return false;
 
       setUsers((prev) => prev.filter((u) => u.id !== userId));
       return true;
