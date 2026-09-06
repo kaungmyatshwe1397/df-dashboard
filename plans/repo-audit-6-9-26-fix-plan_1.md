@@ -11,16 +11,16 @@ Tasks are ordered by priority — do them top to bottom. Each fix lists concrete
 ## 1. Move `auth.admin` calls out of client code, with strict role checks (High)
 **Why first:** these calls are already broken in production — they can never succeed from the browser. But moving them server-side only fixes the "will it run" problem — it doesn't stop any logged-in user from calling the action directly. The service role key bypasses RLS entirely, so the action itself must check who's calling it.
 
-- [ ] Create `app/admin/actions.ts` (Server Action file, no `"use client"`)
-- [ ] In that file, import the server-side Supabase client from `lib/supabase/server.ts` (the one built with the service role key)
-- [ ] At the top of every action in this file, call `supabase.auth.getUser()` to verify there's an active, valid session — reject immediately if not
-- [ ] Fetch the caller's profile and assert `role === 'ADMIN'` before doing anything else in the action
-- [ ] Throw an explicit `Unauthorized` error (and don't proceed) if the caller isn't an admin
-- [ ] Write `updateUserAction(userId, updates)` — after the checks above, calls `auth.admin.updateUserById`
-- [ ] Write `deleteUserAction(userId)` — after the checks above, calls `auth.admin.deleteUser`
-- [ ] Remove the `auth.admin.updateUserById` call at `context/DataContext.tsx:760` — replace with a call to `updateUserAction`
-- [ ] Remove the `auth.admin.deleteUser` call at `context/DataContext.tsx:776` — replace with a call to `deleteUserAction`
-- [ ] Confirm `lib/supabase/server.ts` (or wherever the admin client lives) never gets imported into any file marked `"use client"`
+- [x] Create `app/admin/actions.ts` (Server Action file, no `"use client"`)
+- [x] In that file, import the server-side Supabase client from `lib/supabase/server.ts` (the one built with the service role key)
+- [x] At the top of every action in this file, call `supabase.auth.getUser()` to verify there's an active, valid session — reject immediately if not
+- [x] Fetch the caller's profile and assert `role === 'ADMIN'` before doing anything else in the action
+- [x] Throw an explicit `Unauthorized` error (and don't proceed) if the caller isn't an admin
+- [x] Write `updateUserAction(userId, updates)` — after the checks above, calls `auth.admin.updateUserById`
+- [x] Write `deleteUserAction(userId)` — after the checks above, calls `auth.admin.deleteUser`
+- [x] Remove the `auth.admin.updateUserById` call at `context/DataContext.tsx:760` — replace with a call to `updateUserAction`
+- [x] Remove the `auth.admin.deleteUser` call at `context/DataContext.tsx:776` — replace with a call to `deleteUserAction`
+- [x] Confirm `lib/supabase/server.ts` (or wherever the admin client lives) never gets imported into any file marked `"use client"`
 - [ ] Manually test: as admin, update a user's password and delete a user — both should succeed. As a non-admin (assistant), attempt to call the same actions directly — both should be rejected with `Unauthorized`
 
 ---
@@ -28,16 +28,16 @@ Tasks are ordered by priority — do them top to bottom. Each fix lists concrete
 ## 2. Add server-side route protection in middleware, with role-based access control (High)
 **Why:** currently a signed-out user can briefly see protected page content before the client-side redirect kicks in. But session-only checks aren't enough either — a logged-in assistant could still navigate straight to `/admin/*` and hit partial UI or permission errors instead of a clean redirect.
 
-- [ ] Open `middleware.ts` — confirm what it currently does (likely only session refresh)
-- [ ] Add a route matcher for protected paths: `/admin/*`, `/assistant/*` (adjust to match your actual protected routes)
-- [ ] Inside the middleware, after refreshing the session, check if a session/user exists — if not, redirect to `/login` for any protected route
-- [ ] Prerequisite: confirm the user's role is already available on the session/JWT. If not, set up a Supabase Auth Hook (Customize Access Token hook) that reads the role from the `profiles` table and adds it to the JWT's `app_metadata` on login/token refresh — this is a one-time setup in the Supabase dashboard plus a small SQL function, done once, not per request
-- [ ] Extract the user's role for the RBAC check below. Middleware runs on every request, so avoid a database query per request here — read the role from the JWT custom claim set up above, rather than calling the profiles table each time
-- [ ] Add route gating on top of the session check:
+- [x] Open `middleware.ts` — confirm what it currently does (likely only session refresh)
+- [x] Add a route matcher for protected paths: `/admin/*`, `/assistant/*` (adjust to match your actual protected routes)
+- [x] Inside the middleware, after refreshing the session, check if a session/user exists — if not, redirect to `/login` for any protected route
+- [x] Prerequisite: confirm the user's role is already available on the session/JWT. If not, set up a Supabase Auth Hook (Customize Access Token hook) that reads the role from the `profiles` table and adds it to the JWT's `app_metadata` on login/token refresh — this is a one-time setup in the Supabase dashboard plus a small SQL function, done once, not per request
+- [x] Extract the user's role for the RBAC check below. Middleware runs on every request, so avoid a database query per request here — read the role from the JWT custom claim set up above, rather than calling the profiles table each time
+- [x] Add route gating on top of the session check:
   - If a non-admin session hits `/admin/*`, redirect to `/assistant` (or a 403 page)
   - If an assistant hits an admin-only resource, redirect accordingly
-- [ ] Update `config.matcher` in `middleware.ts` if needed so middleware actually runs on `/admin` and `/assistant` paths
-- [ ] Remove or simplify the client-side `useEffect` redirect in `components/layout/PortalLayout.tsx:22-28` — middleware is now the real guard, the client check becomes a fallback rather than the only protection
+- [x] Update `config.matcher` in `middleware.ts` if needed so middleware actually runs on `/admin` and `/assistant` paths
+- [x] Remove or simplify the client-side `useEffect` redirect in `components/layout/PortalLayout.tsx:22-28` — middleware is now the real guard, the client check becomes a fallback rather than the only protection
 - [ ] Manually test: (a) signed out, navigate to an admin URL — redirected at the server level, no flash of content; (b) signed in as assistant, navigate to an admin URL — redirected to `/assistant`, not a broken/partial admin page
 
 ---
@@ -128,7 +128,7 @@ Tasks are ordered by priority — do them top to bottom. Each fix lists concrete
 ## 10. Remove committed demo credentials (Medium)
 **Why:** `admin@test.com` / `admin123` and `assistant@test.com` / `assist123` are visible in `.env.local` comments — a real risk if the repo is ever made public or shared.
 
-- [ ] Remove the credential comments from `.env.local:5-7`
+- [x] Remove the credential comments from `.env.local:5-7`
 - [ ] If these demo accounts are still needed for local development, document them somewhere not committed to version control (a private note, a team password manager, or a `.env.local.example` with placeholder text only)
 - [ ] Check git history — if these were ever committed in a prior commit, decide whether the credentials need to be rotated (if the repo has any chance of being public or has been shared outside the immediate team)
 
