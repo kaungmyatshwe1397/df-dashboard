@@ -28,10 +28,21 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh session — important for Server Components.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return { supabaseResponse, user };
+  // Fetch role from profiles for RBAC in middleware.
+  // TODO: Replace with JWT custom claim via Supabase Auth Hook to avoid a DB query per request.
+  let role: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    role = profile?.role ?? null;
+  }
+
+  return { supabaseResponse, user, role };
 }

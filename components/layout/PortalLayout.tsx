@@ -11,6 +11,7 @@ interface PortalLayoutProps {
   children: React.ReactNode;
 }
 
+// Fallback redirect — middleware is the primary route guard.
 export function PortalLayout({ requiredRole, children }: PortalLayoutProps) {
   const { isAuthenticated, isAdmin, isAssistant } = useAuth();
   const router = useRouter();
