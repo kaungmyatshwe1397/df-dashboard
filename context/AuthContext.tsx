@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { UserRole } from "@/lib/global";
 interface AuthUser {
   id: string;
+  email: string;
   username: string;
   role: UserRole;
 }
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (profile) {
             setUser({
               id: session.user.id,
+              email: session.user.email ?? "",
               username: profile.username,
               role: profile.role as UserRole,
             });
@@ -65,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (profile) {
               setUser({
                 id: session!.user.id,
+                email: session!.user.email ?? "",
                 username: profile.username,
                 role: profile.role as UserRole,
               });

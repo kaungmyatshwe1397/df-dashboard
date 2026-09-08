@@ -105,11 +105,11 @@ function mockQuery(table: string, rows: unknown[]) {
   q.select = vi.fn().mockReturnValue(q);
   q.order = vi.fn().mockReturnValue(q);
   q.eq = vi.fn().mockImplementation((col: string, val: unknown) => {
-    data = data.filter((r: Record<string, unknown>) => r[col] === val);
+    data = data.filter((r) => (r as Record<string, unknown>)[col] === val);
     return q;
   });
   q.in = vi.fn().mockImplementation((col: string, vals: unknown[]) => {
-    data = data.filter((r: Record<string, unknown>) => vals.includes(r[col]));
+    data = data.filter((r) => vals.includes((r as Record<string, unknown>)[col]));
     return q;
   });
 
