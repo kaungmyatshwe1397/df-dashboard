@@ -361,6 +361,41 @@
 
 **Connection:** Depends on Task 4 (layout). Feeds into Task 7 (Dashboard recalculates commission). Read-only when cycle locked.
 
+**Next Step →** Task 8.1
+
+---
+
+## Task 8.1 — Admin Portal: Manage Labs & Case Types (Completed 9/8/2026)
+
+**Title:** Build CRUD management page for labs and case types used across the system
+
+**Expected Outcome:** A page at `/admin/reconciliation/manage` where admins can add, edit, and delete labs and case types. Both reference tables are displayed with full CRUD operations.
+
+**Things To Do:**
+- ✅ Create `app/admin/reconciliation/manage/page.tsx` with `PortalLayout requiredRole="ADMIN"`
+- ✅ Create `components/reconciliation/manage/index.tsx` barrel export
+- ✅ Create `components/reconciliation/manage/LabTable.tsx` — table with add/edit/delete actions
+- ✅ Create `components/reconciliation/manage/CaseTypeTable.tsx` — table with add/edit/delete actions
+- ✅ Create `components/reconciliation/manage/labFormDialog.tsx` — add/edit dialog for labs
+- ✅ Create `components/reconciliation/manage/caseTypeFormDialog.tsx` — add/edit dialog for case types
+- ✅ Create `components/reconciliation/manage/deleteConfirmDialog.tsx` — reusable delete confirmation
+- ✅ Add `addLab`, `updateLab`, `deleteLab`, `addCaseType`, `updateCaseType`, `deleteCaseType` to DataContext
+- ✅ Add "Manage Labs & Cases" button to reconciliation page linking to manage page
+- ✅ Add back button on manage page linking to `/admin/reconciliation`
+- ✅ Duplicate name validation on add and edit
+- ✅ Loading state: shadcn `Skeleton` rows
+- ✅ Error state: shadcn `Alert` with Retry button
+- ✅ Empty state: "No labs configured" / "No case types configured" with dashed border
+- ✅ Edge case: long names truncate with ellipsis, duplicate names rejected with inline error
+
+**Backend Plan Remarks:**
+- CRUD functions use Supabase `insert`/`update`/`delete` on `labs` and `case_types` tables
+- RLS policies already allow admin CRUD on both tables
+- Deleting a lab/case type does NOT cascade — patient records store names as free text
+- Local state updated optimistically after successful Supabase operations
+
+**Connection:** Depends on Task 8 (lab reconciliation exists). Provides reference data management for the entire system.
+
 **Next Step →** Task 9
 
 ---
@@ -470,6 +505,7 @@ Task 1 (Scaffolding)
 | 6.2 | Admin Access to Record Table | `/admin/records` | Admin | ✅ |
 | 7 | Financial Dashboard | `/admin` | Admin | ✅ |
 | 8 | Case & Lab Fee Reconciliation + Case Type Selector | `/admin/reconciliation` | Admin | ✅ |
+| 8.1 | Manage Labs & Case Types | `/admin/reconciliation/manage` | Admin | ✅ |
 | 9 | Overhead & Expenses | `/admin/overhead` | Admin | ✅ |
 | 10 | Month-End Closeout | `/admin/closeout` | Admin | ✅ |
 

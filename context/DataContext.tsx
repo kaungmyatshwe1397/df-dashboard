@@ -51,6 +51,12 @@ interface DataContextType {
   addUser: (user: { email: string; username: string; password: string; role: UserRole }) => Promise<boolean>;
   updateUser: (userId: string, updates: { username?: string; password?: string }) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;
+  addLab: (name: string) => Promise<boolean>;
+  updateLab: (id: string, name: string) => Promise<boolean>;
+  deleteLab: (id: string) => Promise<boolean>;
+  addCaseType: (name: string) => Promise<boolean>;
+  updateCaseType: (id: string, name: string) => Promise<boolean>;
+  deleteCaseType: (id: string) => Promise<boolean>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -778,6 +784,160 @@ export function DataProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  // ------------------------------------------
+  // Lab Management
+  // ------------------------------------------
+
+  const addLab = useCallback(
+    async (name: string): Promise<boolean> => {
+      const trimmed = name.trim();
+      if (!trimmed) return false;
+
+      const duplicate = labs.find(
+        (l) => l.lab_name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (duplicate) return false;
+
+      const { data, error } = await supabaseRef.current
+        .from("labs")
+        .insert({ lab_name: trimmed })
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error("Failed to add lab:", error);
+        return false;
+      }
+
+      setLabs((prev) => [...prev, { id: data.id, lab_name: data.lab_name }]);
+      return true;
+    },
+    [labs]
+  );
+
+  const updateLab = useCallback(
+    async (id: string, name: string): Promise<boolean> => {
+      const trimmed = name.trim();
+      if (!trimmed) return false;
+
+      const duplicate = labs.find(
+        (l) => l.id !== id && l.lab_name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (duplicate) return false;
+
+      const { error } = await supabaseRef.current
+        .from("labs")
+        .update({ lab_name: trimmed })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Failed to update lab:", error);
+        return false;
+      }
+
+      setLabs((prev) =>
+        prev.map((l) => (l.id === id ? { ...l, lab_name: trimmed } : l))
+      );
+      return true;
+    },
+    [labs]
+  );
+
+  const deleteLab = useCallback(
+    async (id: string): Promise<boolean> => {
+      const { error } = await supabaseRef.current
+        .from("labs")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        console.error("Failed to delete lab:", error);
+        return false;
+      }
+
+      setLabs((prev) => prev.filter((l) => l.id !== id));
+      return true;
+    },
+    []
+  );
+
+  // ------------------------------------------
+  // Case Type Management
+  // ------------------------------------------
+
+  const addCaseType = useCallback(
+    async (name: string): Promise<boolean> => {
+      const trimmed = name.trim();
+      if (!trimmed) return false;
+
+      const duplicate = caseTypes.find(
+        (ct) => ct.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (duplicate) return false;
+
+      const { data, error } = await supabaseRef.current
+        .from("case_types")
+        .insert({ name: trimmed })
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error("Failed to add case type:", error);
+        return false;
+      }
+
+      setCaseTypes((prev) => [...prev, { id: data.id, name: data.name }]);
+      return true;
+    },
+    [caseTypes]
+  );
+
+  const updateCaseType = useCallback(
+    async (id: string, name: string): Promise<boolean> => {
+      const trimmed = name.trim();
+      if (!trimmed) return false;
+
+      const duplicate = caseTypes.find(
+        (ct) => ct.id !== id && ct.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (duplicate) return false;
+
+      const { error } = await supabaseRef.current
+        .from("case_types")
+        .update({ name: trimmed })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Failed to update case type:", error);
+        return false;
+      }
+
+      setCaseTypes((prev) =>
+        prev.map((ct) => (ct.id === id ? { ...ct, name: trimmed } : ct))
+      );
+      return true;
+    },
+    [caseTypes]
+  );
+
+  const deleteCaseType = useCallback(
+    async (id: string): Promise<boolean> => {
+      const { error } = await supabaseRef.current
+        .from("case_types")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        console.error("Failed to delete case type:", error);
+        return false;
+      }
+
+      setCaseTypes((prev) => prev.filter((ct) => ct.id !== id));
+      return true;
+    },
+    []
+  );
+
   return (
     <DataContext.Provider
       value={{
@@ -812,6 +972,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         addUser,
         updateUser,
         deleteUser,
+        addLab,
+        updateLab,
+        deleteLab,
+        addCaseType,
+        updateCaseType,
+        deleteCaseType,
       }}
     >
       {children}
