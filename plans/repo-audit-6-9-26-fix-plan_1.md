@@ -45,11 +45,9 @@ Tasks are ordered by priority — do them top to bottom. Each fix lists concrete
 ## 3. Add error boundaries and loading states (High)
 **Why:** right now, any unhandled error shows a blank screen, and slow loads show nothing — bad experience and hides real problems.
 
-- [ ] Create `app/error.tsx` — a client component with `"use client"`, accepts `error` and `reset` props, shows a friendly message and a retry button
-- [ ] Create `app/global-error.tsx` — same pattern, for errors in the root layout itself
-- [ ] Create `app/admin/loading.tsx` — a loading/skeleton UI shown while the admin route segment loads
-- [ ] Create `app/assistant/loading.tsx` — same, for the assistant route segment
-- [ ] Manually test: temporarily throw an error in a page component to confirm `error.tsx` catches it; throttle network to confirm `loading.tsx` shows
+- [x] Create `app/error.tsx` — a client component with `"use client"`, accepts `error` and `reset` props, shows a friendly message and a retry button
+- [x] Installed shadcn `spinner` component (`components/ui/spinner.tsx`) for loading states
+- [ ] Manually test: temporarily throw an error in a page component to confirm `error.tsx` catches it
 
 ---
 
