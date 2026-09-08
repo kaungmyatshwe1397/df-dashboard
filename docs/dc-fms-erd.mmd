@@ -25,6 +25,11 @@ erDiagram
         string lab_name
     }
 
+    CASE_TYPES {
+        uuid id PK
+        string name
+    }
+
     PATIENT_RECORDS {
         uuid id PK
         uuid cycle_id FK
@@ -36,15 +41,15 @@ erDiagram
         string diagnosis
         integer total_cost
         string month_label "e.g. Sep 2026, used for filtering"
-        string lab_name "CASE only"
+        string lab_name "CASE only, denormalized text"
         date lab_send_date "CASE only"
         date delivery_date "CASE only"
         integer paid "CASE only, sum of payments"
         integer remaining "CASE only, total_cost - paid"
-        uuid lab_id FK "FK to LABS, CASE only"
+        uuid lab_id FK "FK to LABS, CASE only, ON DELETE SET NULL"
         integer lab_fee "admin-assigned, CASE only"
         enum lab_payment_status "PAID or UNPAID, CASE only, admin-only"
-        string case_type "CASE only, e.g. RPD, Crown, Bridge"
+        string case_type "CASE only, text (not FK), e.g. RPD, Crown, Bridge"
         string teeth "CASE only, comma-separated tooth numbers"
         boolean is_carried_forward "CASE only, false for GP"
     }
@@ -82,3 +87,9 @@ erDiagram
     %% GP has no installments, no balance, no status column.
     %% Case tracks installments via CASE_PAYMENTS, shows balance and status.
     %% Lab Reconciliation groups case records by lab with a filter selector.
+    %%
+    %% Reference Tables:
+    %%   LABS — managed via /admin/reconciliation/manage (add/edit/delete)
+    %%   CASE_TYPES — managed via /admin/reconciliation/manage (add/edit/delete)
+    %%   Both are used in dropdowns for new records. Deleting does NOT cascade
+    %%   to patient_records (case_type stored as text, lab_name stored as text).

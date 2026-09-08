@@ -400,6 +400,24 @@
 
 ---
 
+## Task 8.2 — ERD & Schema Documentation Update (Completed 9/8/2026)
+
+**Title:** Update ERD to include CASE_TYPES table and document reference table behavior
+
+**Expected Outcome:** ERD accurately reflects all tables including CASE_TYPES. Documentation explains delete behavior for reference tables.
+
+**Things To Do:**
+- ✅ Add CASE_TYPES table to ERD diagram
+- ✅ Update PATIENT_RECORDS field descriptions (lab_id ON DELETE SET NULL, case_type as text not FK)
+- ✅ Add UI Display Note about reference table management
+- ✅ Document that deleting labs/case_types does NOT cascade to patient_records
+
+**Connection:** Depends on Task 8.1 (CRUD management exists). Updates documentation.
+
+**Next Step →** Task 9
+
+---
+
 ## Task 9 — Admin Portal: Monthly Overhead & Expenses (Completed 9/4/2026)
 
 **Title:** Build the overhead input form for monthly operating expenses
@@ -506,6 +524,7 @@ Task 1 (Scaffolding)
 | 7 | Financial Dashboard | `/admin` | Admin | ✅ |
 | 8 | Case & Lab Fee Reconciliation + Case Type Selector | `/admin/reconciliation` | Admin | ✅ |
 | 8.1 | Manage Labs & Case Types | `/admin/reconciliation/manage` | Admin | ✅ |
+| 8.2 | ERD & Schema Documentation Update | — | — | ✅ |
 | 9 | Overhead & Expenses | `/admin/overhead` | Admin | ✅ |
 | 10 | Month-End Closeout | `/admin/closeout` | Admin | ✅ |
 

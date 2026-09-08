@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, Fragment } from "react";
 import { useData } from "@/context/DataContext";
 import { RecordCategory, CasePatientRecordType, LabPaymentStatus } from "@/lib/global";
 import {
@@ -204,9 +204,9 @@ export function LabReconciliationTable({ cycleLocked }: LabReconciliationTablePr
           </TableHeader>
           <TableBody>
             {visibleGroups.map((group) => (
-              <>
+              <Fragment key={group.labName}>
                 {/* Lab group header */}
-                <TableRow key={`header-${group.labName}`} className="bg-muted/50">
+                <TableRow className="bg-muted/50">
                   <TableCell colSpan={3}>
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">{group.labName}</span>
@@ -247,7 +247,7 @@ export function LabReconciliationTable({ cycleLocked }: LabReconciliationTablePr
                     </TableRow>
                   );
                 })}
-              </>
+              </Fragment>
             ))}
           </TableBody>
         </Table>
