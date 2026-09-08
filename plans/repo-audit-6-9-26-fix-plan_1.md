@@ -92,11 +92,11 @@ Tasks are ordered by priority — do them top to bottom. Each fix lists concrete
 ## 7. Add a CI workflow (Medium)
 **Why:** without this, broken code (failing lint, failing typecheck, failing tests) can reach production before anyone notices.
 
-- [ ] Create `.github/workflows/ci.yml`
-- [ ] Add a job that installs dependencies and runs `npm run lint`
-- [ ] Add a step that runs `npm run typecheck` (add this script to `package.json` as `tsc --noEmit` if it doesn't exist yet)
-- [ ] Add a step that runs `npm test`
-- [ ] Set the workflow to trigger on pull requests and pushes to the main branch
+- [x] Create `.github/workflows/ci.yml`
+- [x] Add a job that installs dependencies and runs `npm run lint`
+- [x] Add a step that runs `npm run typecheck` (add this script to `package.json` as `tsc --noEmit` if it doesn't exist yet)
+- [x] Add a step that runs `npm test`
+- [x] Set the workflow to trigger on pull requests and pushes to the main branch
 - [ ] Confirm the workflow actually fails the PR check when a test or lint rule is broken (test this with a deliberate throwaway break)
 
 ---
