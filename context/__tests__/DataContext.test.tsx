@@ -8,7 +8,7 @@ import { describe, test, expect } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 import { DataProvider, useData } from "../DataContext";
-import { PaymentStatus, RecordCategory } from "@/lib/global";
+import { CasePatientRecordType, PaymentStatus, RecordCategory } from "@/lib/global";
 
 function wrapper({ children }: { children: ReactNode }) {
   return <DataProvider>{children}</DataProvider>;
@@ -213,7 +213,7 @@ describe("DataContext — CRUD Operations", () => {
             lab_name: "Central Lab",
             case_type: "Crown",
             teeth: "11",
-          },
+          } as Omit<CasePatientRecordType, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
           100000
         );
       });

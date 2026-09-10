@@ -11,6 +11,7 @@ import {
   toCustomOverhead,
 } from "./data-helpers";
 import { RecordCategory } from "./global";
+import type { CasePatientRecordType } from "./global";
 
 describe("getMonthLabel", () => {
   test("converts YYYY-MM to 'Mon YYYY' format", () => {
@@ -83,7 +84,7 @@ describe("toPatientRecord", () => {
       teeth: "41,42",
     };
 
-    const record = toPatientRecord(row);
+    const record = toPatientRecord(row) as CasePatientRecordType;
 
     expect(record.category).toBe(RecordCategory.CASE);
     expect(record.lab_name).toBe("Central Lab");
