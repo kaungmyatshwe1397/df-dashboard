@@ -10,7 +10,7 @@ begin
     new.id,
     new.raw_user_meta_data->>'username',
     new.email,
-    coalesce(new.raw_user_meta_data->>'role', 'ASSISTANT')
+    coalesce((new.raw_user_meta_data->>'role')::public.user_role, 'ASSISTANT'::public.user_role)
   );
   return new;
 end;
