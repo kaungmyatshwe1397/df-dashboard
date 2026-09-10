@@ -648,20 +648,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      // Insert profile manually (trigger on auth.users is unreliable on hosted Supabase)
-      const { error: profileError } = await supabaseRef.current
-        .from("profiles")
-        .insert({
-          id: authData.user.id,
-          username: userData.username,
-          email: userData.email,
-          role: userData.role,
-        });
-
-      if (profileError) {
-        console.error("Failed to create profile:", profileError);
-        return false;
-      }
+      //Profile insertion is handle automatically by the database trigger(handle_new_user).
+      // No manual insert needed here, preventing RLS 42501 errors while email confrimation is pending.
 
       const newUser: User = {
         id: authData.user.id,
