@@ -35,6 +35,7 @@
 13. **Write intefcae name** by folliwning instuction from **Type Naming Convection** from `docs/my-rules.md`.
 14. **Follow `docs/project-folder-rules.md`** for Component Architecture & File Organization.
 15. **Read and Follow `docs/clea-code.md`**  for how to write clean and managable coding and coding standard.
+16. **Only do what is explicitly asked.** If you want to run, test, debug, or fix something beyond the ask, ask for permission first and wait for confirmation.
 
 
 ## Library & External Documentation Rule

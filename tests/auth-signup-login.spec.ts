@@ -1,5 +1,6 @@
 // Integration test: sign up via Supabase auth, then log in with the new account.
-// Tests the real user flow end-to-end. If signup is broken, this test should fail.
+// Profile creation is handled by the DB trigger (handle_new_user), not manual insert.
+// Email confirmation is disabled — users can sign in immediately after signup.
 
 import { test, expect } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
@@ -94,9 +95,9 @@ test.describe("Sign Up and Login", () => {
     // Submit the signup form.
     await page.getByRole("button", { name: "Sign Up" }).click();
 
-    // Expects success message after signup.
+    // Expects success message after signup (DB trigger creates profile automatically).
     await expect(
-      page.getByText("Account created successfully!")
+      page.getByText("Account created successfully! Redirecting to login...")
     ).toBeVisible();
 
     // Expects redirect to /login after signup.
@@ -115,7 +116,7 @@ test.describe("Sign Up and Login", () => {
     await page.waitForURL("**/assistant");
     await expect(page).toHaveURL(/\/assistant/);
 
-    // ── Cleanup: delete the auth user created during signup ────
+    // ── Cleanup: delete the auth user (cascade deletes profiles row) ────
     const { data: users } = await admin.auth.admin.listUsers();
     const createdUser = users?.users?.find((u) => u.email === uniqueEmail);
     if (createdUser) {
