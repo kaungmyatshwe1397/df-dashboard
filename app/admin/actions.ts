@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { User, UserRole } from "@/lib/global";
 
 // Verify the caller is an authenticated admin. Returns the user or throws.
 async function assertAdmin() {
@@ -27,6 +28,51 @@ async function assertAdmin() {
   }
 
   return user;
+}
+
+export async function createUserAction(userData: {
+  email: string;
+  username: string;
+  password: string;
+  role: UserRole;
+}): Promise<{ error: string | null; user: User | null }> {
+  try {
+    await assertAdmin();
+  } catch {
+    return { error: "Unauthorized. Admin access required.", user: null };
+  }
+
+  const admin = createAdminClient();
+
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email: userData.email,
+    password: userData.password,
+    email_confirm: true,
+    user_metadata: { username: userData.username, role: userData.role },
+  });
+
+  if (authError) {
+    const message = authError.message.includes("already")
+      ? "Email is already registered."
+      : authError.message.includes("password")
+        ? "Password does not meet requirements."
+        : "Failed to create user. Please try again.";
+    return { error: message, user: null };
+  }
+
+  if (!authData.user) {
+    return { error: "Failed to create user. Please try again.", user: null };
+  }
+
+  const newUser: User = {
+    id: authData.user.id,
+    email: userData.email,
+    username: userData.username,
+    password_hash: "",
+    role: userData.role,
+  };
+
+  return { error: null, user: newUser };
 }
 
 export async function updateUserAction(

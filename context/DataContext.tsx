@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { updateUserAction, deleteUserAction } from "@/app/admin/actions";
+import { createUserAction, updateUserAction, deleteUserAction } from "@/app/admin/actions";
 import {
   MonthlyCycle,
   PatientRecord,
@@ -13,7 +13,6 @@ import {
   CaseType,
   User,
   UserRole,
-  CycleStatus,
   RecordCategory,
   PaymentStatus,
   CasePatientRecordType,
@@ -28,7 +27,6 @@ interface DataContextType {
   labs: Lab[];
   caseTypes: CaseType[];
   users: User[];
-  cycleLocked: boolean;
   loading: boolean;
   error: string | null;
   allMonths: string[];
@@ -38,18 +36,17 @@ interface DataContextType {
   getRecordBalance: (record: PatientRecord) => number;
   getRecordTotalPaid: (recordId: string) => number;
   refreshData: () => void;
-  addRecord: (record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">, initialPayment?: number) => void;
-  updateRecord: (recordId: string, updates: Partial<PatientRecord>) => void;
-  deleteRecord: (recordId: string) => void;
-  addPayment: (payment: Omit<CasePayment, "id" | "payment_date">) => void;
+  addRecord: (record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">, initialPayment?: number) => Promise<void>;
+  updateRecord: (recordId: string, updates: Partial<PatientRecord>) => Promise<void>;
+  deleteRecord: (recordId: string) => Promise<void>;
+  addPayment: (payment: Omit<CasePayment, "id" | "payment_date">) => Promise<void>;
   findRecordByPatientId: (patientId: string, category?: RecordCategory) => PatientRecord | undefined;
-  updateFinancials: (updates: Partial<Omit<MonthlyFinancials, "id" | "cycle_id">>) => void;
-  addCustomOverhead: (item: Omit<CustomOverhead, "id">) => void;
-  removeCustomOverhead: (itemId: string) => void;
-  toggleLock: () => void;
+  updateFinancials: (updates: Partial<Omit<MonthlyFinancials, "id" | "cycle_id">>) => Promise<void>;
+  addCustomOverhead: (item: Omit<CustomOverhead, "id">) => Promise<void>;
+  removeCustomOverhead: (itemId: string) => Promise<void>;
   carryForward: () => Promise<{ carriedCount: number }>;
   deleteMonth: () => Promise<number>;
-  addUser: (user: { email: string; username: string; password: string; role: UserRole }) => Promise<boolean>;
+  addUser: (user: { email: string; username: string; password: string; role: UserRole }) => Promise<string | null>;
   updateUser: (userId: string, updates: { username?: string; password?: string }) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;
   addLab: (name: string) => Promise<boolean>;
@@ -78,11 +75,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const supabaseRef = useRef(createClient());
 
-  const cycle = allCycles.find((c) => c.status === CycleStatus.OPEN) ?? null;
+  const cycle = allCycles.find((c) => c.status === "OPEN") ?? null;
   const financials = cycle
     ? allFinancials.find((f) => f.cycle_id === cycle.id) ?? null
     : null;
-  const cycleLocked = cycle?.status === CycleStatus.LOCKED;
 
   const allMonths = useMemo(() => {
     const months = new Set(allRecords.map((r) => r.month_label));
@@ -134,7 +130,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         (cyclesRes.data ?? []).map((c: Record<string, unknown>) => ({
           id: c.id as string,
           month_year: c.month_year as string,
-          status: c.status as CycleStatus,
+          status: c.status as "OPEN" | "LOCKED",
         }))
       );
       setAllRecords((recordsRes.data ?? []).map(toPatientRecord));
@@ -217,11 +213,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
       recordData: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
       initialPayment?: number
     ) => {
-      if (!cycle) return;
+      let activeCycle = cycle;
 
-      const monthLabel = getMonthLabel(cycle.month_year);
+      if (!activeCycle) {
+        // No OPEN cycle exists — auto-create one for the current month
+        const now = new Date();
+        const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const { data: newCycle, error: cycleError } = await supabaseRef.current
+          .from("monthly_cycles")
+          .insert({ month_year: monthYear, status: "OPEN" })
+          .select()
+          .single();
+
+        if (cycleError || !newCycle) {
+          throw new Error(cycleError?.message ?? "Failed to create a new cycle. Please contact an admin.");
+        }
+
+        activeCycle = { id: newCycle.id, month_year: newCycle.month_year, status: newCycle.status as "OPEN" | "LOCKED" };
+        setAllCycles((prev) => [...prev, activeCycle!]);
+      }
+
+      const monthLabel = getMonthLabel(activeCycle.month_year);
       const baseFields = {
-        cycle_id: cycle.id,
+        cycle_id: activeCycle.id,
         entry_date: new Date().toISOString().split("T")[0],
         month_label: monthLabel,
       };
@@ -237,18 +251,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (insertError || !newRecord) {
-        console.error("Failed to insert record:", insertError);
-        return;
+        throw new Error(insertError?.message ?? "Failed to create record.");
       }
 
       setAllRecords((prev) => [...prev, toPatientRecord(newRecord)]);
+      setSelectedMonth(monthLabel);
 
       if (
         recordData.category === RecordCategory.CASE &&
         initialPayment !== undefined &&
         initialPayment > 0
       ) {
-        const { data: newPayment } = await supabaseRef.current
+        const { data: newPayment, error: paymentError } = await supabaseRef.current
           .from("case_payments")
           .insert({
             record_id: newRecord.id,
@@ -260,19 +274,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
           .select()
           .single();
 
-        if (newPayment) {
-          setAllPayments((prev) => [
-            ...prev,
-            {
-              id: newPayment.id,
-              record_id: newPayment.record_id,
-              payment_date: newPayment.payment_date,
-              paid_amount: newPayment.paid_amount,
-              payment_note: newPayment.payment_note,
-              payment_status: newPayment.payment_status,
-            },
-          ]);
+        if (paymentError || !newPayment) {
+          throw new Error(paymentError?.message ?? "Record created but initial payment failed.");
         }
+
+        setAllPayments((prev) => [
+          ...prev,
+          {
+            id: newPayment.id,
+            record_id: newPayment.record_id,
+            payment_date: newPayment.payment_date,
+            paid_amount: newPayment.paid_amount,
+            payment_note: newPayment.payment_note,
+            payment_status: newPayment.payment_status,
+          },
+        ]);
       }
     },
     [cycle]
@@ -286,8 +302,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .eq("id", recordId);
 
       if (updateError) {
-        console.error("Failed to update record:", updateError);
-        return;
+        throw new Error(updateError.message ?? "Failed to update record.");
       }
 
       setAllRecords((prev) =>
@@ -309,8 +324,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (insertError || !newPayment) {
-        console.error("Failed to insert payment:", insertError);
-        return;
+        throw new Error(insertError?.message ?? "Failed to record payment.");
       }
 
       setAllPayments((prev) => [
@@ -329,10 +343,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (record?.category === RecordCategory.CASE) {
         const caseRec = record as CasePatientRecordType;
         const newTotalPaid = (caseRec.paid ?? 0) + paymentData.paid_amount;
-        await supabaseRef.current
+        const { error: updateError } = await supabaseRef.current
           .from("patient_records")
           .update({ paid: newTotalPaid, remaining: caseRec.total_cost - newTotalPaid })
           .eq("id", record.id);
+
+        if (updateError) {
+          throw new Error(updateError.message ?? "Payment recorded but failed to update record balance.");
+        }
 
         setAllRecords((prev) =>
           prev.map((r) =>
@@ -348,8 +366,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const deleteRecord = useCallback(
     async (recordId: string) => {
-      await supabaseRef.current.from("case_payments").delete().eq("record_id", recordId);
-      await supabaseRef.current.from("patient_records").delete().eq("id", recordId);
+      const { error: paymentsError } = await supabaseRef.current
+        .from("case_payments")
+        .delete()
+        .eq("record_id", recordId);
+
+      if (paymentsError) {
+        throw new Error(paymentsError.message ?? "Failed to delete payments.");
+      }
+
+      const { error: recordError } = await supabaseRef.current
+        .from("patient_records")
+        .delete()
+        .eq("id", recordId);
+
+      if (recordError) {
+        throw new Error(recordError.message ?? "Failed to delete record.");
+      }
 
       setAllRecords((prev) => prev.filter((r) => r.id !== recordId));
       setAllPayments((prev) => prev.filter((p) => p.record_id !== recordId));
@@ -359,7 +392,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateFinancials = useCallback(
     async (updates: Partial<Omit<MonthlyFinancials, "id" | "cycle_id">>) => {
-      if (!cycle) return;
+      if (!cycle) {
+        throw new Error("No open cycle found. Cannot update financials.");
+      }
 
       const existing = allFinancials.find((f) => f.cycle_id === cycle.id);
 
@@ -370,8 +405,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           .eq("cycle_id", cycle.id);
 
         if (updateError) {
-          console.error("Failed to update financials:", updateError);
-          return;
+          throw new Error(updateError.message ?? "Failed to update financials.");
         }
       } else {
         const { error: insertError } = await supabaseRef.current
@@ -394,8 +428,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           });
 
         if (insertError) {
-          console.error("Failed to insert financials:", insertError);
-          return;
+          throw new Error(insertError.message ?? "Failed to create financials.");
         }
       }
 
@@ -433,19 +466,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addCustomOverhead = useCallback(
     async (item: Omit<CustomOverhead, "id">) => {
-      if (!cycle) return;
+      if (!cycle) {
+        throw new Error("No open cycle found. Cannot add custom overhead.");
+      }
 
       const existing = allFinancials.find((f) => f.cycle_id === cycle.id);
       const newItem: CustomOverhead = { ...item, id: `co-${Date.now()}` };
       const updatedOverheads = [...(existing?.custom_overheads ?? []), newItem];
 
       if (existing) {
-        await supabaseRef.current
+        const { error } = await supabaseRef.current
           .from("monthly_financials")
-          .update({ custom_overheads: updatedOverheads })
+          .update({ custom_overheads: JSON.stringify(updatedOverheads) })
           .eq("cycle_id", cycle.id);
+
+        if (error) {
+          throw new Error(error.message ?? "Failed to add custom overhead.");
+        }
       } else {
-        await supabaseRef.current
+        const { error } = await supabaseRef.current
           .from("monthly_financials")
           .insert({
             cycle_id: cycle.id,
@@ -460,8 +499,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
             utility_costs: 0,
             building_rent: 0,
             net_profit: 0,
-            custom_overheads: updatedOverheads,
+            custom_overheads: JSON.stringify(updatedOverheads),
           });
+
+        if (error) {
+          throw new Error(error.message ?? "Failed to add custom overhead.");
+        }
       }
 
       setAllFinancials((prev) => {
@@ -499,16 +542,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const removeCustomOverhead = useCallback(
     async (itemId: string) => {
-      if (!cycle) return;
+      if (!cycle) {
+        throw new Error("No open cycle found. Cannot remove custom overhead.");
+      }
 
       const existing = allFinancials.find((f) => f.cycle_id === cycle.id);
       const updatedOverheads = (existing?.custom_overheads ?? []).filter((c) => c.id !== itemId);
 
       if (existing) {
-        await supabaseRef.current
+        const { error } = await supabaseRef.current
           .from("monthly_financials")
-          .update({ custom_overheads: updatedOverheads })
+          .update({ custom_overheads: JSON.stringify(updatedOverheads) })
           .eq("cycle_id", cycle.id);
+
+        if (error) {
+          throw new Error(error.message ?? "Failed to remove custom overhead.");
+        }
       }
 
       setAllFinancials((prev) =>
@@ -532,25 +581,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [activeRecords]
   );
 
-  const toggleLock = useCallback(async () => {
-    if (!cycle) return;
-
-    const newStatus = cycle.status === CycleStatus.OPEN ? CycleStatus.LOCKED : CycleStatus.OPEN;
-    const { error: updateError } = await supabaseRef.current
-      .from("monthly_cycles")
-      .update({ status: newStatus })
-      .eq("id", cycle.id);
-
-    if (updateError) {
-      console.error("Failed to toggle lock:", updateError);
-      return;
-    }
-
-    setAllCycles((prev) =>
-      prev.map((c) => (c.id === cycle.id ? { ...c, status: newStatus } : c))
-    );
-  }, [cycle]);
-
   const carryForward = useCallback(async () => {
     if (!cycle) return { carriedCount: 0 };
 
@@ -565,19 +595,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     let nextCycle = allCycles.find((c) => c.month_year === nextMonthYear);
     if (!nextCycle) {
-      const { data: newCycle } = await supabaseRef.current
+      const { data: newCycle, error: cycleError } = await supabaseRef.current
         .from("monthly_cycles")
-        .insert({ month_year: nextMonthYear, status: CycleStatus.OPEN })
+        .insert({ month_year: nextMonthYear, status: "OPEN" })
         .select()
         .single();
 
-      if (!newCycle) return { carriedCount: 0 };
-      nextCycle = { id: newCycle.id, month_year: newCycle.month_year, status: newCycle.status as CycleStatus };
+      if (cycleError || !newCycle) {
+        throw new Error(cycleError?.message ?? "Failed to create next cycle.");
+      }
+      nextCycle = { id: newCycle.id, month_year: newCycle.month_year, status: newCycle.status as "OPEN" | "LOCKED" };
       setAllCycles((prev) => [...prev, nextCycle!]);
     }
 
     for (const record of unsettledRecords) {
-      await supabaseRef.current
+      const { error } = await supabaseRef.current
         .from("patient_records")
         .update({
           cycle_id: nextCycle.id,
@@ -585,6 +617,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           is_carried_forward: true,
         })
         .eq("id", record.id);
+
+      if (error) {
+        throw new Error(error.message ?? "Failed to carry forward record.");
+      }
     }
 
     setAllRecords((prev) =>
@@ -611,20 +647,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const count = monthRecords.length;
 
     if (recordIds.length > 0) {
-      await supabaseRef.current.from("case_payments").delete().in("record_id", recordIds);
-      await supabaseRef.current.from("patient_records").delete().in("id", recordIds);
-    }
+      const { error: paymentsError } = await supabaseRef.current
+        .from("case_payments")
+        .delete()
+        .in("record_id", recordIds);
 
-    await supabaseRef.current
-      .from("monthly_cycles")
-      .update({ status: CycleStatus.LOCKED })
-      .eq("id", cycle.id);
+      if (paymentsError) {
+        throw new Error(paymentsError.message ?? "Failed to delete payments.");
+      }
+
+      const { error: recordsError } = await supabaseRef.current
+        .from("patient_records")
+        .delete()
+        .in("id", recordIds);
+
+      if (recordsError) {
+        throw new Error(recordsError.message ?? "Failed to delete records.");
+      }
+    }
 
     setAllRecords((prev) => prev.filter((r) => !recordIds.includes(r.id)));
     setAllPayments((prev) => prev.filter((p) => !recordIds.includes(p.record_id)));
-    setAllCycles((prev) =>
-      prev.map((c) => (c.id === cycle.id ? { ...c, status: CycleStatus.LOCKED } : c))
-    );
 
     return count;
   }, [cycle, allRecords, effectiveMonth]);
@@ -634,32 +677,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // ------------------------------------------
 
   const addUser = useCallback(
-    async (userData: { email: string; username: string; password: string; role: UserRole }): Promise<boolean> => {
-      const { data: authData, error: authError } = await supabaseRef.current.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          data: { username: userData.username, role: userData.role },
-        },
-      });
-
-      if (authError || !authData.user) {
-        console.error("Failed to create user:", authError);
-        return false;
-      }
-
-      //Profile insertion is handle automatically by the database trigger(handle_new_user).
-      // No manual insert needed here, preventing RLS 42501 errors while email confrimation is pending.
-
-      const newUser: User = {
-        id: authData.user.id,
+    async (userData: { email: string; username: string; password: string; role: UserRole }): Promise<string | null> => {
+      const result = await createUserAction({
         email: userData.email,
         username: userData.username,
-        password_hash: "",
+        password: userData.password,
         role: userData.role,
-      };
-      setUsers((prev) => [...prev, newUser]);
-      return true;
+      });
+
+      if (result.error) {
+        return result.error;
+      }
+
+      if (result.user) {
+        setUsers((prev) => [...prev, result.user!]);
+      }
+
+      return null;
     },
     []
   );
@@ -872,7 +906,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         labs,
         caseTypes,
         users,
-        cycleLocked,
         loading,
         error,
         allMonths,
@@ -890,7 +923,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         updateFinancials,
         addCustomOverhead,
         removeCustomOverhead,
-        toggleLock,
         carryForward,
         deleteMonth,
         addUser,

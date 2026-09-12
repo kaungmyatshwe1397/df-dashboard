@@ -79,7 +79,7 @@ export default function SignupPage() {
 
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    const success_ = await addUser({
+    const error = await addUser({
       email: email.trim(),
       username: username.trim(),
       password,
@@ -88,11 +88,11 @@ export default function SignupPage() {
 
     setSaving(false);
 
-    if (success_) {
+    if (error) {
+      setSubmitError(error);
+    } else {
       setSuccess(true);
       setTimeout(() => router.push("/login"), 1500);
-    } else {
-      setSubmitError("Email is already registered. Please use another email.");
     }
   }
 
