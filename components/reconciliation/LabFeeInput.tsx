@@ -11,10 +11,9 @@ export interface LabFeeInputProps {
   record: CasePatientRecordType;
   onSave: (recordId: string, fee: number) => void;
   saving: boolean;
-  cycleLocked: boolean;
 }
 
-export function LabFeeInput({ record, onSave, saving, cycleLocked }: LabFeeInputProps) {
+export function LabFeeInput({ record, onSave, saving }: LabFeeInputProps) {
   const [value, setValue] = useState(record.lab_fee?.toString() ?? "");
   const [error, setError] = useState<string | null>(null);
 
@@ -54,7 +53,7 @@ export function LabFeeInput({ record, onSave, saving, cycleLocked }: LabFeeInput
         onKeyDown={(e) => {
           if (e.key === "Enter") handleSave();
         }}
-        disabled={cycleLocked || saving}
+        disabled={saving}
         className="h-8 w-28 text-right"
         placeholder="0"
       />

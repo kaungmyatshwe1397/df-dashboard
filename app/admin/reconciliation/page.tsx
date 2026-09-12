@@ -3,13 +3,10 @@
 import Link from "next/link";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { LabReconciliationTable } from "@/components/reconciliation";
-import { useData } from "@/context/DataContext";
 import { buttonVariants } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 
 export default function ReconciliationPage() {
-  const { cycleLocked } = useData();
-
   return (
     <PortalLayout requiredRole="ADMIN">
       <div className="flex flex-col gap-6">
@@ -29,12 +26,7 @@ export default function ReconciliationPage() {
             Manage Labs & Cases
           </Link>
         </div>
-        {cycleLocked && (
-          <p className="text-sm text-muted-foreground">
-            Cycle is locked — lab fees are read-only.
-          </p>
-        )}
-        <LabReconciliationTable cycleLocked={cycleLocked} />
+        <LabReconciliationTable />
       </div>
     </PortalLayout>
   );

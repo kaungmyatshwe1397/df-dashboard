@@ -24,7 +24,7 @@ import {
 } from "./Types";
 
 export function OverheadForm() {
-  const { financials, updateFinancials, cycleLocked } = useData();
+  const { financials, updateFinancials, refreshData } = useData();
 
   const [fields, setFields] = useState<OverheadFields>(() =>
     financials ? financialsToFields(financials) : {
@@ -132,8 +132,6 @@ export function OverheadForm() {
     setSubmitError(null);
     setSaved(false);
 
-    await new Promise((resolve) => setTimeout(resolve, 400));
-
     try {
       const updates: Record<string, number> = {};
       for (const { key } of FIELD_META) {
@@ -141,7 +139,6 @@ export function OverheadForm() {
         updates[key] = raw === "" ? 0 : Number(raw);
       }
 
-      // Rebuild custom overheads — filter out empty rows.
       const customOverheads = customItems
         .filter((item) => item.name.trim() !== "" || item.amount.trim() !== "")
         .map((item, i) => ({
@@ -150,10 +147,11 @@ export function OverheadForm() {
           amount: item.amount.trim() === "" ? 0 : Number(item.amount.trim()),
         }));
 
-      updateFinancials({ ...updates, custom_overheads: customOverheads });
+      await updateFinancials({ ...updates, custom_overheads: customOverheads });
+      refreshData();
       setSaved(true);
-    } catch {
-      setSubmitError("Failed to save overhead data. Please try again.");
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Failed to save overhead data. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -184,7 +182,7 @@ export function OverheadForm() {
                 step="1"
                 value={fields[key]}
                 onChange={(e) => handleChange(key, e.target.value)}
-                disabled={saving || cycleLocked}
+                disabled={saving}
               />
             </FormField>
           ))}
@@ -202,7 +200,7 @@ export function OverheadForm() {
               variant="outline"
               size="sm"
               onClick={handleAddCustom}
-              disabled={saving || cycleLocked}
+              disabled={saving}
             >
               <Plus className="mr-1 h-4 w-4" />
               Add Item
@@ -227,7 +225,7 @@ export function OverheadForm() {
                   placeholder="e.g. Internet, Insurance"
                   value={item.name}
                   onChange={(e) => handleCustomChange(index, "name", e.target.value)}
-                  disabled={saving || cycleLocked}
+                  disabled={saving}
                 />
               </FormField>
               <FormField
@@ -243,14 +241,14 @@ export function OverheadForm() {
                   step="1"
                   value={item.amount}
                   onChange={(e) => handleCustomChange(index, "amount", e.target.value)}
-                  disabled={saving || cycleLocked}
+                  disabled={saving}
                 />
               </FormField>
               <Button
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => handleRemoveCustom(index)}
-                disabled={saving || cycleLocked}
+                disabled={saving}
                 title="Remove item"
               >
                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -273,14 +271,8 @@ export function OverheadForm() {
           </Alert>
         )}
 
-        {cycleLocked && (
-          <Alert className="mb-4">
-            This cycle is locked. Expenses cannot be edited.
-          </Alert>
-        )}
-
         <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving || cycleLocked}>
+          <Button onClick={handleSave} disabled={saving}>
             {saving ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (

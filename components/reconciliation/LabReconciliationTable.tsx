@@ -50,13 +50,12 @@ function formatCurrency(amount: number): string {
 // Main Table — grouped by lab with filter
 // ------------------------------------------
 
-interface LabReconciliationTableProps {
-  cycleLocked: boolean;
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface LabReconciliationTableProps {}
 
 const ALL_LABS_VALUE = "__all__";
 
-export function LabReconciliationTable({ cycleLocked }: LabReconciliationTableProps) {
+export function LabReconciliationTable(_props: LabReconciliationTableProps) {
   const { records, loading, error, refreshData, updateRecord } = useData();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [selectedLab, setSelectedLab] = useState<string>(ALL_LABS_VALUE);
@@ -241,7 +240,6 @@ export function LabReconciliationTable({ cycleLocked }: LabReconciliationTablePr
                           record={record}
                           onSave={handleFeeSave}
                           saving={isSaving}
-                          cycleLocked={cycleLocked}
                         />
                       </TableCell>
                     </TableRow>

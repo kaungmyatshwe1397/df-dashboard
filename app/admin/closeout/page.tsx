@@ -1,4 +1,4 @@
-// Admin closeout page — lock cycle, carry forward, delete month.
+// Admin closeout page — carry forward unsettled cases, or delete month data.
 
 "use client";
 
@@ -12,7 +12,7 @@ export default function CloseoutPage() {
         <div>
           <h1 className="text-2xl font-bold">Month-End Closeout</h1>
           <p className="text-muted-foreground">
-            Lock the cycle, carry forward unsettled cases, or delete month data.
+            Carry forward unsettled cases to the next month, or delete all records for the current month.
           </p>
         </div>
         <CloseoutPanel />

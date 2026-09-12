@@ -10,7 +10,6 @@ import {
   FlaskConical,
   Calculator,
   CalendarCheck,
-  Lock,
   LogOut,
   Users,
   Key,
@@ -54,11 +53,7 @@ const adminNavItems: NavItem[] = [
   { title: "Users", href: "/admin/users", icon: Users },
 ];
 
-interface AppSidebarProps {
-  cycleLocked?: boolean;
-}
-
-export function AppSidebar({ cycleLocked = false }: AppSidebarProps) {
+export function AppSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const isAdmin = user?.role === UserRole.ADMIN;
@@ -113,20 +108,6 @@ export function AppSidebar({ cycleLocked = false }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {cycleLocked && (
-          <>
-            <Separator />
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-                  <Lock className="h-4 w-4" />
-                  <span>Cycle Locked</span>
-                </div>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
       </SidebarContent>
 
       <SidebarFooter>

@@ -1,20 +1,18 @@
-// Closeout Panel — simple 3-action panel: Lock, Carry Forward, Delete Month.
-// Replaces the old CloseoutWizard with a streamlined flow.
+// Closeout Panel — simple 2-action panel: Carry Forward, Delete Month.
 
 "use client";
 
 import { useState } from "react";
-import { Lock, Unlock, ArrowRight, Trash2, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowRight, Trash2, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { useData } from "@/context/DataContext";
 import { RecordCategory } from "@/lib/global";
 
 export function CloseoutPanel() {
-  const { records, cycleLocked, toggleLock, carryForward, deleteMonth, selectedMonth } = useData();
-  const [loading, setLoading] = useState<"lock" | "carry" | "delete" | null>(null);
+  const { records, carryForward, deleteMonth, selectedMonth } = useData();
+  const [loading, setLoading] = useState<"carry" | "delete" | null>(null);
   const [result, setResult] = useState<string | null>(null);
 
   const unsettledRecords = records.filter(
@@ -23,69 +21,36 @@ export function CloseoutPanel() {
   const totalCount = records.length;
   const unsettledCount = unsettledRecords.length;
 
-  async function handleToggleLock() {
-    setLoading("lock");
-    setResult(null);
-    await toggleLock();
-    setLoading(null);
-    setResult(cycleLocked ? "Cycle unlocked." : "Cycle locked. Assistant has read-only access.");
-  }
-
   async function handleCarryForward() {
     setLoading("carry");
     setResult(null);
-    const { carriedCount } = await carryForward();
-    setLoading(null);
-    setResult(carriedCount > 0
-      ? `${carriedCount} case(s) carried forward to next month.`
-      : "No unsettled cases to carry forward.");
+    try {
+      const { carriedCount } = await carryForward();
+      setResult(carriedCount > 0
+        ? `${carriedCount} case(s) carried forward to next month.`
+        : "No unsettled cases to carry forward.");
+    } catch (err) {
+      setResult(err instanceof Error ? err.message : "Failed to carry forward.");
+    } finally {
+      setLoading(null);
+    }
   }
 
   async function handleDeleteMonth() {
     setLoading("delete");
     setResult(null);
-    const count = await deleteMonth();
-    setLoading(null);
-    setResult(`${count} record(s) for ${selectedMonth} permanently deleted.`);
+    try {
+      const count = await deleteMonth();
+      setResult(`${count} record(s) for ${selectedMonth} permanently deleted.`);
+    } catch (err) {
+      setResult(err instanceof Error ? err.message : "Failed to delete month.");
+    } finally {
+      setLoading(null);
+    }
   }
 
   return (
     <div className="space-y-4">
-      {/* Lock / Unlock */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            {cycleLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-            Cycle Lock
-            <Badge variant={cycleLocked ? "destructive" : "default"}>
-              {cycleLocked ? "Locked" : "Unlocked"}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-3">
-            {cycleLocked
-              ? "Cycle is locked. Assistant has read-only access."
-              : "Cycle is unlocked. Assistant can edit records."}
-          </p>
-          <Button
-            onClick={handleToggleLock}
-            disabled={loading !== null}
-            variant={cycleLocked ? "outline" : "default"}
-            size="sm"
-          >
-            {loading === "lock" ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : cycleLocked ? (
-              <Unlock className="mr-2 h-4 w-4" />
-            ) : (
-              <Lock className="mr-2 h-4 w-4" />
-            )}
-            {cycleLocked ? "Unlock Cycle" : "Lock Cycle"}
-          </Button>
-        </CardContent>
-      </Card>
-
       {/* Carry Forward */}
       <Card>
         <CardHeader>

@@ -78,21 +78,17 @@ export function TableSkeleton({ columns }: { columns: number }) {
 export function TableEmpty({
   message,
   onAdd,
-  cycleLocked,
 }: {
   message: string;
   onAdd: () => void;
-  cycleLocked: boolean;
 }) {
   return (
     <div className="rounded-md border p-12 text-center">
       <p className="text-muted-foreground text-body mb-4">{message}</p>
-      {!cycleLocked && (
-        <Button onClick={onAdd} size="sm">
-          <Plus className="mr-1.5 h-4 w-4" />
-          Add Record
-        </Button>
-      )}
+      <Button onClick={onAdd} size="sm">
+        <Plus className="mr-1.5 h-4 w-4" />
+        Add Record
+      </Button>
     </div>
   );
 }

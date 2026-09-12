@@ -36,7 +36,7 @@ export function PatientRecordUpdateForm({
   editRecord = null,
   isAdding = false,
 }: PatientRecordUpdateFormProps) {
-  const { addRecord, updateRecord, deleteRecord, findRecordByPatientId, cycleLocked } = useData();
+  const { addRecord, updateRecord, deleteRecord, findRecordByPatientId } = useData();
   const isCase = defaultCategory === RecordCategory.CASE;
 
   const isLookupMode = !isAdding && !editRecord;
@@ -224,9 +224,9 @@ export function PatientRecordUpdateForm({
 
       setSaving(false);
       onOpenChange(false);
-    } catch {
+    } catch (err) {
       setSaving(false);
-      setSubmitError("Failed to save record. Please try again.");
+      setSubmitError(err instanceof Error ? err.message : "Failed to save record. Please try again.");
     }
   }
 
@@ -247,8 +247,6 @@ export function PatientRecordUpdateForm({
       setSubmitError("Failed to delete record. Please try again.");
     }
   }
-
-  if (cycleLocked) return null;
 
   return (
     <Dialog open={open} onOpenChange={saving ? undefined : onOpenChange}>

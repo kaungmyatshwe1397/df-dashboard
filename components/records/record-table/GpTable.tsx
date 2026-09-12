@@ -24,12 +24,10 @@ import {
 
 export function GpTable({
   records,
-  cycleLocked,
   onAdd,
   onEdit,
 }: {
   records: GPPatientRecordType[];
-  cycleLocked: boolean;
   onAdd: () => void;
   onEdit: (record: GPPatientRecordType | null, category: RecordCategory) => void;
 }) {
@@ -43,7 +41,6 @@ export function GpTable({
       <TableEmpty
         message="No GP records yet this cycle."
         onAdd={onAdd}
-        cycleLocked={cycleLocked}
       />
     );
   }
@@ -54,18 +51,16 @@ export function GpTable({
         <p className="text-body-sm text-muted-foreground">
           {records.length} record{records.length !== 1 ? "s" : ""}
         </p>
-        {!cycleLocked && (
-          <div className="flex gap-2">
-            <Button onClick={() => onEdit(null, RecordCategory.GP)} size="sm" variant="outline">
-              <Pencil className="mr-1.5 h-4 w-4" />
-              Update / Edit
-            </Button>
-            <Button onClick={onAdd} size="sm">
-              <Plus className="mr-1.5 h-4 w-4" />
-              Add GP Record
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <Button onClick={() => onEdit(null, RecordCategory.GP)} size="sm" variant="outline">
+            <Pencil className="mr-1.5 h-4 w-4" />
+            Update / Edit
+          </Button>
+          <Button onClick={onAdd} size="sm">
+            <Plus className="mr-1.5 h-4 w-4" />
+            Add GP Record
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-md border">
