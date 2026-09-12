@@ -14,16 +14,18 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
 import { User, UserRole } from "@/lib/global";
 import { UserDeleteDialog } from "./userDeleteDialog";
+import { UserEditDialog } from "./userEditDialog";
 
 export function UserTable() {
   const { users } = useData();
   const { user: currentUser } = useAuth();
   const [deleteUserTarget, setDeleteUserTarget] = useState<User | null>(null);
+  const [editUserTarget, setEditUserTarget] = useState<User | null>(null);
 
   return (
     <>
@@ -67,15 +69,25 @@ export function UserTable() {
                   <TableCell>
                     <div className="flex gap-1">
                       {u.role !== UserRole.ADMIN && (
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => setDeleteUserTarget(u)}
-                          title="Delete user"
-                          disabled={isCurrentUser}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setEditUserTarget(u)}
+                            title="Edit user"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setDeleteUserTarget(u)}
+                            title="Delete user"
+                            disabled={isCurrentUser}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </TableCell>
@@ -92,6 +104,14 @@ export function UserTable() {
           if (!open) setDeleteUserTarget(null);
         }}
         user={deleteUserTarget}
+      />
+
+      <UserEditDialog
+        open={!!editUserTarget}
+        onOpenChange={(open) => {
+          if (!open) setEditUserTarget(null);
+        }}
+        user={editUserTarget}
       />
     </>
   );

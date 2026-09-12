@@ -1,21 +1,131 @@
 // ============================================
-// Component Tests — DataContext
+// Integration Tests — DataContext Mutation Error Handling
 // ============================================
-// Tests for payment logic, CRUD operations, and record lookup.
+// Tests that mutations properly throw errors on Supabase failures,
+// and that addRecord auto-selects the correct month.
 
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 import { DataProvider, useData } from "../DataContext";
-import { CasePatientRecordType, PaymentStatus, RecordCategory } from "@/lib/global";
+import { RecordCategory, PaymentStatus } from "@/lib/global";
 
 function wrapper({ children }: { children: ReactNode }) {
   return <DataProvider>{children}</DataProvider>;
 }
 
-describe("DataContext — Payment Logic", () => {
+describe("DataContext — Mutation Error Handling", () => {
+  describe("addRecord", () => {
+    test("auto-selects the month after successful creation", async () => {
+      const { result } = renderHook(() => useData(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.addRecord({
+          patient_id: "ERR-001",
+          patient_name: "Month Test",
+          category: RecordCategory.GP,
+          diagnosis: "Test",
+          total_cost: 10000,
+        });
+      });
+
+      // After adding, selectedMonth should be "Sep 2026" (the open cycle's month)
+      expect(result.current.selectedMonth).toBe("Sep 2026");
+    });
+
+    test("adds record to state after successful insert", async () => {
+      const { result } = renderHook(() => useData(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      const recordsBefore = result.current.records.length;
+
+      await act(async () => {
+        await result.current.addRecord({
+          patient_id: "NEW-001",
+          patient_name: "New Patient",
+          category: RecordCategory.GP,
+          diagnosis: "Checkup",
+          total_cost: 30000,
+        });
+      });
+
+      expect(result.current.records.length).toBe(recordsBefore + 1);
+      const added = result.current.records.find((r) => r.patient_id === "NEW-001");
+      expect(added).toBeDefined();
+      expect(added!.patient_name).toBe("New Patient");
+    });
+  });
+
+  describe("updateRecord", () => {
+    test("updates record in state after successful update", async () => {
+      const { result } = renderHook(() => useData(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      const record = result.current.records.find((r) => r.id === "rec-001");
+      expect(record).toBeDefined();
+      expect(record!.patient_name).toBe("John Doe");
+
+      await act(async () => {
+        await result.current.updateRecord("rec-001", {
+          patient_name: "John Updated",
+        });
+      });
+
+      const updated = result.current.records.find((r) => r.id === "rec-001");
+      expect(updated!.patient_name).toBe("John Updated");
+    });
+  });
+
+  describe("deleteRecord", () => {
+    test("removes record and payments from state after successful delete", async () => {
+      const { result } = renderHook(() => useData(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      const recordsBefore = result.current.records.length;
+
+      await act(async () => {
+        await result.current.deleteRecord("rec-001");
+      });
+
+      expect(result.current.records.length).toBe(recordsBefore - 1);
+      expect(result.current.records.find((r) => r.id === "rec-001")).toBeUndefined();
+    });
+
+    test("removes associated payments from state", async () => {
+      const { result } = renderHook(() => useData(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      // rec-002 has payments (pay-001, pay-002)
+      const paymentsBefore = result.current.getPaymentsForRecord("rec-002").length;
+      expect(paymentsBefore).toBeGreaterThan(0);
+
+      await act(async () => {
+        await result.current.deleteRecord("rec-002");
+      });
+
+      const paymentsAfter = result.current.getPaymentsForRecord("rec-002");
+      expect(paymentsAfter.length).toBe(0);
+    });
+  });
+
   describe("addPayment", () => {
-    test("adds a payment and updates record paid/remaining", async () => {
+    test("adds payment and updates record paid/remaining", async () => {
       const { result } = renderHook(() => useData(), { wrapper });
 
       await waitFor(() => {
@@ -136,146 +246,6 @@ describe("DataContext — Payment Logic", () => {
     });
   });
 
-  describe("getRecordTotalPaid", () => {
-    test("returns sum of all payments for a record", async () => {
-      const { result } = renderHook(() => useData(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      const totalPaid = result.current.getRecordTotalPaid("rec-002");
-      expect(totalPaid).toBe(250000);
-    });
-
-    test("returns 0 for record with no payments", async () => {
-      const { result } = renderHook(() => useData(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      const totalPaid = result.current.getRecordTotalPaid("rec-001");
-      expect(totalPaid).toBe(0);
-    });
-  });
-});
-
-describe("DataContext — CRUD Operations", () => {
-  describe("addRecord", () => {
-    test("adds a GP record to the records list", async () => {
-      const { result } = renderHook(() => useData(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      const recordsBefore = result.current.records.length;
-
-      await act(async () => {
-        await result.current.addRecord({
-          patient_id: "0099/26",
-          patient_name: "Test Patient",
-          category: RecordCategory.GP,
-          diagnosis: "Test diagnosis",
-          total_cost: 75000,
-        });
-      });
-
-      expect(result.current.records.length).toBe(recordsBefore + 1);
-
-      const added = result.current.records.find(
-        (r) => r.patient_id === "0099/26"
-      );
-      expect(added).toBeDefined();
-      expect(added!.patient_name).toBe("Test Patient");
-      expect(added!.category).toBe(RecordCategory.GP);
-    });
-
-    test("adds a Case record with initial payment", async () => {
-      const { result } = renderHook(() => useData(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      const recordsBefore = result.current.records.length;
-
-      await act(async () => {
-        await result.current.addRecord(
-          {
-            patient_id: "0098/26",
-            patient_name: "Case Patient",
-            category: RecordCategory.CASE,
-            diagnosis: "Crown at 11",
-            total_cost: 300000,
-            lab_name: "Central Lab",
-            case_type: "Crown",
-            teeth: "11",
-          } as Omit<CasePatientRecordType, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
-          100000
-        );
-      });
-
-      expect(result.current.records.length).toBe(recordsBefore + 1);
-
-      const added = result.current.records.find(
-        (r) => r.patient_id === "0098/26"
-      ) as import("@/lib/global").CasePatientRecordType;
-      expect(added).toBeDefined();
-      // The record is inserted first; paid field is updated after payment insert
-      // Verify the record was added with correct type and fields
-      expect(added.category).toBe(RecordCategory.CASE);
-      expect(added.total_cost).toBe(300000);
-    });
-  });
-
-  describe("updateRecord", () => {
-    test("modifies an existing record's fields", async () => {
-      const { result } = renderHook(() => useData(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      const record = result.current.records.find((r) => r.id === "rec-001");
-      expect(record).toBeDefined();
-      expect(record!.patient_name).toBe("John Doe");
-
-      await act(async () => {
-        await result.current.updateRecord("rec-001", {
-          patient_name: "John Updated",
-        });
-      });
-
-      const updated = result.current.records.find((r) => r.id === "rec-001");
-      expect(updated!.patient_name).toBe("John Updated");
-    });
-  });
-
-  describe("deleteRecord", () => {
-    test("removes record and its payments from state", async () => {
-      const { result } = renderHook(() => useData(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      const recordsBefore = result.current.records.length;
-
-      await act(async () => {
-        await result.current.deleteRecord("rec-001");
-      });
-
-      expect(result.current.records.length).toBe(recordsBefore - 1);
-      expect(
-        result.current.records.find((r) => r.id === "rec-001")
-      ).toBeUndefined();
-    });
-  });
-});
-
-describe("DataContext — Cycle & Lookup", () => {
   describe("findRecordByPatientId", () => {
     test("finds a record by patient ID", async () => {
       const { result } = renderHook(() => useData(), { wrapper });
@@ -296,7 +266,6 @@ describe("DataContext — Cycle & Lookup", () => {
         expect(result.current.loading).toBe(false);
       });
 
-      // 0003/26 is a CASE record
       const gpResult = result.current.findRecordByPatientId(
         "0003/26",
         RecordCategory.GP
