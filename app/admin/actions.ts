@@ -109,3 +109,66 @@ export async function deleteUserAction(userId: string): Promise<boolean> {
 
   return true;
 }
+
+// ------------------------------------------
+// Orphan Detection
+// ------------------------------------------
+// Finds auth users who have no matching profile in the profiles table.
+// An orphan means: user exists in Supabase Auth but was never inserted
+// into profiles (e.g. failed signup, partial failure, or manual deletion).
+
+export interface OrphanedUser {
+  id: string;
+  email: string;
+}
+
+export async function checkOrphanedUsers(): Promise<{
+  error: string | null;
+  orphans: OrphanedUser[];
+}> {
+  try {
+    await assertAdmin();
+  } catch {
+    return { error: "Unauthorized. Admin access required.", orphans: [] };
+  }
+
+  const admin = createAdminClient();
+
+  const { data: authData, error: authError } = await admin.auth.admin.listUsers();
+  if (authError || !authData) {
+    return { error: authError?.message ?? "Failed to list auth users.", orphans: [] };
+  }
+
+  const supabase = await createClient();
+  const { data: profiles, error: profileError } = await supabase
+    .from("profiles")
+    .select("id");
+
+  if (profileError || !profiles) {
+    return { error: profileError?.message ?? "Failed to list profiles.", orphans: [] };
+  }
+
+  const profileIds = new Set(profiles.map((p) => p.id));
+  const orphans = authData.users
+    .filter((u) => !profileIds.has(u.id))
+    .map((u) => ({ id: u.id, email: u.email ?? "unknown" }));
+
+  return { error: null, orphans };
+}
+
+export async function deleteOrphanedAuthUser(userId: string): Promise<boolean> {
+  try {
+    await assertAdmin();
+  } catch {
+    return false;
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) {
+    console.error("Failed to delete orphaned auth user:", error);
+    return false;
+  }
+
+  return true;
+}

@@ -2,6 +2,7 @@
 
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { UserTable } from "@/components/users-table";
+import { OrphanDetector } from "@/components/users-table/orphanDetector";
 
 export default function AdminUsersPage() {
   return (
@@ -14,6 +15,7 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <UserTable />
+        <OrphanDetector />
       </div>
     </PortalLayout>
   );
