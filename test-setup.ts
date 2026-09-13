@@ -64,6 +64,23 @@ const SEED_PROFILES = [
 ];
 
 // ──────────────────────────────────────────────
+// Auth user store (tracked separately from DB tables)
+// ──────────────────────────────────────────────
+
+interface AuthUser {
+  id: string;
+  email: string;
+  password: string;
+}
+
+let authUsers: AuthUser[] = [];
+let authIdCounter = 1;
+
+function generateAuthId(): string {
+  return `auth-${String(authIdCounter++).padStart(3, "0")}`;
+}
+
+// ──────────────────────────────────────────────
 // Table data store (deep-copied per test)
 // ──────────────────────────────────────────────
 
@@ -83,6 +100,8 @@ let db = freshData();
 
 beforeEach(() => {
   db = freshData();
+  authUsers = [];
+  authIdCounter = 1;
 });
 
 // ──────────────────────────────────────────────
@@ -173,15 +192,66 @@ vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(() => ({
     from: vi.fn((table: string) => mockQuery(table, db[table] || [])),
     auth: {
-      signUp: vi.fn().mockResolvedValue({ data: { user: { id: "new-user" } }, error: null }),
-      signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
+      signUp: vi.fn().mockImplementation(
+        ({ email, password }: { email: string; password: string }) => {
+          const existing = authUsers.find((u) => u.email === email);
+          if (existing) {
+            return Promise.resolve({ data: { user: null }, error: { message: "User already registered" } });
+          }
+          const user = { id: generateAuthId(), email, password };
+          authUsers.push(user);
+          return Promise.resolve({ data: { user: { id: user.id, email } }, error: null });
+        }
+      ),
+      signInWithPassword: vi.fn().mockImplementation(
+        ({ email, password }: { email: string; password: string }) => {
+          const user = authUsers.find((u) => u.email === email && u.password === password);
+          if (!user) {
+            return Promise.resolve({ data: { user: null, session: null }, error: { message: "Invalid login credentials" } });
+          }
+          return Promise.resolve({ data: { user: { id: user.id, email: user.email }, session: { access_token: "mock-token" } }, error: null });
+        }
+      ),
       signOut: vi.fn().mockResolvedValue({ error: null }),
       getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
       updateUser: vi.fn().mockResolvedValue({ error: null }),
       onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
       admin: {
-        updateUserById: vi.fn().mockResolvedValue({ error: null }),
-        deleteUser: vi.fn().mockResolvedValue({ error: null }),
+        createUser: vi.fn().mockImplementation(
+          ({ email, password }: { email: string; password: string }) => {
+            const existing = authUsers.find((u) => u.email === email);
+            if (existing) {
+              return Promise.resolve({ data: { user: null }, error: { message: "User already registered" } });
+            }
+            const user = { id: generateAuthId(), email, password };
+            authUsers.push(user);
+            return Promise.resolve({ data: { user: { id: user.id, email } }, error: null });
+          }
+        ),
+        listUsers: vi.fn().mockImplementation(() => {
+          return Promise.resolve({
+            data: { users: authUsers.map((u) => ({ id: u.id, email: u.email })) },
+            error: null,
+          });
+        }),
+        updateUserById: vi.fn().mockImplementation(
+          (userId: string, { password }: { password: string }) => {
+            const user = authUsers.find((u) => u.id === userId);
+            if (!user) {
+              return Promise.resolve({ data: null, error: { message: "User not found" } });
+            }
+            user.password = password;
+            return Promise.resolve({ data: { user: { id: user.id } }, error: null });
+          }
+        ),
+        deleteUser: vi.fn().mockImplementation((userId: string) => {
+          const index = authUsers.findIndex((u) => u.id === userId);
+          if (index === -1) {
+            return Promise.resolve({ data: null, error: { message: "User not found" } });
+          }
+          authUsers.splice(index, 1);
+          return Promise.resolve({ data: null, error: null });
+        }),
       },
     },
   })),
