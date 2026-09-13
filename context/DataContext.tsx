@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { createUserAction, updateUserAction, deleteUserAction } from "@/app/admin/actions";
 import {
   MonthlyCycle,
   PatientRecord,
@@ -18,6 +17,10 @@ import {
   CasePatientRecordType,
 } from "@/lib/global";
 import { getMonthLabel, getNextMonthLabel, toPatientRecord, toCustomOverhead } from "@/lib/data-helpers";
+import { useUser } from "./hooks/useUser";
+import { useLab } from "./hooks/useLab";
+import { useCaseType } from "./hooks/useCaseType";
+import { useFinancials } from "./hooks/useFinancials";
 
 interface DataContextType {
   cycle: MonthlyCycle | null;
@@ -66,19 +69,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [allRecords, setAllRecords] = useState<PatientRecord[]>([]);
   const [allPayments, setAllPayments] = useState<CasePayment[]>([]);
-  const [allFinancials, setAllFinancials] = useState<MonthlyFinancials[]>([]);
   const [allCycles, setAllCycles] = useState<MonthlyCycle[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [labs, setLabs] = useState<Lab[]>([]);
-  const [caseTypes, setCaseTypes] = useState<CaseType[]>([]);
+  const { users, setUsers, addUser, updateUser, deleteUser } = useUser();
+  const { labs, setLabs, addLab, updateLab, deleteLab } = useLab();
+  const { caseTypes, setCaseTypes, addCaseType, updateCaseType, deleteCaseType } = useCaseType();
+  const { allFinancials, setAllFinancials, getFinancialsForCycle, updateFinancials, addCustomOverhead, removeCustomOverhead } = useFinancials();
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState(0);
   const supabaseRef = useRef(createClient());
 
   const cycle = allCycles.find((c) => c.status === "OPEN") ?? null;
-  const financials = cycle
-    ? allFinancials.find((f) => f.cycle_id === cycle.id) ?? null
-    : null;
+  const financials = cycle ? getFinancialsForCycle(cycle.id) : null;
 
   const allMonths = useMemo(() => {
     const months = new Set(allRecords.map((r) => r.month_label));
@@ -178,6 +179,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -390,187 +392,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const updateFinancials = useCallback(
-    async (updates: Partial<Omit<MonthlyFinancials, "id" | "cycle_id">>) => {
-      if (!cycle) {
-        throw new Error("No open cycle found. Cannot update financials.");
-      }
-
-      const existing = allFinancials.find((f) => f.cycle_id === cycle.id);
-
-      if (existing) {
-        const { error: updateError } = await supabaseRef.current
-          .from("monthly_financials")
-          .update(updates)
-          .eq("cycle_id", cycle.id);
-
-        if (updateError) {
-          throw new Error(updateError.message ?? "Failed to update financials.");
-        }
-      } else {
-        const { error: insertError } = await supabaseRef.current
-          .from("monthly_financials")
-          .insert({
-            cycle_id: cycle.id,
-            total_gp: 0,
-            total_case: 0,
-            gross_income: 0,
-            lab_fee: 0,
-            relieving_fee: 0,
-            general_expenses: 0,
-            assistant_fee: 0,
-            bonus: 0,
-            utility_costs: 0,
-            building_rent: 0,
-            net_profit: 0,
-            custom_overheads: "[]",
-            ...updates,
-          });
-
-        if (insertError) {
-          throw new Error(insertError.message ?? "Failed to create financials.");
-        }
-      }
-
-      setAllFinancials((prev) => {
-        const fin = prev.find((f) => f.cycle_id === cycle.id);
-        if (fin) {
-          return prev.map((f) =>
-            f.cycle_id === cycle.id ? { ...f, ...updates } : f
-          );
-        }
-        return [
-          ...prev,
-          {
-            id: `fin-${Date.now()}`,
-            cycle_id: cycle.id,
-            total_gp: 0,
-            total_case: 0,
-            gross_income: 0,
-            lab_fee: 0,
-            relieving_fee: 0,
-            general_expenses: 0,
-            assistant_fee: 0,
-            bonus: 0,
-            utility_costs: 0,
-            building_rent: 0,
-            net_profit: 0,
-            custom_overheads: [],
-            ...updates,
-          },
-        ];
-      });
-    },
-    [cycle, allFinancials]
-  );
-
-  const addCustomOverhead = useCallback(
-    async (item: Omit<CustomOverhead, "id">) => {
-      if (!cycle) {
-        throw new Error("No open cycle found. Cannot add custom overhead.");
-      }
-
-      const existing = allFinancials.find((f) => f.cycle_id === cycle.id);
-      const newItem: CustomOverhead = { ...item, id: `co-${Date.now()}` };
-      const updatedOverheads = [...(existing?.custom_overheads ?? []), newItem];
-
-      if (existing) {
-        const { error } = await supabaseRef.current
-          .from("monthly_financials")
-          .update({ custom_overheads: JSON.stringify(updatedOverheads) })
-          .eq("cycle_id", cycle.id);
-
-        if (error) {
-          throw new Error(error.message ?? "Failed to add custom overhead.");
-        }
-      } else {
-        const { error } = await supabaseRef.current
-          .from("monthly_financials")
-          .insert({
-            cycle_id: cycle.id,
-            total_gp: 0,
-            total_case: 0,
-            gross_income: 0,
-            lab_fee: 0,
-            relieving_fee: 0,
-            general_expenses: 0,
-            assistant_fee: 0,
-            bonus: 0,
-            utility_costs: 0,
-            building_rent: 0,
-            net_profit: 0,
-            custom_overheads: JSON.stringify(updatedOverheads),
-          });
-
-        if (error) {
-          throw new Error(error.message ?? "Failed to add custom overhead.");
-        }
-      }
-
-      setAllFinancials((prev) => {
-        const fin = prev.find((f) => f.cycle_id === cycle.id);
-        if (fin) {
-          return prev.map((f) =>
-            f.cycle_id === cycle.id
-              ? { ...f, custom_overheads: updatedOverheads }
-              : f
-          );
-        }
-        return [
-          ...prev,
-          {
-            id: `fin-${Date.now()}`,
-            cycle_id: cycle.id,
-            total_gp: 0,
-            total_case: 0,
-            gross_income: 0,
-            lab_fee: 0,
-            relieving_fee: 0,
-            general_expenses: 0,
-            assistant_fee: 0,
-            bonus: 0,
-            utility_costs: 0,
-            building_rent: 0,
-            net_profit: 0,
-            custom_overheads: updatedOverheads,
-          },
-        ];
-      });
-    },
-    [cycle, allFinancials]
-  );
-
-  const removeCustomOverhead = useCallback(
-    async (itemId: string) => {
-      if (!cycle) {
-        throw new Error("No open cycle found. Cannot remove custom overhead.");
-      }
-
-      const existing = allFinancials.find((f) => f.cycle_id === cycle.id);
-      const updatedOverheads = (existing?.custom_overheads ?? []).filter((c) => c.id !== itemId);
-
-      if (existing) {
-        const { error } = await supabaseRef.current
-          .from("monthly_financials")
-          .update({ custom_overheads: JSON.stringify(updatedOverheads) })
-          .eq("cycle_id", cycle.id);
-
-        if (error) {
-          throw new Error(error.message ?? "Failed to remove custom overhead.");
-        }
-      }
-
-      setAllFinancials((prev) =>
-        prev.map((f) =>
-          f.cycle_id === cycle.id
-            ? { ...f, custom_overheads: updatedOverheads }
-            : f
-        )
-      );
-    },
-    [cycle, allFinancials]
-  );
-
   const findRecordByPatientId = useCallback(
     (patientId: string, category?: RecordCategory) =>
       activeRecords.find(
@@ -672,230 +493,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return count;
   }, [cycle, allRecords, effectiveMonth]);
 
-  // ------------------------------------------
-  // User Management (Supabase Auth + Profiles)
-  // ------------------------------------------
-
-  const addUser = useCallback(
-    async (userData: { email: string; username: string; password: string; role: UserRole }): Promise<string | null> => {
-      const result = await createUserAction({
-        email: userData.email,
-        username: userData.username,
-        password: userData.password,
-        role: userData.role,
-      });
-
-      if (result.error) {
-        return result.error;
-      }
-
-      if (result.user) {
-        setUsers((prev) => [...prev, result.user!]);
-      }
-
-      return null;
-    },
-    []
-  );
-
-  const updateUser = useCallback(
-    async (userId: string, updates: { username?: string; password?: string }): Promise<boolean> => {
-      if (updates.username) {
-        const duplicate = users.find(
-          (u) => u.id !== userId && u.username.toLowerCase() === updates.username!.toLowerCase()
-        );
-        if (duplicate) return false;
-
-        const { error: profileError } = await supabaseRef.current
-          .from("profiles")
-          .update({ username: updates.username })
-          .eq("id", userId);
-
-        if (profileError) {
-          console.error("Failed to update profile:", profileError);
-          return false;
-        }
-
-        setUsers((prev) =>
-          prev.map((u) => (u.id === userId ? { ...u, username: updates.username! } : u))
-        );
-      }
-
-      if (updates.password) {
-        const success = await updateUserAction(userId, { password: updates.password });
-        if (!success) return false;
-      }
-
-      return true;
-    },
-    [users]
-  );
-
-  const deleteUser = useCallback(
-    async (userId: string): Promise<boolean> => {
-      const success = await deleteUserAction(userId);
-      if (!success) return false;
-
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
-      return true;
-    },
-    []
-  );
-
-  // ------------------------------------------
-  // Lab Management
-  // ------------------------------------------
-
-  const addLab = useCallback(
-    async (name: string): Promise<boolean> => {
-      const trimmed = name.trim();
-      if (!trimmed) return false;
-
-      const duplicate = labs.find(
-        (l) => l.lab_name.toLowerCase() === trimmed.toLowerCase()
-      );
-      if (duplicate) return false;
-
-      const { data, error } = await supabaseRef.current
-        .from("labs")
-        .insert({ lab_name: trimmed })
-        .select()
-        .single();
-
-      if (error || !data) {
-        console.error("Failed to add lab:", error);
-        return false;
-      }
-
-      setLabs((prev) => [...prev, { id: data.id, lab_name: data.lab_name }]);
-      return true;
-    },
-    [labs]
-  );
-
-  const updateLab = useCallback(
-    async (id: string, name: string): Promise<boolean> => {
-      const trimmed = name.trim();
-      if (!trimmed) return false;
-
-      const duplicate = labs.find(
-        (l) => l.id !== id && l.lab_name.toLowerCase() === trimmed.toLowerCase()
-      );
-      if (duplicate) return false;
-
-      const { error } = await supabaseRef.current
-        .from("labs")
-        .update({ lab_name: trimmed })
-        .eq("id", id);
-
-      if (error) {
-        console.error("Failed to update lab:", error);
-        return false;
-      }
-
-      setLabs((prev) =>
-        prev.map((l) => (l.id === id ? { ...l, lab_name: trimmed } : l))
-      );
-      return true;
-    },
-    [labs]
-  );
-
-  const deleteLab = useCallback(
-    async (id: string): Promise<boolean> => {
-      const { error } = await supabaseRef.current
-        .from("labs")
-        .delete()
-        .eq("id", id);
-
-      if (error) {
-        console.error("Failed to delete lab:", error);
-        return false;
-      }
-
-      setLabs((prev) => prev.filter((l) => l.id !== id));
-      return true;
-    },
-    []
-  );
-
-  // ------------------------------------------
-  // Case Type Management
-  // ------------------------------------------
-
-  const addCaseType = useCallback(
-    async (name: string): Promise<boolean> => {
-      const trimmed = name.trim();
-      if (!trimmed) return false;
-
-      const duplicate = caseTypes.find(
-        (ct) => ct.name.toLowerCase() === trimmed.toLowerCase()
-      );
-      if (duplicate) return false;
-
-      const { data, error } = await supabaseRef.current
-        .from("case_types")
-        .insert({ name: trimmed })
-        .select()
-        .single();
-
-      if (error || !data) {
-        console.error("Failed to add case type:", error);
-        return false;
-      }
-
-      setCaseTypes((prev) => [...prev, { id: data.id, name: data.name }]);
-      return true;
-    },
-    [caseTypes]
-  );
-
-  const updateCaseType = useCallback(
-    async (id: string, name: string): Promise<boolean> => {
-      const trimmed = name.trim();
-      if (!trimmed) return false;
-
-      const duplicate = caseTypes.find(
-        (ct) => ct.id !== id && ct.name.toLowerCase() === trimmed.toLowerCase()
-      );
-      if (duplicate) return false;
-
-      const { error } = await supabaseRef.current
-        .from("case_types")
-        .update({ name: trimmed })
-        .eq("id", id);
-
-      if (error) {
-        console.error("Failed to update case type:", error);
-        return false;
-      }
-
-      setCaseTypes((prev) =>
-        prev.map((ct) => (ct.id === id ? { ...ct, name: trimmed } : ct))
-      );
-      return true;
-    },
-    [caseTypes]
-  );
-
-  const deleteCaseType = useCallback(
-    async (id: string): Promise<boolean> => {
-      const { error } = await supabaseRef.current
-        .from("case_types")
-        .delete()
-        .eq("id", id);
-
-      if (error) {
-        console.error("Failed to delete case type:", error);
-        return false;
-      }
-
-      setCaseTypes((prev) => prev.filter((ct) => ct.id !== id));
-      return true;
-    },
-    []
-  );
-
   return (
     <DataContext.Provider
       value={{
@@ -920,9 +517,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         deleteRecord,
         addPayment,
         findRecordByPatientId,
-        updateFinancials,
-        addCustomOverhead,
-        removeCustomOverhead,
+        updateFinancials: cycle
+          ? (updates) => updateFinancials(cycle.id, updates)
+          : async () => { throw new Error("No open cycle found. Cannot update financials."); },
+        addCustomOverhead: cycle
+          ? (item) => addCustomOverhead(cycle.id, item)
+          : async () => { throw new Error("No open cycle found. Cannot add custom overhead."); },
+        removeCustomOverhead: cycle
+          ? (itemId) => removeCustomOverhead(cycle.id, itemId)
+          : async () => { throw new Error("No open cycle found. Cannot remove custom overhead."); },
         carryForward,
         deleteMonth,
         addUser,
