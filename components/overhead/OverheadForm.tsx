@@ -4,8 +4,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Save, Plus, Trash2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, Save, Plus, Trash2, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -158,130 +157,136 @@ export function OverheadForm() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-body-sm font-medium text-muted-foreground">
-          Monthly Operating Expenses
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* Base overhead fields */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          {FIELD_META.map(({ key, label }) => (
+    <div className="rounded-[14px] border border-border bg-card p-[18px]">
+      <div className="text-xs text-muted-foreground mb-4">Monthly Operating Expenses</div>
+
+      {/* Base overhead fields */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {FIELD_META.map(({ key, label }) => (
+          <FormField
+            key={key}
+            label={label}
+            htmlFor={key}
+            error={errors[key]}
+          >
+            <Input
+              id={key}
+              type="number"
+              placeholder="0"
+              min={0}
+              step="1"
+              value={fields[key]}
+              onChange={(e) => handleChange(key, e.target.value)}
+              disabled={saving}
+              className="bg-input border-border focus:ring-2 focus:ring-accent transition-shadow"
+            />
+          </FormField>
+        ))}
+      </div>
+
+      <Separator className="my-6 border-border" />
+
+      {/* Custom overhead items */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-normal text-muted-foreground">
+            Custom Overhead Items
+          </Label>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAddCustom}
+            disabled={saving}
+            className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            Add Item
+          </Button>
+        </div>
+
+        {customItems.length === 0 && (
+          <p className="text-[12px] text-muted-foreground">
+            No custom overhead items added yet.
+          </p>
+        )}
+
+        {customItems.map((item, index) => (
+          <div key={index} className="grid gap-3 sm:grid-cols-[1fr_120px_40px] items-end">
             <FormField
-              key={key}
-              label={label}
-              htmlFor={key}
-              error={errors[key]}
+              label="Name"
+              htmlFor={`custom-name-${index}`}
+              error={customErrors[index]?.name}
             >
               <Input
-                id={key}
+                id={`custom-name-${index}`}
+                placeholder="e.g. Internet, Insurance"
+                value={item.name}
+                onChange={(e) => handleCustomChange(index, "name", e.target.value)}
+                disabled={saving}
+                className="bg-input border-border focus:ring-2 focus:ring-accent transition-shadow"
+              />
+            </FormField>
+            <FormField
+              label="Amount"
+              htmlFor={`custom-amount-${index}`}
+              error={customErrors[index]?.amount}
+            >
+              <Input
+                id={`custom-amount-${index}`}
                 type="number"
                 placeholder="0"
                 min={0}
                 step="1"
-                value={fields[key]}
-                onChange={(e) => handleChange(key, e.target.value)}
+                value={item.amount}
+                onChange={(e) => handleCustomChange(index, "amount", e.target.value)}
                 disabled={saving}
+                className="bg-input border-border focus:ring-2 focus:ring-accent transition-shadow"
               />
             </FormField>
-          ))}
-        </div>
-
-        <Separator className="my-4" />
-
-        {/* Custom overhead items */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-body-sm font-medium text-muted-foreground">
-              Custom Overhead Items
-            </Label>
             <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAddCustom}
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => handleRemoveCustom(index)}
               disabled={saving}
+              title="Remove item"
             >
-              <Plus className="mr-1 h-4 w-4" />
-              Add Item
+              <Trash2 className="h-4 w-4 text-danger" />
             </Button>
           </div>
+        ))}
+      </div>
 
-          {customItems.length === 0 && (
-            <p className="text-caption text-muted-foreground">
-              No custom overhead items added yet.
-            </p>
+      <Separator className="my-6 border-border" />
+
+      {submitError && (
+        <Alert variant="destructive" className="mb-4 border-danger/30 bg-danger-bg text-danger">
+          {submitError}
+        </Alert>
+      )}
+
+      {saved && (
+        <Alert className="mb-4 border-accent/30 bg-accent-dark text-accent">
+          <Check className="h-4 w-4" />
+          Overhead expenses saved successfully.
+        </Alert>
+      )}
+
+      <div className="flex justify-end">
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-accent text-accent-foreground hover:bg-accent/90"
+        >
+          {saving ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : saved ? (
+            <Check className="mr-2 h-4 w-4" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
           )}
-
-          {customItems.map((item, index) => (
-            <div key={index} className="grid gap-3 sm:grid-cols-[1fr_120px_40px] items-end">
-              <FormField
-                label="Name"
-                htmlFor={`custom-name-${index}`}
-                error={customErrors[index]?.name}
-              >
-                <Input
-                  id={`custom-name-${index}`}
-                  placeholder="e.g. Internet, Insurance"
-                  value={item.name}
-                  onChange={(e) => handleCustomChange(index, "name", e.target.value)}
-                  disabled={saving}
-                />
-              </FormField>
-              <FormField
-                label="Amount"
-                htmlFor={`custom-amount-${index}`}
-                error={customErrors[index]?.amount}
-              >
-                <Input
-                  id={`custom-amount-${index}`}
-                  type="number"
-                  placeholder="0"
-                  min={0}
-                  step="1"
-                  value={item.amount}
-                  onChange={(e) => handleCustomChange(index, "amount", e.target.value)}
-                  disabled={saving}
-                />
-              </FormField>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => handleRemoveCustom(index)}
-                disabled={saving}
-                title="Remove item"
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        <Separator className="my-4" />
-
-        {submitError && (
-          <Alert variant="destructive" className="mb-4">
-            {submitError}
-          </Alert>
-        )}
-
-        {saved && (
-          <Alert className="mb-4 border-success bg-success-surface text-success">
-            Overhead expenses saved successfully.
-          </Alert>
-        )}
-
-        <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
-            Save Expenses
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          Save Expenses
+        </Button>
+      </div>
+    </div>
   );
 }
