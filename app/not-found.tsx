@@ -10,8 +10,8 @@ export default function NotFound() {
           The page you are looking for does not exist.
         </p>
       </div>
-      <Link href="/login" className={buttonVariants({ variant: "outline" })}>
-        Go to login
+      <Link href="/admin" className={buttonVariants({ variant: "outline" })}>
+        Go to dashboard
       </Link>
     </div>
   );

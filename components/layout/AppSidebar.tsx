@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -10,20 +9,11 @@ import {
   FlaskConical,
   Calculator,
   CalendarCheck,
-  LogOut,
   Users,
-  Key,
 } from "lucide-react";
-import { UserRole } from "@/lib/global";
-import { useAuth } from "@/context/AuthContext";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { PasswordChangeDialog } from "@/components/users-table/passwordChangeDialog";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -55,20 +45,19 @@ const adminNavItems: NavItem[] = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
-  const isAdmin = user?.role === UserRole.ADMIN;
+  const isAdmin = pathname.startsWith("/admin");
   const navItems = isAdmin ? adminNavItems : assistantNavItems;
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const portalLabel = isAdmin ? "Admin Portal" : "Assistant Portal";
 
   return (
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-3 px-2 py-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-bold">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-foreground text-sm font-bold">
             DC
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold leading-tight">
+            <span className="text-sm font-semibold leading-tight text-foreground">
               DC-FMS
             </span>
             <span className="text-xs text-muted-foreground">
@@ -80,14 +69,12 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>
-            {isAdmin ? "Admin Portal" : "Assistant Portal"}
-          </SidebarGroupLabel>
+          <SidebarGroupLabel>{portalLabel}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
                 const isActive =
-                  item.href === "/assistant" || item.href === "/admin"
+                  item.href === "/admin" || item.href === "/assistant"
                     ? pathname === item.href
                     : pathname.startsWith(item.href + "/") || pathname === item.href;
                 return (
@@ -109,47 +96,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      <SidebarFooter>
-        <Separator />
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <div className="flex items-center justify-between px-2 py-1">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium leading-tight">
-                  {user?.username}
-                </span>
-                <Badge variant="secondary" className="mt-1 w-fit text-xs">
-                  {user?.role}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => setPasswordDialogOpen(true)}
-                  title="Change password"
-                >
-                  <Key className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={logout}
-                  title="Log out"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarFooter>
-
-      <PasswordChangeDialog
-        open={passwordDialogOpen}
-        onOpenChange={setPasswordDialogOpen}
-      />
     </Sidebar>
   );
 }

@@ -10,14 +10,11 @@ import {
   CustomOverhead,
   Lab,
   CaseType,
-  User,
-  UserRole,
   RecordCategory,
   PaymentStatus,
   CasePatientRecordType,
 } from "@/lib/global";
 import { getMonthLabel, getNextMonthLabel, toPatientRecord, toCustomOverhead } from "@/lib/data-helpers";
-import { useUser } from "./hooks/useUser";
 import { useLab } from "./hooks/useLab";
 import { useCaseType } from "./hooks/useCaseType";
 import { useFinancials } from "./hooks/useFinancials";
@@ -29,7 +26,6 @@ interface DataContextType {
   financials: MonthlyFinancials | null;
   labs: Lab[];
   caseTypes: CaseType[];
-  users: User[];
   loading: boolean;
   error: string | null;
   allMonths: string[];
@@ -49,9 +45,6 @@ interface DataContextType {
   removeCustomOverhead: (itemId: string) => Promise<void>;
   carryForward: () => Promise<{ carriedCount: number }>;
   deleteMonth: () => Promise<number>;
-  addUser: (user: { email: string; username: string; password: string; role: UserRole }) => Promise<string | null>;
-  updateUser: (userId: string, updates: { username?: string; password?: string }) => Promise<boolean>;
-  deleteUser: (userId: string) => Promise<boolean>;
   addLab: (name: string) => Promise<boolean>;
   updateLab: (id: string, name: string) => Promise<boolean>;
   deleteLab: (id: string) => Promise<boolean>;
@@ -70,10 +63,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [allRecords, setAllRecords] = useState<PatientRecord[]>([]);
   const [allPayments, setAllPayments] = useState<CasePayment[]>([]);
   const [allCycles, setAllCycles] = useState<MonthlyCycle[]>([]);
-  const { users, setUsers, addUser, updateUser, deleteUser } = useUser();
   const { labs, setLabs, addLab, updateLab, deleteLab } = useLab();
   const { caseTypes, setCaseTypes, addCaseType, updateCaseType, deleteCaseType } = useCaseType();
-  const { allFinancials, setAllFinancials, getFinancialsForCycle, updateFinancials, addCustomOverhead, removeCustomOverhead } = useFinancials();
+  const { setAllFinancials, getFinancialsForCycle, updateFinancials, addCustomOverhead, removeCustomOverhead } = useFinancials();
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState(0);
   const supabaseRef = useRef(createClient());
@@ -109,14 +101,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const [cyclesRes, recordsRes, paymentsRes, financialsRes, labsRes, caseTypesRes, usersRes] = await Promise.all([
+      const [cyclesRes, recordsRes, paymentsRes, financialsRes, labsRes, caseTypesRes] = await Promise.all([
         supabaseRef.current.from("monthly_cycles").select("*").order("month_year", { ascending: false }),
         supabaseRef.current.from("patient_records").select("*").order("entry_date", { ascending: true }),
         supabaseRef.current.from("case_payments").select("*").order("payment_date", { ascending: true }),
         supabaseRef.current.from("monthly_financials").select("*"),
         supabaseRef.current.from("labs").select("*").order("lab_name"),
         supabaseRef.current.from("case_types").select("*").order("name"),
-        supabaseRef.current.from("profiles").select("id, username, email, role"),
       ]);
 
       if (cyclesRes.error) throw cyclesRes.error;
@@ -125,7 +116,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (financialsRes.error) throw financialsRes.error;
       if (labsRes.error) throw labsRes.error;
       if (caseTypesRes.error) throw caseTypesRes.error;
-      if (usersRes.error) throw usersRes.error;
 
       setAllCycles(
         (cyclesRes.data ?? []).map((c: Record<string, unknown>) => ({
@@ -165,15 +155,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       );
       setLabs((labsRes.data ?? []).map((l: Record<string, unknown>) => ({ id: l.id as string, lab_name: l.lab_name as string })));
       setCaseTypes((caseTypesRes.data ?? []).map((ct: Record<string, unknown>) => ({ id: ct.id as string, name: ct.name as string })));
-      setUsers(
-        (usersRes.data ?? []).map((u: Record<string, unknown>) => ({
-          id: u.id as string,
-          email: u.email as string,
-          username: u.username as string,
-          password_hash: "",
-          role: u.role as UserRole,
-        }))
-      );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
@@ -502,7 +483,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         financials,
         labs,
         caseTypes,
-        users,
         loading,
         error,
         allMonths,
@@ -528,9 +508,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
           : async () => { throw new Error("No open cycle found. Cannot remove custom overhead."); },
         carryForward,
         deleteMonth,
-        addUser,
-        updateUser,
-        deleteUser,
         addLab,
         updateLab,
         deleteLab,
