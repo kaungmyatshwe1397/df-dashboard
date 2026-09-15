@@ -1,43 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { TopNav } from "@/components/layout/TopNav";
 
 interface PortalLayoutProps {
   requiredRole: "ADMIN" | "ASSISTANT";
   children: React.ReactNode;
 }
 
-// Fallback redirect — middleware is the primary route guard.
-export function PortalLayout({ requiredRole, children }: PortalLayoutProps) {
-  const { isAuthenticated, isAdmin, isAssistant } = useAuth();
-  const router = useRouter();
-
-  const isWrongRole =
-    (requiredRole === "ADMIN" && isAssistant) ||
-    (requiredRole === "ASSISTANT" && isAdmin);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-    } else if (isWrongRole) {
-      router.push(requiredRole === "ADMIN" ? "/admin" : "/assistant");
-    }
-  }, [isAuthenticated, isWrongRole, requiredRole, router]);
-
-  if (!isAuthenticated || isWrongRole) {
-    return null;
-  }
-
+export function PortalLayout({ children }: PortalLayoutProps) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <div className="flex-1 p-6">{children}</div>
-      </SidebarInset>
-    </SidebarProvider>
+    <div className="min-h-screen bg-background">
+      <TopNav />
+      <main className="px-8 py-8 max-w-[1200px] mx-auto">
+        {children}
+      </main>
+    </div>
   );
 }
