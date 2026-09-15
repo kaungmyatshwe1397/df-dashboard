@@ -41,11 +41,11 @@ export function RecordTable({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-h4 font-semibold">Patient Records</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">Patient Records</h2>
 
         {allMonths.length > 0 && (
           <Select value={selectedMonth} onValueChange={(v) => v && setSelectedMonth(v)}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[160px] bg-input border-border">
               <SelectValue placeholder="Select month" />
             </SelectTrigger>
             <SelectContent>
@@ -60,7 +60,7 @@ export function RecordTable({
       </div>
 
       <Tabs defaultValue="gp">
-        <TabsList>
+        <TabsList variant="line">
           <TabsTrigger value="gp">GP Records</TabsTrigger>
           <TabsTrigger value="case">Case Records</TabsTrigger>
         </TabsList>
