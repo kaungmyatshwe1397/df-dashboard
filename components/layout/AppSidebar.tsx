@@ -53,12 +53,14 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-3 px-2 py-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-foreground text-sm font-bold">
-            DC
-          </div>
+          <img
+            src="/clinic-logo.jpg"
+            alt="Shwe Taw Win Dental Clinic"
+            className="h-8 w-8 rounded-lg object-cover"
+          />
           <div className="flex flex-col">
             <span className="text-sm font-semibold leading-tight text-foreground">
-              DC-FMS
+              Shwe Taw Win Dental Clinic
             </span>
             <span className="text-xs text-muted-foreground">
               Financial Management

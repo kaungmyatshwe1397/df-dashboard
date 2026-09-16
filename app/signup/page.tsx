@@ -5,17 +5,21 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { GlassAuthCard } from "@/components/auth/GlassAuthCard";
 import { AuthLogo } from "@/components/auth/AuthLogo";
-import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { Eye, EyeOff } from "lucide-react";
 import { signUpNewUser } from "@/lib/supabase/auth";
 
 export default function SignupPage() {
+  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -56,20 +60,16 @@ export default function SignupPage() {
             className="text-xl font-semibold"
             style={{ color: "#ecfdf5" }}
           >
-            Check your email
+            Account created
           </h1>
           <p
             className="text-center text-sm"
             style={{ color: "rgba(255,255,255,0.55)" }}
           >
-            We sent a confirmation link to{" "}
-            <span className="font-medium" style={{ color: "#C9BEFF" }}>
-              {email}
-            </span>
-            . Please verify your account.
+            Your account has been created successfully. You can now sign in with your credentials.
           </p>
           <Link href="/login" className="auth-link mt-2 font-medium">
-            Back to login
+            Go to login
           </Link>
         </div>
       </GlassAuthCard>
@@ -78,11 +78,11 @@ export default function SignupPage() {
 
   return (
     <GlassAuthCard>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <div className="flex flex-col items-center gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col items-center gap-1">
           <AuthLogo />
           <h1
-            className="mt-2 text-xl font-semibold"
+            className="text-xl font-semibold"
             style={{ color: "#ecfdf5" }}
           >
             Create account
@@ -105,8 +105,8 @@ export default function SignupPage() {
           </div>
         )}
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="fullName"
               className="text-sm font-medium"
@@ -125,7 +125,7 @@ export default function SignupPage() {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="email"
               className="text-sm font-medium"
@@ -144,7 +144,7 @@ export default function SignupPage() {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="password"
               className="text-sm font-medium"
@@ -152,18 +152,28 @@ export default function SignupPage() {
             >
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Create a password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="auth-glass-input"
-            />
+            <div className="auth-glass-input-wrapper">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Create a password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="auth-glass-input"
+              />
+              <button
+                type="button"
+                className="auth-toggle-password"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="confirmPassword"
               className="text-sm font-medium"
@@ -171,30 +181,35 @@ export default function SignupPage() {
             >
               Confirm Password
             </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              placeholder="Confirm your password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="auth-glass-input"
-            />
+            <div className="auth-glass-input-wrapper">
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm your password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="auth-glass-input"
+              />
+              <button
+                type="button"
+                className="auth-toggle-password"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? <EyeOff /> : <Eye />}
+              </button>
+            </div>
           </div>
         </div>
 
-        <Button
+        <button
           type="submit"
           disabled={isLoading}
-          className="h-11 w-full rounded-[10px] text-sm font-semibold"
-          style={{
-            background: "rgba(124,106,240,0.85)",
-            color: "#fff",
-            border: "1px solid rgba(255,255,255,0.25)",
-          }}
+          className="auth-btn"
         >
           {isLoading ? <Spinner className="size-4" /> : "Create Account"}
-        </Button>
+        </button>
 
         <p
           className="text-center text-sm"

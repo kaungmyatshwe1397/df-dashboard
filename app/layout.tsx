@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DC-FMS",
+  title: "Shwe Taw Win Dental Clinic",
   description: "Dental Clinic Financial Management System",
 };
 

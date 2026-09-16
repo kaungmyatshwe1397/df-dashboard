@@ -66,8 +66,12 @@ export function TopNav() {
     <>
       <nav className="flex items-center justify-between px-8 py-4 border-b border-border">
         <div className="flex items-center gap-2.5">
-          <span className="w-2 h-2 rounded-full bg-accent" />
-          <span className="text-sm font-bold text-foreground">DC-FMS</span>
+          <img
+            src="/clinic-logo.jpg"
+            alt="Shwe Taw Win Dental Clinic"
+            className="h-6 w-6 rounded object-cover"
+          />
+          <span className="text-sm font-bold text-foreground">Shwe Taw Win Dental Clinic</span>
         </div>
 
         <div className="flex items-center gap-1.5">
