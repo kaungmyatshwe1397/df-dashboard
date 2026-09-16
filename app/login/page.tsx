@@ -1,29 +1,46 @@
 // Login page — glassmorphism card with email/password form.
-// No auth logic wired yet — submit handler is a TODO placeholder.
+// Wired to Supabase signInWithPassword. Redirects by role after auth.
 
 "use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { GlassAuthCard } from "@/components/auth/GlassAuthCard";
 import { AuthLogo } from "@/components/auth/AuthLogo";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  signInWithCredentials,
+  getUserProfile,
+} from "@/lib/supabase/auth";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // TODO: Wire to Supabase signInWithPassword or existing auth handler.
-  // Call setIsLoading(true) before the async operation, false after.
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     setIsLoading(true);
-    // TODO: implement actual sign-in logic here
-    console.log("Login attempt:", { email, password, rememberMe });
-    setIsLoading(false);
+
+    const { error: authError } = await signInWithCredentials({
+      email,
+      password,
+    });
+
+    if (authError) {
+      setError(authError.message);
+      setIsLoading(false);
+      return;
+    }
+
+    const profile = await getUserProfile();
+    router.push(profile?.role === "ADMIN" ? "/admin" : "/assistant");
   }
 
   return (
@@ -41,6 +58,19 @@ export default function LoginPage() {
             Sign in to your account
           </p>
         </div>
+
+        {error && (
+          <div
+            className="rounded-[10px] px-4 py-3 text-sm"
+            style={{
+              background: "rgba(251,113,133,0.15)",
+              border: "1px solid rgba(251,113,133,0.3)",
+              color: "#FB7185",
+            }}
+          >
+            {error}
+          </div>
+        )}
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
@@ -90,7 +120,10 @@ export default function LoginPage() {
               onChange={(e) => setRememberMe(e.target.checked)}
               className="h-4 w-4 rounded border-white/20 bg-white/8 accent-[#7C6AF0]"
             />
-            <span className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+            <span
+              className="text-sm"
+              style={{ color: "rgba(255,255,255,0.65)" }}
+            >
               Remember me
             </span>
           </label>
@@ -113,7 +146,10 @@ export default function LoginPage() {
           {isLoading ? <Spinner className="size-4" /> : "Log In"}
         </Button>
 
-        <p className="text-center text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>
+        <p
+          className="text-center text-sm"
+          style={{ color: "rgba(255,255,255,0.55)" }}
+        >
           Don&apos;t have an account?{" "}
           <Link href="/signup" className="auth-link font-medium">
             Register
