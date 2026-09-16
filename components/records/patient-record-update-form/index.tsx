@@ -309,7 +309,7 @@ export function PatientRecordUpdateForm({
         ) : form ? (
           /* Form step — pre-filled with found record */
           <>
-            <div className="grid gap-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="grid gap-4 py-2 max-h-[60vh] overflow-y-auto themed-scrollbar pr-1">
               {isCase ? (
                 <CaseFormFields
                   form={{ ...form, category: defaultCategory }}

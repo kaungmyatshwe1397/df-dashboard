@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GlassAuthCard } from "@/components/auth/GlassAuthCard";
 import { AuthLogo } from "@/components/auth/AuthLogo";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Eye, EyeOff } from "lucide-react";
 import {
@@ -144,13 +145,14 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <button
+        <Button
           type="submit"
+          variant="outline"
           disabled={isLoading}
-          className="auth-btn"
+          className="w-full h-10"
         >
           {isLoading ? <Spinner className="size-4" /> : "Log In"}
-        </button>
+        </Button>
 
         <p
           className="text-center text-sm"
