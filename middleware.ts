@@ -1,50 +1,80 @@
-// Next.js middleware — refreshes session and enforces route-level auth + RBAC.
-// Protected routes: /admin/* (ADMIN only), /assistant/* (authenticated users).
+// Middleware — role-based route protection.
+// Unauthenticated users → /login.
+// ADMIN → /admin/*, ASSISTANT → /assistant/*.
+// Mismatched role → redirect to correct dashboard.
 
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
 
-const adminRoutes = ["/admin"];
-const assistantRoutes = ["/assistant"];
-const protectedRoutes = [...adminRoutes, ...assistantRoutes];
+async function getUserRole(
+  supabase: ReturnType<typeof createServerClient>
+): Promise<string | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-function isProtectedRoute(pathname: string) {
-  return protectedRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"));
-}
+  if (!user) return null;
 
-function isAdminRoute(pathname: string) {
-  return adminRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"));
+  const { data } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  return data?.role ?? null;
 }
 
 export async function middleware(request: NextRequest) {
-  const { supabaseResponse, user, role } = await updateSession(request);
+  let response = NextResponse.next({ request: { headers: request.headers } });
 
-  const { pathname } = request.nextUrl;
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          response = NextResponse.next({ request: { headers: request.headers } });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
 
-  if (!isProtectedRoute(pathname)) {
-    return supabaseResponse;
+  const role = await getUserRole(supabase);
+  const pathname = request.nextUrl.pathname;
+
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isAssistantRoute = pathname.startsWith("/assistant");
+
+  if (!role && (isAdminRoute || isAssistantRoute)) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Unauthenticated — redirect to login.
-  if (!user) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    return Response.redirect(loginUrl);
+  if (role && pathname === "/login") {
+    return NextResponse.redirect(
+      new URL(role === "ADMIN" ? "/admin" : "/assistant", request.url)
+    );
   }
 
-  // Non-admin hitting admin routes — redirect to assistant portal.
-  if (isAdminRoute(pathname) && role !== "ADMIN") {
-    const assistantUrl = request.nextUrl.clone();
-    assistantUrl.pathname = "/assistant";
-    return Response.redirect(assistantUrl);
+  if (role === "ADMIN" && isAssistantRoute) {
+    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
-  return supabaseResponse;
+  if (role === "ASSISTANT" && isAdminRoute) {
+    return NextResponse.redirect(new URL("/assistant", request.url));
+  }
+
+  return response;
 }
 
 export const config = {
-  matcher: [
-    "/admin/:path*",
-    "/assistant/:path*",
-  ],
+  matcher: ["/admin/:path*", "/assistant/:path*", "/login"],
 };

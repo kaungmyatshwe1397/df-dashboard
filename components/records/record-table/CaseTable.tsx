@@ -26,12 +26,10 @@ import { PaymentDialog } from "./PaymentDialog";
 
 export function CaseTable({
   records,
-  cycleLocked,
   onAdd,
   onEdit,
 }: {
   records: CasePatientRecordType[];
-  cycleLocked: boolean;
   onAdd: () => void;
   onEdit: (record: CasePatientRecordType | null, category: RecordCategory) => void;
 }) {
@@ -53,7 +51,6 @@ export function CaseTable({
       <TableEmpty
         message="No case records yet this cycle."
         onAdd={onAdd}
-        cycleLocked={cycleLocked}
       />
     );
   }
@@ -61,24 +58,31 @@ export function CaseTable({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-body-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {records.length} record{records.length !== 1 ? "s" : ""}
         </p>
-        {!cycleLocked && (
-          <div className="flex gap-2">
-            <Button onClick={() => onEdit(null, RecordCategory.CASE)} size="sm" variant="outline">
-              <Pencil className="mr-1.5 h-4 w-4" />
-              Update / Edit
-            </Button>
-            <Button onClick={onAdd} size="sm">
-              <Plus className="mr-1.5 h-4 w-4" />
-              Add New Case
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <Button
+            onClick={() => onEdit(null, RecordCategory.CASE)}
+            size="sm"
+            variant="outline"
+            className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
+          >
+            <Pencil className="mr-1.5 h-4 w-4" />
+            Update / Edit
+          </Button>
+          <Button
+            onClick={onAdd}
+            size="sm"
+            className="bg-accent text-accent-foreground hover:bg-accent/90"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            Add New Case
+          </Button>
+        </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-[14px] border border-border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -110,7 +114,6 @@ export function CaseTable({
                   totalPaid={totalPaid}
                   isSettled={isSettled}
                   isExpanded={isExpanded}
-                  cycleLocked={cycleLocked}
                   onToggleExpand={toggleExpand}
                   onPay={setPayRecord}
                 />

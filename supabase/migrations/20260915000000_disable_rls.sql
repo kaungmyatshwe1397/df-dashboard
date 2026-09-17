@@ -1,0 +1,10 @@
+-- Migration: Disable RLS on all tables
+-- Removes authentication requirements for development.
+
+ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE monthly_cycles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE patient_records DISABLE ROW LEVEL SECURITY;
+ALTER TABLE case_payments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE monthly_financials DISABLE ROW LEVEL SECURITY;
+ALTER TABLE labs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE case_types DISABLE ROW LEVEL SECURITY;

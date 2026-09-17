@@ -1,8 +1,7 @@
 // ============================================
 // Component Tests — DataContext
 // ============================================
-// Tests for payment logic, CRUD operations, record lookup,
-// and cycle lock toggle.
+// Tests for payment logic, CRUD operations, and record lookup.
 
 import { describe, test, expect } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
@@ -277,29 +276,6 @@ describe("DataContext — CRUD Operations", () => {
 });
 
 describe("DataContext — Cycle & Lookup", () => {
-  describe("toggleLock", () => {
-    test("switches cycle status and clears the active cycle", async () => {
-      const { result } = renderHook(() => useData(), { wrapper });
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      // Initially cycle is OPEN, so cycleLocked is false
-      expect(result.current.cycleLocked).toBe(false);
-      expect(result.current.cycle).not.toBeNull();
-
-      await act(async () => {
-        await result.current.toggleLock();
-      });
-
-      // After toggling to LOCKED, the OPEN cycle finder returns null
-      // cycleLocked is false because cycle is null (no OPEN cycle exists)
-      // This is the actual derived behavior — the cycle is now LOCKED
-      expect(result.current.cycle).toBeNull();
-    });
-  });
-
   describe("findRecordByPatientId", () => {
     test("finds a record by patient ID", async () => {
       const { result } = renderHook(() => useData(), { wrapper });

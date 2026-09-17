@@ -1,0 +1,2 @@
+- **A class, module or function must have one responsibilty ( single repsonsibility principle) and one reason to change**
+- **Writing mutliple responsibilities in one `GOD file` must be avoided**

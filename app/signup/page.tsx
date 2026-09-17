@@ -1,219 +1,228 @@
-// Assistant Signup Page — public registration for new assistant accounts.
-// Creates a new user with ASSISTANT role and redirects to login on success.
+// Signup page — glassmorphism card with registration form.
+// Wired to Supabase signUp with username metadata for profile trigger.
 
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
+import { GlassAuthCard } from "@/components/auth/GlassAuthCard";
+import { AuthLogo } from "@/components/auth/AuthLogo";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { UserRole } from "@/lib/global";
-import { useData } from "@/context/DataContext";
-import { PasswordField } from "@/components/shared/passwordField";
+import { Spinner } from "@/components/ui/spinner";
+import { Eye, EyeOff } from "lucide-react";
+import { signUpNewUser } from "@/lib/supabase/auth";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { addUser } = useData();
-
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [errors, setErrors] = useState<{
-    email?: string;
-    username?: string;
-    password?: string;
-    confirmPassword?: string;
-  }>({});
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  function validate(): boolean {
-    const newErrors: {
-      email?: string;
-      username?: string;
-      password?: string;
-      confirmPassword?: string;
-    } = {};
-
-    if (!email.trim()) {
-      newErrors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      newErrors.email = "Please enter a valid email address.";
-    }
-
-    if (!username.trim()) {
-      newErrors.username = "Username is required.";
-    } else if (username.trim().length < 3) {
-      newErrors.username = "Username must be at least 3 characters.";
-    } else if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
-      newErrors.username = "Username can only contain letters, numbers, and underscores.";
-    }
-
-    if (!password) {
-      newErrors.password = "Password is required.";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters.";
-    }
-
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match.";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
+    setError(null);
 
-    setSaving(true);
-    setSubmitError(null);
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
 
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    setIsLoading(true);
 
-    const success_ = await addUser({
-      email: email.trim(),
-      username: username.trim(),
+    const { error: authError } = await signUpNewUser({
+      email,
       password,
-      role: UserRole.ASSISTANT,
+      fullName,
     });
 
-    setSaving(false);
-
-    if (success_) {
-      setSuccess(true);
-      setTimeout(() => router.push("/login"), 1500);
-    } else {
-      setSubmitError("Email is already registered. Please use another email.");
+    if (authError) {
+      setError(authError.message);
+      setIsLoading(false);
+      return;
     }
+
+    setSuccess(true);
+    setIsLoading(false);
   }
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <Alert className="border-success bg-success-surface text-success">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>
-                Account created successfully! Redirecting to login...
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-      </div>
+      <GlassAuthCard>
+        <div className="flex flex-col items-center gap-4 py-4">
+          <AuthLogo />
+          <h1
+            className="text-xl font-semibold"
+            style={{ color: "#ecfdf5" }}
+          >
+            Account created
+          </h1>
+          <p
+            className="text-center text-sm"
+            style={{ color: "rgba(255,255,255,0.55)" }}
+          >
+            Your account has been created successfully. You can now sign in with your credentials.
+          </p>
+          <Link href="/login" className="auth-link mt-2 font-medium">
+            Go to login
+          </Link>
+        </div>
+      </GlassAuthCard>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-h2 font-heading text-center">
-            Create Assistant Account
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {submitError && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{submitError}</AlertDescription>
-              </Alert>
-            )}
+    <GlassAuthCard>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col items-center gap-1">
+          <AuthLogo />
+          <h1
+            className="text-xl font-semibold"
+            style={{ color: "#ecfdf5" }}
+          >
+            Create account
+          </h1>
+          <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>
+            Fill in your details to get started
+          </p>
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                Email <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="e.g. assistant@clinic.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setErrors((prev) => ({ ...prev, email: undefined }));
-                }}
-                aria-invalid={!!errors.email}
-                disabled={saving}
-                maxLength={50}
-              />
-              {errors.email && (
-                <p className="text-caption text-destructive">{errors.email}</p>
-              )}
-            </div>
+        {error && (
+          <div
+            className="rounded-[10px] px-4 py-3 text-sm"
+            style={{
+              background: "rgba(251,113,133,0.15)",
+              border: "1px solid rgba(251,113,133,0.3)",
+              color: "#FB7185",
+            }}
+          >
+            {error}
+          </div>
+        )}
 
-            <div className="space-y-2">
-              <Label htmlFor="username">
-                Username <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="e.g. dental_assistant"
-                value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value);
-                  setErrors((prev) => ({ ...prev, username: undefined }));
-                }}
-                aria-invalid={!!errors.username}
-                disabled={saving}
-                maxLength={30}
-              />
-              {errors.username && (
-                <p className="text-caption text-destructive">{errors.username}</p>
-              )}
-            </div>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="fullName"
+              className="text-sm font-medium"
+              style={{ color: "rgba(255,255,255,0.7)" }}
+            >
+              Full Name
+            </label>
+            <input
+              id="fullName"
+              type="text"
+              placeholder="John Doe"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="auth-glass-input"
+            />
+          </div>
 
-            <PasswordField
-              label="Password"
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="email"
+              className="text-sm font-medium"
+              style={{ color: "rgba(255,255,255,0.7)" }}
+            >
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="auth-glass-input"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
               htmlFor="password"
-              value={password}
-              onChange={(val) => {
-                setPassword(val);
-                setErrors((prev) => ({ ...prev, password: undefined }));
-              }}
-              placeholder="Min. 6 characters"
-              required
-              disabled={saving}
-              error={errors.password}
-            />
-
-            <PasswordField
-              label="Confirm Password"
-              htmlFor="confirmPassword"
-              value={confirmPassword}
-              onChange={(val) => {
-                setConfirmPassword(val);
-                setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
-              }}
-              placeholder="Re-enter password"
-              required
-              disabled={saving}
-              error={errors.confirmPassword}
-            />
-
-            <Button type="submit" className="w-full" disabled={saving}>
-              {saving ? "Creating account..." : "Sign Up"}
-            </Button>
-
-            <div className="text-body-sm text-text-secondary text-center">
-              <Link href="/login" className="text-primary hover:underline">
-                Already have an account? Log in
-              </Link>
+              className="text-sm font-medium"
+              style={{ color: "rgba(255,255,255,0.7)" }}
+            >
+              Password
+            </label>
+            <div className="auth-glass-input-wrapper">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Create a password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="auth-glass-input"
+              />
+              <button
+                type="button"
+                className="auth-toggle-password"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="confirmPassword"
+              className="text-sm font-medium"
+              style={{ color: "rgba(255,255,255,0.7)" }}
+            >
+              Confirm Password
+            </label>
+            <div className="auth-glass-input-wrapper">
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm your password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="auth-glass-input"
+              />
+              <button
+                type="button"
+                className="auth-toggle-password"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? <EyeOff /> : <Eye />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          variant="outline"
+          disabled={isLoading}
+          className="w-full h-10"
+        >
+          {isLoading ? <Spinner className="size-4" /> : "Create Account"}
+        </Button>
+
+        <p
+          className="text-center text-sm"
+          style={{ color: "rgba(255,255,255,0.55)" }}
+        >
+          Already have an account?{" "}
+          <Link href="/login" className="auth-link font-medium">
+            Log In
+          </Link>
+        </p>
+      </form>
+    </GlassAuthCard>
   );
 }

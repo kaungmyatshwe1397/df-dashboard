@@ -1,21 +1,29 @@
-// Closeout Panel — simple 3-action panel: Lock, Carry Forward, Delete Month.
-// Replaces the old CloseoutWizard with a streamlined flow.
+// Closeout Panel — simple 2-action panel: Carry Forward, Delete Month.
+// Delete action uses a confirmation dialog to prevent accidental data loss.
 
 "use client";
 
 import { useState } from "react";
-import { Lock, Unlock, ArrowRight, Trash2, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, Trash2, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useData } from "@/context/DataContext";
 import { RecordCategory } from "@/lib/global";
 
 export function CloseoutPanel() {
-  const { records, cycleLocked, toggleLock, carryForward, deleteMonth, selectedMonth } = useData();
-  const [loading, setLoading] = useState<"lock" | "carry" | "delete" | null>(null);
+  const { records, carryForward, deleteMonth, selectedMonth } = useData();
+  const [loading, setLoading] = useState<"carry" | "delete" | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const unsettledRecords = records.filter(
     (r) => r.category === RecordCategory.CASE && (r.remaining ?? 0) > 0
@@ -23,132 +31,137 @@ export function CloseoutPanel() {
   const totalCount = records.length;
   const unsettledCount = unsettledRecords.length;
 
-  async function handleToggleLock() {
-    setLoading("lock");
-    setResult(null);
-    await toggleLock();
-    setLoading(null);
-    setResult(cycleLocked ? "Cycle unlocked." : "Cycle locked. Assistant has read-only access.");
-  }
-
   async function handleCarryForward() {
     setLoading("carry");
     setResult(null);
-    const { carriedCount } = await carryForward();
-    setLoading(null);
-    setResult(carriedCount > 0
-      ? `${carriedCount} case(s) carried forward to next month.`
-      : "No unsettled cases to carry forward.");
+    try {
+      const { carriedCount } = await carryForward();
+      setResult(carriedCount > 0
+        ? `${carriedCount} case(s) carried forward to next month.`
+        : "No unsettled cases to carry forward.");
+    } catch (err) {
+      setResult(err instanceof Error ? err.message : "Failed to carry forward.");
+    } finally {
+      setLoading(null);
+    }
   }
 
   async function handleDeleteMonth() {
     setLoading("delete");
     setResult(null);
-    const count = await deleteMonth();
-    setLoading(null);
-    setResult(`${count} record(s) for ${selectedMonth} permanently deleted.`);
+    setDeleteDialogOpen(false);
+    try {
+      const count = await deleteMonth();
+      setResult(`${count} record(s) for ${selectedMonth} permanently deleted.`);
+    } catch (err) {
+      setResult(err instanceof Error ? err.message : "Failed to delete month.");
+    } finally {
+      setLoading(null);
+    }
   }
 
   return (
-    <div className="space-y-4">
-      {/* Lock / Unlock */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            {cycleLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-            Cycle Lock
-            <Badge variant={cycleLocked ? "destructive" : "default"}>
-              {cycleLocked ? "Locked" : "Unlocked"}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-3">
-            {cycleLocked
-              ? "Cycle is locked. Assistant has read-only access."
-              : "Cycle is unlocked. Assistant can edit records."}
-          </p>
-          <Button
-            onClick={handleToggleLock}
-            disabled={loading !== null}
-            variant={cycleLocked ? "outline" : "default"}
-            size="sm"
-          >
-            {loading === "lock" ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : cycleLocked ? (
-              <Unlock className="mr-2 h-4 w-4" />
-            ) : (
-              <Lock className="mr-2 h-4 w-4" />
-            )}
-            {cycleLocked ? "Unlock Cycle" : "Lock Cycle"}
-          </Button>
-        </CardContent>
-      </Card>
-
+    <div className="grid gap-3.5" style={{ gridTemplateColumns: "1fr 1fr" }}>
       {/* Carry Forward */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <ArrowRight className="h-4 w-4" />
-            Carry Forward
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-3">
-            Move unsettled cases to next month. {totalCount > 0 && `${unsettledCount} of ${totalCount} cases have remaining balance.`}
-          </p>
-          <Button
-            onClick={handleCarryForward}
-            disabled={loading !== null || unsettledCount === 0}
-            variant="outline"
-            size="sm"
-          >
-            {loading === "carry" ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <ArrowRight className="mr-2 h-4 w-4" />
-            )}
-            Carry Forward ({unsettledCount})
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="rounded-[14px] border border-border bg-card p-[18px]">
+        <div className="flex justify-between items-start mb-3">
+          <span className="text-xs text-muted-foreground">Carry Forward</span>
+          <div className="w-[30px] h-[30px] rounded-lg bg-input flex items-center justify-center">
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+        <p className="text-[13px] text-muted-foreground mb-3">
+          Move unsettled cases to next month. {totalCount > 0 && `${unsettledCount} of ${totalCount} cases have remaining balance.`}
+        </p>
+        <Button
+          onClick={handleCarryForward}
+          disabled={loading !== null || unsettledCount === 0}
+          variant="outline"
+          size="sm"
+          className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
+        >
+          {loading === "carry" ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <ArrowRight className="mr-2 h-4 w-4" />
+          )}
+          Carry Forward ({unsettledCount})
+        </Button>
+      </div>
 
       {/* Delete Month */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2 text-destructive">
-            <Trash2 className="h-4 w-4" />
-            Delete Month
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive" className="mb-3">
-            <AlertTriangle className="h-4 w-4" />
-            This permanently deletes all {totalCount} record(s) for {selectedMonth}. This cannot be undone.
-          </Alert>
-          <Button
-            onClick={handleDeleteMonth}
-            disabled={loading !== null || totalCount === 0}
-            variant="destructive"
-            size="sm"
+      <div className="rounded-[14px] border border-border bg-card p-[18px]">
+        <div className="flex justify-between items-start mb-3">
+          <span className="text-xs text-muted-foreground">Delete Month</span>
+          <div className="w-[30px] h-[30px] rounded-lg bg-danger-bg flex items-center justify-center">
+            <Trash2 className="h-4 w-4 text-danger" />
+          </div>
+        </div>
+        <div className="rounded-lg border border-danger/20 bg-danger-bg p-3 mb-3">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="h-4 w-4 text-danger shrink-0 mt-0.5" />
+            <p className="text-[13px] text-danger">
+              This permanently deletes all {totalCount} record(s) for {selectedMonth}. This cannot be undone.
+            </p>
+          </div>
+        </div>
+
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogTrigger
+            render={
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={loading !== null || totalCount === 0}
+              />
+            }
           >
-            {loading === "delete" ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Trash2 className="mr-2 h-4 w-4" />
-            )}
+            <Trash2 className="mr-2 h-4 w-4" />
             Delete {selectedMonth}
-          </Button>
-        </CardContent>
-      </Card>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-danger" />
+                Confirm Delete
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to permanently delete all {totalCount} record(s) for {selectedMonth}? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)}
+                className="border-border"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteMonth}
+                disabled={loading !== null}
+              >
+                {loading === "delete" ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                Delete Permanently
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {/* Result feedback */}
       {result && (
-        <Alert className="border-success bg-success-surface text-success">
-          <CheckCircle2 className="h-4 w-4" />
-          {result}
-        </Alert>
+        <div className="col-span-2">
+          <Alert className="border-accent/30 bg-accent-dark text-accent">
+            <CheckCircle2 className="h-4 w-4" />
+            {result}
+          </Alert>
+        </div>
       )}
     </div>
   );

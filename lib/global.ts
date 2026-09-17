@@ -47,7 +47,7 @@ export interface User {
 export interface MonthlyCycle {
   id: string;
   month_year: string;
-  status: CycleStatus;
+  status: "OPEN" | "LOCKED";
 }
 
 export interface Lab {
