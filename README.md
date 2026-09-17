@@ -69,13 +69,7 @@ DC-FMS replaces the manual paper logbook workflow with a digital system that han
 | [Contributing](docs/contributions.md) | Getting started, setup, scripts, development workflow, and conventions |
 | [ERD](docs/dc-fms-erd.mmd) | Database schema and relationships |
 | [User Flow](docs/dc-fms-user-flow.mermaid) | Navigation paths and screen flow |
-| [UI States](docs/dc-fms-ui-states-checklist.md) | Required states for every screen |
-| [Design Tokens](docs/tokens.md) | Spacing, typography, and color system |
-| [PRD](docs/prd.md) | Product requirements and business logic |
-| [Testing Guide](docs/testing-guide.md) | When and how to write tests |
-| [Code Style](docs/clea-code.md) | Clean code standards |
-| [Comment Methods](docs/comment_methods.md) | When and how to write comments |
-| [Repo Audit](docs/repo-audit-2026-09-16.md) | Security, architecture, and reliability audit |
+
 
 ## License
 
