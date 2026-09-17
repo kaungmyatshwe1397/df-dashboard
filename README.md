@@ -61,65 +61,12 @@ DC-FMS replaces the manual paper logbook workflow with a digital system that han
 | Auth | Supabase Auth |
 | Testing | Vitest |
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- Supabase account (or Docker for local development)
-
-### Installation
-
-```bash
-npm install
-```
-
-### Environment Variables
-
-Create `.env.local` with your Supabase credentials:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
-SUPABASE_SERVICE_ROLE_KEY=your_secret_key
-```
-
-### Development
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### Local Database (Optional)
-
-Requires Docker Desktop running:
-
-```bash
-npx supabase start     # Start local Supabase stack
-npx supabase db reset  # Reset and apply migrations
-npx supabase db seed   # Seed test data
-```
-
-## Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run typecheck` | Run TypeScript type checking |
-| `npm run test` | Run tests |
-| `npm run test:watch` | Run tests in watch mode |
-
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
-| [Architecture](docs/architecture.md) | System architecture, data flow, and key decisions |
-| [Contributing](docs/contributions.md) | Development workflow, code standards, and conventions |
+| [Architecture](docs/architecture.md) | System architecture, data flow, key decisions, and project structure |
+| [Contributing](docs/contributions.md) | Getting started, setup, scripts, development workflow, and conventions |
 | [ERD](docs/dc-fms-erd.mmd) | Database schema and relationships |
 | [User Flow](docs/dc-fms-user-flow.mermaid) | Navigation paths and screen flow |
 | [UI States](docs/dc-fms-ui-states-checklist.md) | Required states for every screen |
@@ -129,32 +76,6 @@ npx supabase db seed   # Seed test data
 | [Code Style](docs/clea-code.md) | Clean code standards |
 | [Comment Methods](docs/comment_methods.md) | When and how to write comments |
 | [Repo Audit](docs/repo-audit-2026-09-16.md) | Security, architecture, and reliability audit |
-
-## Project Structure
-
-```
-app/                    # Route pages (admin/, assistant/)
-components/             # Feature modules
-  dashboard/            # KPIs, RevenueChart
-  records/              # RecordTable, PatientRecordUpdateForm
-  overhead/             # OverheadForm
-  reconciliation/       # LabReconciliationTable, manage/
-  users/                # UserManagementTable
-  settings/             # AccountSettingsModal
-  layout/               # PortalLayout, TopNav
-context/                # DataContext + AuthContext
-lib/                    # Types, utilities, Supabase clients
-supabase/               # Database migrations
-docs/                   # Documentation
-plans/                  # Development plans
-```
-
-## CI/CD
-
-GitHub Actions runs on PRs to `main`:
-- Linting
-- Type checking
-- Tests
 
 ## License
 

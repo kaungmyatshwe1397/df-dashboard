@@ -85,3 +85,10 @@ supabase/               # Database migrations
 docs/                   # Documentation
 plans/                  # Development plans
 ```
+
+## CI/CD
+
+GitHub Actions runs on PRs to `main`:
+- Linting
+- Type checking
+- Tests
