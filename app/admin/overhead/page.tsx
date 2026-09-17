@@ -8,7 +8,7 @@ import { OverheadForm } from "@/components/overhead/OverheadForm";
 
 export default function OverheadPage() {
   return (
-    <PortalLayout requiredRole="ADMIN">
+      <PortalLayout>
       <div>
         <h1 className="text-[26px] font-bold text-foreground m-0 mb-1">Overhead & Expenses</h1>
         <p className="text-[13px] text-muted-foreground m-0 mb-7">

@@ -35,7 +35,7 @@ export default function AssistantPage() {
   }
 
   return (
-    <PortalLayout requiredRole="ASSISTANT">
+      <PortalLayout>
       <div>
         <h1 className="text-[26px] font-bold text-foreground m-0 mb-1">Records</h1>
         <p className="text-[13px] text-muted-foreground m-0 mb-7">

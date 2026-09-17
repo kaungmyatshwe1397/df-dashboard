@@ -5,7 +5,7 @@ import { DashboardKPIs } from "@/components/dashboard";
 
 export default function AdminPage() {
   return (
-    <PortalLayout requiredRole="ADMIN">
+      <PortalLayout>
       <div className="flex justify-between items-end mb-7">
         <div>
           <h1 className="text-[26px] font-bold text-foreground m-0 mb-1">Financial overview</h1>

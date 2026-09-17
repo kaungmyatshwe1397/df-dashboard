@@ -8,7 +8,7 @@ import { Settings } from "lucide-react";
 
 export default function ReconciliationPage() {
   return (
-    <PortalLayout requiredRole="ADMIN">
+      <PortalLayout>
       <div className="flex flex-col gap-6">
         <div className="flex items-start justify-between">
           <div>

@@ -7,7 +7,7 @@ import { CloseoutPanel } from "@/components/closeout/CloseoutPanel";
 
 export default function CloseoutPage() {
   return (
-    <PortalLayout requiredRole="ADMIN">
+      <PortalLayout>
       <div>
         <h1 className="text-[26px] font-bold text-foreground m-0 mb-1">Month-End Closeout</h1>
         <p className="text-[13px] text-muted-foreground m-0 mb-7">

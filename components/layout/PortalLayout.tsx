@@ -3,7 +3,6 @@
 import { TopNav } from "@/components/layout/TopNav";
 
 interface PortalLayoutProps {
-  requiredRole: "ADMIN" | "ASSISTANT";
   children: React.ReactNode;
 }
 

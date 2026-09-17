@@ -9,7 +9,7 @@ import { ArrowLeft } from "lucide-react";
 
 export default function ManageLabsCaseTypesPage() {
   return (
-    <PortalLayout requiredRole="ADMIN">
+      <PortalLayout>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-4">
           <Link

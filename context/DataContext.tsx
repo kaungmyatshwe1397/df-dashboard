@@ -68,7 +68,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const { setAllFinancials, getFinancialsForCycle, updateFinancials, addCustomOverhead, removeCustomOverhead } = useFinancials();
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState(0);
-  const supabaseRef = useRef(createClient());
+  const [supabase] = useState(() => createClient());
   const initialLoadDone = useRef(false);
 
   const cycle = allCycles.find((c) => c.status === "OPEN") ?? null;
@@ -98,10 +98,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const [cyclesRes, financialsRes, labsRes, caseTypesRes] = await Promise.all([
-        supabaseRef.current.from("monthly_cycles").select("*").order("month_year", { ascending: false }),
-        supabaseRef.current.from("monthly_financials").select("*"),
-        supabaseRef.current.from("labs").select("*").order("lab_name"),
-        supabaseRef.current.from("case_types").select("*").order("name"),
+        supabase.from("monthly_cycles").select("*").order("month_year", { ascending: false }),
+        supabase.from("monthly_financials").select("*"),
+        supabase.from("labs").select("*").order("lab_name"),
+        supabase.from("case_types").select("*").order("name"),
       ]);
 
       if (cyclesRes.error) throw cyclesRes.error;
@@ -154,8 +154,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const [recordsRes, paymentsRes] = await Promise.all([
-        supabaseRef.current.from("patient_records").select("*").eq("month_label", month).order("entry_date", { ascending: true }),
-        supabaseRef.current.from("case_payments").select("*").order("payment_date", { ascending: true }),
+        supabase.from("patient_records").select("*").eq("month_label", month).order("entry_date", { ascending: true }),
+        supabase.from("case_payments").select("*").order("payment_date", { ascending: true }),
       ]);
 
       if (recordsRes.error) throw recordsRes.error;
@@ -223,7 +223,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         // No OPEN cycle exists — auto-create one for the current month
         const now = new Date();
         const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-        const { data: newCycle, error: cycleError } = await supabaseRef.current
+        const { data: newCycle, error: cycleError } = await supabase
           .from("monthly_cycles")
           .insert({ month_year: monthYear, status: "OPEN" })
           .select()
@@ -248,7 +248,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         ? { ...recordData, ...baseFields, is_carried_forward: false }
         : { ...recordData, ...baseFields };
 
-      const { data: newRecord, error: insertError } = await supabaseRef.current
+      const { data: newRecord, error: insertError } = await supabase
         .from("patient_records")
         .insert(insertData)
         .select()
@@ -266,7 +266,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         initialPayment !== undefined &&
         initialPayment > 0
       ) {
-        const { data: newPayment, error: paymentError } = await supabaseRef.current
+        const { data: newPayment, error: paymentError } = await supabase
           .from("case_payments")
           .insert({
             record_id: newRecord.id,
@@ -300,7 +300,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateRecord = useCallback(
     async (recordId: string, updates: Partial<PatientRecord>) => {
-      const { error: updateError } = await supabaseRef.current
+      const { error: updateError } = await supabase
         .from("patient_records")
         .update(updates)
         .eq("id", recordId);
@@ -318,7 +318,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addPayment = useCallback(
     async (paymentData: Omit<CasePayment, "id" | "payment_date">) => {
-      const { data: newPayment, error: insertError } = await supabaseRef.current
+      const { data: newPayment, error: insertError } = await supabase
         .from("case_payments")
         .insert({
           ...paymentData,
@@ -347,7 +347,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (record?.category === RecordCategory.CASE) {
         const caseRec = record as CasePatientRecordType;
         const newTotalPaid = (caseRec.paid ?? 0) + paymentData.paid_amount;
-        const { error: updateError } = await supabaseRef.current
+        const { error: updateError } = await supabase
           .from("patient_records")
           .update({ paid: newTotalPaid, remaining: caseRec.total_cost - newTotalPaid })
           .eq("id", record.id);
@@ -370,7 +370,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const deleteRecord = useCallback(
     async (recordId: string) => {
-      const { error: paymentsError } = await supabaseRef.current
+      const { error: paymentsError } = await supabase
         .from("case_payments")
         .delete()
         .eq("record_id", recordId);
@@ -379,7 +379,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         throw new Error(paymentsError.message ?? "Failed to delete payments.");
       }
 
-      const { error: recordError } = await supabaseRef.current
+      const { error: recordError } = await supabase
         .from("patient_records")
         .delete()
         .eq("id", recordId);
@@ -419,7 +419,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     let nextCycle = allCycles.find((c) => c.month_year === nextMonthYear);
     if (!nextCycle) {
-      const { data: newCycle, error: cycleError } = await supabaseRef.current
+      const { data: newCycle, error: cycleError } = await supabase
         .from("monthly_cycles")
         .insert({ month_year: nextMonthYear, status: "OPEN" })
         .select()
@@ -433,7 +433,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     for (const record of unsettledRecords) {
-      const { error } = await supabaseRef.current
+      const { error } = await supabase
         .from("patient_records")
         .update({
           cycle_id: nextCycle.id,
@@ -471,7 +471,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const count = allRecords.length;
 
     if (recordIds.length > 0) {
-      const { error: paymentsError } = await supabaseRef.current
+      const { error: paymentsError } = await supabase
         .from("case_payments")
         .delete()
         .in("record_id", recordIds);
@@ -480,7 +480,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         throw new Error(paymentsError.message ?? "Failed to delete payments.");
       }
 
-      const { error: recordsError } = await supabaseRef.current
+      const { error: recordsError } = await supabase
         .from("patient_records")
         .delete()
         .in("id", recordIds);
