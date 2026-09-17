@@ -69,13 +69,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState(0);
   const supabaseRef = useRef(createClient());
+  const initialLoadDone = useRef(false);
 
   const cycle = allCycles.find((c) => c.status === "OPEN") ?? null;
   const financials = cycle ? getFinancialsForCycle(cycle.id) : null;
 
+  // Derive allMonths from cycles (small, bounded dataset) instead of allRecords
   const allMonths = useMemo(() => {
-    const months = new Set(allRecords.map((r) => r.month_label));
-    return Array.from(months).sort((a, b) => {
+    return allCycles.map((c) => getMonthLabel(c.month_year)).sort((a, b) => {
       const [aYear, aMonth] = a.split(" ");
       const [bYear, bMonth] = b.split(" ");
       const monthOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -84,35 +85,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (aYear !== bYear) return parseInt(bYear) - parseInt(aYear);
       return bIdx - aIdx;
     });
-  }, [allRecords]);
+  }, [allCycles]);
 
   const effectiveMonth = selectedMonth || (cycle ? getMonthLabel(cycle.month_year) : allMonths[0] ?? "");
 
-  const activeRecords = useMemo(
-    () => allRecords.filter((r) => r.month_label === effectiveMonth),
-    [allRecords, effectiveMonth]
-  );
-
   // ------------------------------------------
-  // Fetch all data from Supabase
+  // Phase 1: Fetch reference data (runs once on mount)
   // ------------------------------------------
 
-  const fetchData = useCallback(async () => {
+  const fetchReferenceData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [cyclesRes, recordsRes, paymentsRes, financialsRes, labsRes, caseTypesRes] = await Promise.all([
+      const [cyclesRes, financialsRes, labsRes, caseTypesRes] = await Promise.all([
         supabaseRef.current.from("monthly_cycles").select("*").order("month_year", { ascending: false }),
-        supabaseRef.current.from("patient_records").select("*").order("entry_date", { ascending: true }),
-        supabaseRef.current.from("case_payments").select("*").order("payment_date", { ascending: true }),
         supabaseRef.current.from("monthly_financials").select("*"),
         supabaseRef.current.from("labs").select("*").order("lab_name"),
         supabaseRef.current.from("case_types").select("*").order("name"),
       ]);
 
       if (cyclesRes.error) throw cyclesRes.error;
-      if (recordsRes.error) throw recordsRes.error;
-      if (paymentsRes.error) throw paymentsRes.error;
       if (financialsRes.error) throw financialsRes.error;
       if (labsRes.error) throw labsRes.error;
       if (caseTypesRes.error) throw caseTypesRes.error;
@@ -122,17 +114,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
           id: c.id as string,
           month_year: c.month_year as string,
           status: c.status as "OPEN" | "LOCKED",
-        }))
-      );
-      setAllRecords((recordsRes.data ?? []).map(toPatientRecord));
-      setAllPayments(
-        (paymentsRes.data ?? []).map((p: Record<string, unknown>) => ({
-          id: p.id as string,
-          record_id: p.record_id as string,
-          payment_date: p.payment_date as string,
-          paid_amount: p.paid_amount as number,
-          payment_note: p.payment_note as string | undefined,
-          payment_status: p.payment_status as PaymentStatus,
         }))
       );
       setAllFinancials(
@@ -159,14 +140,54 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
       setLoading(false);
+      initialLoadDone.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ------------------------------------------
+  // Phase 2: Fetch month-specific data (runs on mount after reference data, and on month change)
+  // ------------------------------------------
+
+  const fetchMonthData = useCallback(async (month: string) => {
+    if (!month) return;
+    setError(null);
+    try {
+      const [recordsRes, paymentsRes] = await Promise.all([
+        supabaseRef.current.from("patient_records").select("*").eq("month_label", month).order("entry_date", { ascending: true }),
+        supabaseRef.current.from("case_payments").select("*").order("payment_date", { ascending: true }),
+      ]);
+
+      if (recordsRes.error) throw recordsRes.error;
+      if (paymentsRes.error) throw paymentsRes.error;
+
+      setAllRecords((recordsRes.data ?? []).map(toPatientRecord));
+      setAllPayments(
+        (paymentsRes.data ?? []).map((p: Record<string, unknown>) => ({
+          id: p.id as string,
+          record_id: p.record_id as string,
+          payment_date: p.payment_date as string,
+          paid_amount: p.paid_amount as number,
+          payment_note: p.payment_note as string | undefined,
+          payment_status: p.payment_status as PaymentStatus,
+        }))
+      );
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load month data");
+    }
+  }, []);
+
+  // Initial load: reference data on mount, then month data after reference data loads
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchData();
-  }, [fetchData, refreshKey]);
+    fetchReferenceData();
+  }, [fetchReferenceData, refreshKey]);
+
+  // Month data: skip initial mount (handled by fetchReferenceData flow), re-fetch on month change
+  useEffect(() => {
+    if (!initialLoadDone.current) return;
+    fetchMonthData(effectiveMonth);
+  }, [fetchMonthData, effectiveMonth, refreshKey]);
 
   const refreshData = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -375,18 +396,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const findRecordByPatientId = useCallback(
     (patientId: string, category?: RecordCategory) =>
-      activeRecords.find(
+      allRecords.find(
         (r) =>
           r.patient_id === patientId.trim() &&
           (category ? r.category === category : true)
       ),
-    [activeRecords]
+    [allRecords]
   );
 
   const carryForward = useCallback(async () => {
     if (!cycle) return { carriedCount: 0 };
 
-    const unsettledRecords = activeRecords.filter(
+    // allRecords is already filtered to the current month
+    const unsettledRecords = allRecords.filter(
       (r) => r.category === RecordCategory.CASE && (r.remaining ?? 0) > 0
     );
 
@@ -439,14 +461,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     );
 
     return { carriedCount: unsettledRecords.length };
-  }, [cycle, activeRecords, allCycles]);
+  }, [cycle, allRecords, allCycles]);
 
   const deleteMonth = useCallback(async () => {
     if (!cycle) return 0;
 
-    const monthRecords = allRecords.filter((r) => r.month_label === effectiveMonth);
-    const recordIds = monthRecords.map((r) => r.id);
-    const count = monthRecords.length;
+    // allRecords is already filtered to the current month
+    const recordIds = allRecords.map((r) => r.id);
+    const count = allRecords.length;
 
     if (recordIds.length > 0) {
       const { error: paymentsError } = await supabaseRef.current
@@ -472,13 +494,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setAllPayments((prev) => prev.filter((p) => !recordIds.includes(p.record_id)));
 
     return count;
-  }, [cycle, allRecords, effectiveMonth]);
+  }, [cycle, allRecords]);
 
   return (
     <DataContext.Provider
       value={{
         cycle,
-        records: activeRecords,
+        records: allRecords,
         payments: allPayments,
         financials,
         labs,
