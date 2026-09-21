@@ -221,31 +221,7 @@ export const MOCK_DATA: MockData = {
   monthly_financials: MOCK_MONTHLY_FINANCIALS,
 };
 
-// ------------------------------------------
-// Auth Helpers
-// ------------------------------------------
 
-export interface AuthUser {
-  id: string;
-  username: string;
-  role: UserRole;
-}
-
-export function authenticateUser(
-  username: string
-): AuthUser | null {
-  const user = MOCK_USERS.find(
-    (u) => u.username === username
-  );
-
-  if (!user) return null;
-
-  return {
-    id: user.id,
-    username: user.username,
-    role: user.role,
-  };
-}
 
 // ------------------------------------------
 // Data Helpers

@@ -7,40 +7,11 @@
 
 import { describe, test, expect } from "vitest";
 import {
-  authenticateUser,
   getActiveCycle,
   getRecordsByCycle,
   getPaymentsByRecord,
 } from "../mock-data";
 import { CycleStatus, RecordCategory } from "../global";
-
-// ------------------------------------------
-// authenticateUser()
-// ------------------------------------------
-describe("authenticateUser", () => {
-  test("returns user when username matches", () => {
-    const user = authenticateUser("admin");
-    expect(user).not.toBeNull();
-    expect(user?.username).toBe("admin");
-    expect(user?.role).toBe("ADMIN");
-  });
-
-  test("returns assistant user for assistant username", () => {
-    const user = authenticateUser("assistant");
-    expect(user).not.toBeNull();
-    expect(user?.role).toBe("ASSISTANT");
-  });
-
-  test("returns null for unknown username", () => {
-    const user = authenticateUser("unknown");
-    expect(user).toBeNull();
-  });
-
-  test("returns null for empty input", () => {
-    const user = authenticateUser("");
-    expect(user).toBeNull();
-  });
-});
 
 // ------------------------------------------
 // getActiveCycle()
