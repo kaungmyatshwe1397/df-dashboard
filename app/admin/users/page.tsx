@@ -1,19 +1,17 @@
 "use client";
 
 import { PortalLayout } from "@/components/layout/PortalLayout";
-import { UserTable } from "@/components/users-table";
 
 export default function AdminUsersPage() {
   return (
-    <PortalLayout requiredRole="ADMIN">
+      <PortalLayout>
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-2xl font-bold">User Management</h1>
           <p className="text-muted-foreground">
-            View assistant accounts and manage their access.
+            User management coming soon.
           </p>
         </div>
-        <UserTable />
       </div>
     </PortalLayout>
   );

@@ -80,9 +80,7 @@ export function PaymentDialog({
     setSubmitError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      addPayment({
+      await addPayment({
         record_id: record.id,
         paid_amount: parseFloat(paidAmount),
         payment_note: note.trim() || undefined,
@@ -95,9 +93,9 @@ export function PaymentDialog({
       setSaving(false);
       onOpenChange(false);
       resetForm();
-    } catch {
+    } catch (err) {
       setSaving(false);
-      setSubmitError("Failed to save payment. Please try again.");
+      setSubmitError(err instanceof Error ? err.message : "Failed to save payment. Please try again.");
     }
   }
 

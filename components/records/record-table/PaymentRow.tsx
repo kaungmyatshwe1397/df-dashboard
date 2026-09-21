@@ -20,7 +20,6 @@ export interface PaymentRowProps {
   totalPaid: number;
   isSettled: boolean;
   isExpanded: boolean;
-  cycleLocked: boolean;
   onToggleExpand: (id: string) => void;
   onPay: (record: CasePatientRecordType) => void;
 }
@@ -38,7 +37,6 @@ export function PaymentRow({
   totalPaid,
   isSettled,
   isExpanded,
-  cycleLocked,
   onToggleExpand,
   onPay,
 }: PaymentRowProps) {
@@ -111,7 +109,7 @@ export function PaymentRow({
           )}
         </TableCell>
         <TableCell>
-          {!cycleLocked && !isSettled && (
+          {!isSettled && (
             <Button
               variant="ghost"
               size="icon-sm"

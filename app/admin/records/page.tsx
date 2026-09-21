@@ -35,14 +35,12 @@ export default function AdminRecordsPage() {
   }
 
   return (
-    <PortalLayout requiredRole="ADMIN">
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-h2 font-bold">Record Table</h1>
-          <p className="text-body-sm text-muted-foreground">
-            View and manage patient records for the current cycle.
-          </p>
-        </div>
+      <PortalLayout>
+      <div>
+        <h1 className="text-[26px] font-bold text-foreground m-0 mb-1">Records</h1>
+        <p className="text-[13px] text-muted-foreground m-0 mb-7">
+          View and manage patient records for the current cycle.
+        </p>
         <RecordTable onAdd={handleAdd} onEdit={handleEdit} />
       </div>
 

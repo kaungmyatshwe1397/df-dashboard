@@ -1,144 +1,169 @@
+// Login page — glassmorphism card with email/password form.
+// Wired to Supabase signInWithPassword. Redirects by role after auth.
+
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
+import { GlassAuthCard } from "@/components/auth/GlassAuthCard";
+import { AuthLogo } from "@/components/auth/AuthLogo";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle } from "lucide-react";
-import { PasswordField } from "@/components/shared/passwordField";
+import { Spinner } from "@/components/ui/spinner";
+import { Eye, EyeOff } from "lucide-react";
+import {
+  signInWithCredentials,
+  getUserProfile,
+} from "@/lib/supabase/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isAuthenticated, isAdmin } = useAuth();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [capsLockOn, setCapsLockOn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Redirect when auth state changes
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push(isAdmin ? "/admin" : "/assistant");
-    }
-  }, [isAuthenticated, isAdmin, router]);
-
-  // Stable ref for caps lock handler to avoid re-registering listener
-  const handleCapsLock = useCallback((e: KeyboardEvent) => {
-    if (typeof e.getModifierState === "function") {
-      setCapsLockOn(e.getModifierState("CapsLock"));
-    }
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener("keydown", handleCapsLock);
-    return () => document.removeEventListener("keydown", handleCapsLock);
-  }, [handleCapsLock]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
-    if (!email.trim() || !password.trim()) {
-      setErrorMessage("Please enter both email and password");
-      return;
-    }
-
+    setError(null);
     setIsLoading(true);
-    setErrorMessage("");
 
-    const success = await login(email, password);
+    const { error: authError } = await signInWithCredentials({
+      email,
+      password,
+    });
 
-    if (!success) {
-      setErrorMessage("Invalid email or password");
+    if (authError) {
+      setError(authError.message);
       setIsLoading(false);
       return;
     }
 
-    // Success: isLoading stays true while onAuthStateChange fires and useEffect handles redirect
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <Skeleton className="h-8 w-48" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-        </Card>
-      </div>
-    );
+    const profile = await getUserProfile();
+    router.push(profile?.role === "ADMIN" ? "/admin" : "/assistant");
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-h2 font-heading text-center">
-            DC-FMS Login
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {errorMessage && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{errorMessage}</AlertDescription>
-              </Alert>
-            )}
+    <GlassAuthCard>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col items-center gap-1">
+          <AuthLogo />
+          <h1
+            className="text-xl font-semibold"
+            style={{ color: "#ecfdf5" }}
+          >
+            Welcome back
+          </h1>
+          <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>
+            Sign in to your account
+          </p>
+        </div>
 
-            {capsLockOn && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>Caps Lock is on</AlertDescription>
-              </Alert>
-            )}
+        {error && (
+          <div
+            className="rounded-[10px] px-4 py-3 text-sm"
+            style={{
+              background: "rgba(251,113,133,0.15)",
+              border: "1px solid rgba(251,113,133,0.3)",
+              color: "#FB7185",
+            }}
+          >
+            {error}
+          </div>
+        )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                maxLength={50}
-              />
-            </div>
-
-            <PasswordField
-              label="Password"
-              htmlFor="password"
-              value={password}
-              onChange={setPassword}
-              placeholder="Enter password"
-              disabled={isLoading}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="email"
+              className="text-sm font-medium"
+              style={{ color: "rgba(255,255,255,0.7)" }}
+            >
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="auth-glass-input"
             />
+          </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign In"}
-            </Button>
-
-            <div className="text-body-sm text-text-secondary text-center">
-              <Link href="/signup" className="text-primary hover:underline">
-                Don&apos;t have an account? Sign up
-              </Link>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="password"
+              className="text-sm font-medium"
+              style={{ color: "rgba(255,255,255,0.7)" }}
+            >
+              Password
+            </label>
+            <div className="auth-glass-input-wrapper">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="auth-glass-input"
+              />
+              <button
+                type="button"
+                className="auth-toggle-password"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 rounded border-white/20 bg-white/8 accent-[#7C6AF0]"
+            />
+            <span
+              className="text-sm"
+              style={{ color: "rgba(255,255,255,0.65)" }}
+            >
+              Remember me
+            </span>
+          </label>
+          {/* TODO: Wire to password recovery flow when implemented */}
+          <Link href="/forgot-password" className="auth-link">
+            Forgot password?
+          </Link>
+        </div>
+
+        <Button
+          type="submit"
+          variant="outline"
+          disabled={isLoading}
+          className="w-full h-10"
+        >
+          {isLoading ? <Spinner className="size-4" /> : "Log In"}
+        </Button>
+
+        <p
+          className="text-center text-sm"
+          style={{ color: "rgba(255,255,255,0.55)" }}
+        >
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="auth-link font-medium">
+            Register
+          </Link>
+        </p>
+      </form>
+    </GlassAuthCard>
   );
 }

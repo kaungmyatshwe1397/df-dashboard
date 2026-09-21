@@ -16,6 +16,7 @@
 | `docs/comment_methods.md` | Commenting standards — when to comment, when not to, formatting rules. |
 | `docs/testing-guide.md` | Testing guide — when to test, what type to use, how to write tests. |
 | `docs/task-completion-rule.md` | Task completion checklist — how to update the plan after finishing a task. |
+| `docs/clea-code.md` | code writing rules file - how to write clean code inside this project. |
 
 ## Rules
 
@@ -33,6 +34,8 @@
 12. **Write to do list of required unit or component tests** , so we can remember and later write it.
 13. **Write intefcae name** by folliwning instuction from **Type Naming Convection** from `docs/my-rules.md`.
 14. **Follow `docs/project-folder-rules.md`** for Component Architecture & File Organization.
+15. **Read and Follow `docs/clea-code.md`**  for how to write clean and managable coding and coding standard.
+
 
 ## Library & External Documentation Rule
 - Whenever working with a new library, an external framework (e.g., Tailwind CSS, shadcn/ui, Next.js), or when interacting with libraries after a long duration, you **MUST** use the `Context7 MCP server`  to check their latest official documentation first.

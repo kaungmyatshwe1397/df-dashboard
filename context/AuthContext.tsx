@@ -1,122 +1,89 @@
-// AuthContext — Supabase Auth integration.
-// Replaces mock login with Supabase Auth (email/password).
-// Listens to auth state changes for session persistence.
+// AuthContext — provides current user and profile to all client components.
+// Fetches from Supabase auth + profiles table. Refreshable after updates.
 
 "use client";
 
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { UserRole } from "@/lib/global";
-interface AuthUser {
+import type { User } from "@supabase/supabase-js";
+
+export interface UserProfileType {
   id: string;
   email: string;
   username: string;
-  role: UserRole;
+  role: string;
 }
 
 interface AuthContextType {
-  user: AuthUser | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
-  isAuthenticated: boolean;
-  isAdmin: boolean;
-  isAssistant: boolean;
+  user: User | null;
+  profile: UserProfileType | null;
+  loading: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  profile: null,
+  loading: true,
+  refreshProfile: async () => {},
+});
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfileType | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabaseRef = useRef(createClient());
+
+  const fetchProfile = useCallback(async (userId: string) => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, email, username, role")
+      .eq("id", userId)
+      .single();
+    setProfile(data);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    const { data: { subscription } } = supabaseRef.current.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          const { data: profile } = await supabaseRef.current
-            .from("profiles")
-            .select("username, role")
-            .eq("id", session.user.id)
-            .single();
+    const supabase = createClient();
 
-          if (profile) {
-            setUser({
-              id: session.user.id,
-              email: session.user.email ?? "",
-              username: profile.username,
-              role: profile.role as UserRole,
-            });
-          }
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    // Check existing session on mount
-    supabaseRef.current.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
       if (session?.user) {
-        supabaseRef.current
-          .from("profiles")
-          .select("username, role")
-          .eq("id", session.user.id)
-          .single()
-          .then(({ data: profile }) => {
-            if (profile) {
-              setUser({
-                id: session!.user.id,
-                email: session!.user.email ?? "",
-                username: profile.username,
-                role: profile.role as UserRole,
-              });
-            }
-            setLoading(false);
-          });
+        fetchProfile(session.user.id);
       } else {
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const login = async (email: string, password: string): Promise<boolean> => {
-    const { error } = await supabaseRef.current.auth.signInWithPassword({
-      email,
-      password,
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
     });
 
-    return !error;
-  };
+    return () => subscription.unsubscribe();
+  }, [fetchProfile]);
 
-  const logout = async () => {
-    await supabaseRef.current.auth.signOut();
-    setUser(null);
-  };
-
-  const isAuthenticated = user !== null;
-  const isAdmin = user?.role === UserRole.ADMIN;
-  const isAssistant = user?.role === UserRole.ASSISTANT;
-
-  if (loading) {
-    return null;
+  async function refreshProfile() {
+    if (user) {
+      await fetchProfile(user.id);
+    }
   }
 
   return (
-    <AuthContext.Provider
-      value={{ user, login, logout, isAuthenticated, isAdmin, isAssistant }}
-    >
+    <AuthContext.Provider value={{ user, profile, loading, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  return useContext(AuthContext);
 }

@@ -1,48 +1,75 @@
 "use client";
 
 import { type LucideIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 interface KpiCardProps {
   title: string;
-  value: string;
+  value: React.ReactNode;
   icon?: LucideIcon;
-  badge?: {
-    label: string;
-    variant: "default" | "secondary" | "destructive" | "outline";
-  };
-  footer?: React.ReactNode;
+  change?: string;
+  changeType?: "up" | "down" | "neutral";
+  note?: string;
+  variant?: "default" | "profit";
+  className?: string;
 }
 
-export function KpiCard({ title, value, icon: Icon, badge, footer }: KpiCardProps) {
+export function KpiCard({
+  title,
+  value,
+  icon: Icon,
+  change,
+  changeType = "neutral",
+  note,
+  variant = "default",
+  className,
+}: KpiCardProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-body-sm font-medium text-muted-foreground">
-          {Icon && <Icon className="h-4 w-4 shrink-0" />}
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold tracking-tight md:text-3xl break-all">
-            {value}
-          </span>
-          {badge && (
-            <Badge variant={badge.variant} className="shrink-0">
-              {badge.label}
-            </Badge>
-          )}
-        </div>
-        {footer && (
-          <>
-            <Separator className="my-3" />
-            {footer}
-          </>
+    <div
+      className={cn(
+        "rounded-[14px] border p-[18px] transition-colors h-full flex flex-col justify-between",
+        variant === "profit"
+          ? "bg-accent-dark border-accent/20"
+          : "bg-card border-border",
+        className
+      )}
+    >
+      <div className="flex justify-between items-start mb-3.5">
+        <span className="text-xs text-muted-foreground">{title}</span>
+        {Icon && (
+          <div className="w-[30px] h-[30px] rounded-lg bg-input flex items-center justify-center text-sm">
+            <Icon className="h-4 w-4 text-muted-foreground" />
+          </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      <div
+        className={cn(
+          "text-[24px] font-bold tracking-tight",
+          variant === "profit" ? "text-accent" : "text-foreground"
+        )}
+      >
+        {value}
+      </div>
+
+      {change && (
+        <div
+          className={cn(
+            "text-[11px] font-semibold mt-1.5",
+            changeType === "up" && "text-accent",
+            changeType === "down" && "text-danger",
+            changeType === "neutral" && "text-muted-foreground"
+          )}
+        >
+          {changeType === "up" && "↗ "}
+          {changeType === "down" && "↘ "}
+          {change}
+        </div>
+      )}
+
+      {note && (
+        <div className="text-[12px] text-muted-foreground mt-1.5">{note}</div>
+      )}
+    </div>
   );
 }

@@ -14,13 +14,12 @@ import {
 } from "./RecordTableHelpers";
 
 describe("TableEmpty", () => {
-  test("renders message and add button when not locked", () => {
+  test("renders message and add button", () => {
     const onAdd = vi.fn();
     const { container } = render(
       <TableEmpty
         message="No GP records yet this cycle."
         onAdd={onAdd}
-        cycleLocked={false}
       />
     );
 
@@ -31,20 +30,6 @@ describe("TableEmpty", () => {
 
     fireEvent.click(addBtn);
     expect(onAdd).toHaveBeenCalledTimes(1);
-  });
-
-  test("hides add button when cycle is locked", () => {
-    const { container } = render(
-      <TableEmpty
-        message="No case records yet this cycle."
-        onAdd={() => {}}
-        cycleLocked={true}
-      />
-    );
-
-    const wrapper = container.firstChild as HTMLElement;
-    expect(within(wrapper).getByText("No case records yet this cycle.")).toBeInTheDocument();
-    expect(within(wrapper).queryByText("Add Record")).not.toBeInTheDocument();
   });
 });
 

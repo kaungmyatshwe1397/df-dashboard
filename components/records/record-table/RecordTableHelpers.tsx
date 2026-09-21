@@ -20,7 +20,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Inbox } from "lucide-react";
 
 export const ROWS_PER_PAGE = 10;
 
@@ -47,7 +47,7 @@ export function TableSkeleton({ columns }: { columns: number }) {
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-9 w-32" />
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-[14px] border border-border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -78,31 +78,32 @@ export function TableSkeleton({ columns }: { columns: number }) {
 export function TableEmpty({
   message,
   onAdd,
-  cycleLocked,
 }: {
   message: string;
   onAdd: () => void;
-  cycleLocked: boolean;
 }) {
   return (
-    <div className="rounded-md border p-12 text-center">
-      <p className="text-muted-foreground text-body mb-4">{message}</p>
-      {!cycleLocked && (
-        <Button onClick={onAdd} size="sm">
-          <Plus className="mr-1.5 h-4 w-4" />
-          Add Record
-        </Button>
-      )}
+    <div className="rounded-[14px] border border-dashed border-border p-12 text-center">
+      <Inbox className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+      <p className="text-muted-foreground text-sm mb-4">{message}</p>
+      <Button
+        onClick={onAdd}
+        size="sm"
+        className="bg-accent text-accent-foreground hover:bg-accent/90"
+      >
+        <Plus className="mr-1.5 h-4 w-4" />
+        Add Record
+      </Button>
     </div>
   );
 }
 
 export function TableError({ onRetry }: { onRetry: () => void }) {
   return (
-    <Alert variant="destructive">
+    <Alert variant="destructive" className="border-danger/30 bg-danger-bg text-danger">
       <AlertDescription className="flex items-center justify-between">
         <span>Failed to load records. Please try again.</span>
-        <Button variant="outline" size="sm" onClick={onRetry}>
+        <Button variant="outline" size="sm" onClick={onRetry} className="border-danger/30 text-danger hover:bg-danger/10">
           <RefreshCw className="mr-1.5 h-4 w-4" />
           Retry
         </Button>
