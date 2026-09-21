@@ -6,7 +6,7 @@
 // NOTE: Tests use scoped queries to avoid JSDOM portal leak issues.
 
 import { describe, test, expect } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { DataProvider } from "@/context/DataContext";
 import { RecordTable } from "../records/record-table";
 
@@ -16,14 +16,14 @@ function renderWithProvider(ui: React.ReactElement) {
 
 describe("RecordTable", () => {
   test("renders the table heading", async () => {
-    const { container } = renderWithProvider(<RecordTable onAdd={() => {}} onEdit={() => {}} />);
+    renderWithProvider(<RecordTable onAdd={() => {}} onEdit={() => {}} />);
     await waitFor(() => {
       expect(screen.getAllByText("Patient Records").length).toBeGreaterThanOrEqual(1);
     });
   });
 
   test("shows GP and Case tabs", async () => {
-    const { container } = renderWithProvider(<RecordTable onAdd={() => {}} onEdit={() => {}} />);
+    renderWithProvider(<RecordTable onAdd={() => {}} onEdit={() => {}} />);
     await waitFor(() => {
       expect(screen.getAllByText("Patient Records").length).toBeGreaterThanOrEqual(1);
     });

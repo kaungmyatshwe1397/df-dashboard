@@ -50,12 +50,9 @@ function formatCurrency(amount: number): string {
 // Main Table — grouped by lab with filter
 // ------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface LabReconciliationTableProps {}
-
 const ALL_LABS_VALUE = "__all__";
 
-export function LabReconciliationTable(_props: LabReconciliationTableProps) {
+export function LabReconciliationTable() {
   const { records, loading, error, refreshData, updateRecord } = useData();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [selectedLab, setSelectedLab] = useState<string>(ALL_LABS_VALUE);

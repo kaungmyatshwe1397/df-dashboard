@@ -4,7 +4,7 @@
 // Tests that mutations properly throw errors on Supabase failures,
 // and that addRecord auto-selects the correct month.
 
-import { describe, test, expect, vi } from "vitest";
+import { describe, test, expect } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 import { DataProvider, useData } from "../DataContext";

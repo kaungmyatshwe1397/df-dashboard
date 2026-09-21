@@ -11,9 +11,6 @@ import {
   getActiveCycle,
   getRecordsByCycle,
   getPaymentsByRecord,
-  MOCK_CYCLES,
-  MOCK_PATIENT_RECORDS,
-  MOCK_CASE_PAYMENTS,
 } from "../mock-data";
 import { CycleStatus, RecordCategory } from "../global";
 

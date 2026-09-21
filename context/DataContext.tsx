@@ -143,7 +143,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       initialLoadDone.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [supabase]);
 
   // ------------------------------------------
   // Phase 2: Fetch month-specific data (runs on mount after reference data, and on month change)
@@ -175,7 +175,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load month data");
     }
-  }, []);
+  }, [supabase]);
 
   // Initial load: reference data on mount, then month data after reference data loads
   useEffect(() => {
@@ -282,20 +282,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
           throw new Error(paymentError?.message ?? "Record created but initial payment failed.");
         }
 
-        setAllPayments((prev) => [
-          ...prev,
-          {
-            id: newPayment.id,
-            record_id: newPayment.record_id,
-            payment_date: newPayment.payment_date,
-            paid_amount: newPayment.paid_amount,
-            payment_note: newPayment.payment_note,
-            payment_status: newPayment.payment_status,
-          },
-        ]);
+      setAllPayments((prev) => [
+        ...prev,
+        {
+          id: newPayment.id,
+          record_id: newPayment.record_id,
+          payment_date: newPayment.payment_date,
+          paid_amount: newPayment.paid_amount,
+          payment_note: newPayment.payment_note,
+          payment_status: newPayment.payment_status,
+        },
+      ]);
       }
     },
-    [cycle]
+    [cycle, supabase]
   );
 
   const updateRecord = useCallback(
@@ -313,7 +313,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         prev.map((r) => (r.id === recordId ? { ...r, ...updates } as PatientRecord : r))
       );
     },
-    []
+    [supabase]
   );
 
   const addPayment = useCallback(
@@ -365,7 +365,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         );
       }
     },
-    [allRecords]
+    [allRecords, supabase]
   );
 
   const deleteRecord = useCallback(
@@ -391,7 +391,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setAllRecords((prev) => prev.filter((r) => r.id !== recordId));
       setAllPayments((prev) => prev.filter((p) => p.record_id !== recordId));
     },
-    []
+    [supabase]
   );
 
   const findRecordByPatientId = useCallback(
@@ -461,7 +461,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     );
 
     return { carriedCount: unsettledRecords.length };
-  }, [cycle, allRecords, allCycles]);
+  }, [cycle, allRecords, allCycles, supabase]);
 
   const deleteMonth = useCallback(async () => {
     if (!cycle) return 0;
@@ -494,7 +494,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setAllPayments((prev) => prev.filter((p) => !recordIds.includes(p.record_id)));
 
     return count;
-  }, [cycle, allRecords]);
+  }, [cycle, allRecords, supabase]);
 
   return (
     <DataContext.Provider

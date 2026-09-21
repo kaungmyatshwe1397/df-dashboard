@@ -6,7 +6,7 @@
 import { describe, test, expect } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
-import { DataProvider, useData } from "@/context/DataContext";
+import { DataProvider } from "@/context/DataContext";
 import { useDashboardKPIs } from "./useDashboardKPIs";
 
 function wrapper({ children }: { children: ReactNode }) {
