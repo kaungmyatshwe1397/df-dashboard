@@ -18,36 +18,26 @@ import { CycleStatus, RecordCategory } from "../global";
 // authenticateUser()
 // ------------------------------------------
 describe("authenticateUser", () => {
-  // Happy path: correct credentials
-  test("returns user when credentials are correct", () => {
-    const user = authenticateUser("admin", "admin123");
+  test("returns user when username matches", () => {
+    const user = authenticateUser("admin");
     expect(user).not.toBeNull();
     expect(user?.username).toBe("admin");
     expect(user?.role).toBe("ADMIN");
   });
 
-  // Happy path: assistant credentials
-  test("returns assistant user for assistant credentials", () => {
-    const user = authenticateUser("assistant", "assist123");
+  test("returns assistant user for assistant username", () => {
+    const user = authenticateUser("assistant");
     expect(user).not.toBeNull();
     expect(user?.role).toBe("ASSISTANT");
   });
 
-  // Error path: wrong password
-  test("returns null for wrong password", () => {
-    const user = authenticateUser("admin", "wrongpassword");
-    expect(user).toBeNull();
-  });
-
-  // Error path: wrong username
   test("returns null for unknown username", () => {
-    const user = authenticateUser("unknown", "admin123");
+    const user = authenticateUser("unknown");
     expect(user).toBeNull();
   });
 
-  // Edge case: empty inputs
-  test("returns null for empty inputs", () => {
-    const user = authenticateUser("", "");
+  test("returns null for empty input", () => {
+    const user = authenticateUser("");
     expect(user).toBeNull();
   });
 });

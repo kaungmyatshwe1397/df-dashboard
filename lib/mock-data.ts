@@ -30,14 +30,12 @@ export const MOCK_USERS: User[] = [
     id: "user-001",
     email: "admin@test.com",
     username: "admin",
-    password_hash: "admin123",
     role: UserRole.ADMIN,
   },
   {
     id: "user-002",
     email: "assistant@test.com",
     username: "assistant",
-    password_hash: "assist123",
     role: UserRole.ASSISTANT,
   },
 ];
@@ -234,11 +232,10 @@ export interface AuthUser {
 }
 
 export function authenticateUser(
-  username: string,
-  password: string
+  username: string
 ): AuthUser | null {
   const user = MOCK_USERS.find(
-    (u) => u.username === username && u.password_hash === password
+    (u) => u.username === username
   );
 
   if (!user) return null;
