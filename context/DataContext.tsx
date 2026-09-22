@@ -66,10 +66,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const { labs, setLabs, addLab, updateLab, deleteLab } = useLab();
   const { caseTypes, setCaseTypes, addCaseType, updateCaseType, deleteCaseType } = useCaseType();
   const { setAllFinancials, getFinancialsForCycle, updateFinancials, addCustomOverhead, removeCustomOverhead } = useFinancials();
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedMonth, setSelectedMonthState] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("lastSelectedMonth") ?? "";
+    }
+    return "";
+  });
+
+  const setSelectedMonth = useCallback((month: string) => {
+    setSelectedMonthState(month);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("lastSelectedMonth", month);
+    }
+  }, []);
   const [refreshKey, setRefreshKey] = useState(0);
   const [supabase] = useState(() => createClient());
   const initialLoadDone = useRef(false);
+  const fetchMonthDataRef = useRef<(month: string) => Promise<void>>(null);
 
   const cycle = allCycles.find((c) => c.status === "OPEN") ?? null;
   const financials = cycle ? getFinancialsForCycle(cycle.id) : null;
@@ -141,6 +154,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
       initialLoadDone.current = true;
+      fetchMonthDataRef.current?.(effectiveMonth);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
@@ -177,13 +191,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [supabase]);
 
+  // Keep fetchMonthDataRef in sync (used by fetchReferenceData for initial load)
+  useEffect(() => {
+    fetchMonthDataRef.current = fetchMonthData;
+  });
+
   // Initial load: reference data on mount, then month data after reference data loads
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchReferenceData();
   }, [fetchReferenceData, refreshKey]);
 
-  // Month data: skip initial mount (handled by fetchReferenceData flow), re-fetch on month change
+  // Month data: re-fetch on month change (skip initial mount — handled by fetchReferenceData)
   useEffect(() => {
     if (!initialLoadDone.current) return;
     fetchMonthData(effectiveMonth);
