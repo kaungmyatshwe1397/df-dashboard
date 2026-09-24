@@ -5,7 +5,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { GlassAuthCard } from "@/components/auth/GlassAuthCard";
 import { AuthLogo } from "@/components/auth/AuthLogo";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import { Eye, EyeOff } from "lucide-react";
 import { signUpNewUser } from "@/lib/supabase/auth";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -66,10 +67,13 @@ export function TopNav() {
     <>
       <nav className="flex items-center justify-between px-8 py-4 border-b border-border">
         <div className="flex items-center gap-2.5">
-          <img
+          <Image
             src="/clinic-logo.jpg"
             alt="Shwe Taw Win Dental Clinic"
+            width={24}
+            height={24}
             className="h-6 w-6 rounded object-cover"
+            priority
           />
           <span className="text-sm font-bold text-foreground">Shwe Taw Win Dental Clinic</span>
         </div>

@@ -5,7 +5,7 @@
 // Each test scopes queries to its own container to avoid JSDOM portal leaks.
 
 import { describe, test, expect, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, fireEvent, within } from "@testing-library/react";
 import {
   TableEmpty,
   TableError,

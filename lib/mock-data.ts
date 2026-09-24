@@ -30,14 +30,12 @@ export const MOCK_USERS: User[] = [
     id: "user-001",
     email: "admin@test.com",
     username: "admin",
-    password_hash: "admin123",
     role: UserRole.ADMIN,
   },
   {
     id: "user-002",
     email: "assistant@test.com",
     username: "assistant",
-    password_hash: "assist123",
     role: UserRole.ASSISTANT,
   },
 ];
@@ -223,32 +221,7 @@ export const MOCK_DATA: MockData = {
   monthly_financials: MOCK_MONTHLY_FINANCIALS,
 };
 
-// ------------------------------------------
-// Auth Helpers
-// ------------------------------------------
 
-export interface AuthUser {
-  id: string;
-  username: string;
-  role: UserRole;
-}
-
-export function authenticateUser(
-  username: string,
-  password: string
-): AuthUser | null {
-  const user = MOCK_USERS.find(
-    (u) => u.username === username && u.password_hash === password
-  );
-
-  if (!user) return null;
-
-  return {
-    id: user.id,
-    username: user.username,
-    role: user.role,
-  };
-}
 
 // ------------------------------------------
 // Data Helpers

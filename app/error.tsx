@@ -10,7 +10,9 @@ interface ErrorBoundaryProps {
 
 export default function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
   useEffect(() => {
-    console.error("Route error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Route error:", error);
+    }
   }, [error]);
 
   return (
