@@ -10,13 +10,25 @@ import {
   CustomOverhead,
   Lab,
   CaseType,
+  MedicalHistoryOptionType,
+  PatientPayloadType,
+  PatientType,
+  PatientUpdatesType,
   RecordCategory,
   PaymentStatus,
   CasePatientRecordType,
 } from "@/lib/global";
-import { getMonthLabel, getNextMonthLabel, toPatientRecord, toCustomOverhead } from "@/lib/data-helpers";
+import {
+  getMonthLabel,
+  getNextMonthLabel,
+  toPatientRecord,
+  toCustomOverhead,
+  toMedicalHistoryOptions,
+} from "@/lib/data-helpers";
+import { registerPatientWithRecord } from "@/lib/services/patientRecordService";
 import { useLab } from "./hooks/useLab";
 import { useCaseType } from "./hooks/useCaseType";
+import { usePatients } from "./hooks/usePatients";
 import { useFinancials } from "./hooks/useFinancials";
 
 interface DataContextType {
@@ -26,6 +38,7 @@ interface DataContextType {
   financials: MonthlyFinancials | null;
   labs: Lab[];
   caseTypes: CaseType[];
+  medicalHistoryOptions: MedicalHistoryOptionType[];
   loading: boolean;
   error: string | null;
   allMonths: string[];
@@ -35,16 +48,21 @@ interface DataContextType {
   getRecordBalance: (record: PatientRecord) => number;
   getRecordTotalPaid: (recordId: string) => number;
   refreshData: () => void;
-  addRecord: (record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">, initialPayment?: number) => Promise<void>;
+  addRecord: (
+    record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
+    patient: PatientPayloadType,
+    initialPayment?: number
+  ) => Promise<void>;
   updateRecord: (recordId: string, updates: Partial<PatientRecord>) => Promise<void>;
   deleteRecord: (recordId: string) => Promise<void>;
   addPayment: (payment: Omit<CasePayment, "id" | "payment_date">) => Promise<void>;
   findRecordByPatientId: (patientId: string, category?: RecordCategory) => PatientRecord | undefined;
+  findPatientById: (patientId: string) => Promise<PatientType | null>;
+  updatePatient: (patientId: string, updates: PatientUpdatesType) => Promise<void>;
   updateFinancials: (updates: Partial<Omit<MonthlyFinancials, "id" | "cycle_id">>) => Promise<void>;
   addCustomOverhead: (item: Omit<CustomOverhead, "id">) => Promise<void>;
   removeCustomOverhead: (itemId: string) => Promise<void>;
   carryForward: () => Promise<{ carriedCount: number }>;
-  deleteMonth: () => Promise<number>;
   addLab: (name: string) => Promise<boolean>;
   updateLab: (id: string, name: string) => Promise<boolean>;
   deleteLab: (id: string) => Promise<boolean>;
@@ -63,8 +81,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [allRecords, setAllRecords] = useState<PatientRecord[]>([]);
   const [allPayments, setAllPayments] = useState<CasePayment[]>([]);
   const [allCycles, setAllCycles] = useState<MonthlyCycle[]>([]);
+  const [medicalHistoryOptions, setMedicalHistoryOptions] = useState<MedicalHistoryOptionType[]>([]);
   const { labs, setLabs, addLab, updateLab, deleteLab } = useLab();
   const { caseTypes, setCaseTypes, addCaseType, updateCaseType, deleteCaseType } = useCaseType();
+  const { findPatientById, updatePatient: updatePatientRow } = usePatients();
   const { setAllFinancials, getFinancialsForCycle, updateFinancials, addCustomOverhead, removeCustomOverhead } = useFinancials();
   const [selectedMonth, setSelectedMonthState] = useState<string>(() => {
     if (typeof window !== "undefined") {
@@ -84,7 +104,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const initialLoadDone = useRef(false);
   const fetchMonthDataRef = useRef<(month: string) => Promise<void>>(null);
 
-  const cycle = allCycles.find((c) => c.status === "OPEN") ?? null;
+  // Cycles are passive month buckets — the active cycle is simply the one
+  // matching the month being viewed (default: current calendar month).
+  const currentMonthYear = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
+  const effectiveMonth = selectedMonth || getMonthLabel(currentMonthYear);
+  const cycle = allCycles.find((c) => getMonthLabel(c.month_year) === effectiveMonth) ?? null;
   const financials = cycle ? getFinancialsForCycle(cycle.id) : null;
 
   // Derive allMonths from cycles (small, bounded dataset) instead of allRecords
@@ -100,8 +127,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   }, [allCycles]);
 
-  const effectiveMonth = selectedMonth || (cycle ? getMonthLabel(cycle.month_year) : allMonths[0] ?? "");
-
   // ------------------------------------------
   // Phase 1: Fetch reference data (runs once on mount)
   // ------------------------------------------
@@ -110,23 +135,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const [cyclesRes, financialsRes, labsRes, caseTypesRes] = await Promise.all([
+      const [cyclesRes, financialsRes, labsRes, caseTypesRes, medHistRes] = await Promise.all([
         supabase.from("monthly_cycles").select("*").order("month_year", { ascending: false }),
         supabase.from("monthly_financials").select("*"),
         supabase.from("labs").select("*").order("lab_name"),
         supabase.from("case_types").select("*").order("name"),
+        supabase.from("medical_history_options").select("*").order("name"),
       ]);
 
       if (cyclesRes.error) throw cyclesRes.error;
       if (financialsRes.error) throw financialsRes.error;
       if (labsRes.error) throw labsRes.error;
       if (caseTypesRes.error) throw caseTypesRes.error;
+      if (medHistRes.error) throw medHistRes.error;
 
       setAllCycles(
         (cyclesRes.data ?? []).map((c: Record<string, unknown>) => ({
           id: c.id as string,
           month_year: c.month_year as string,
-          status: c.status as "OPEN" | "LOCKED",
         }))
       );
       setAllFinancials(
@@ -149,6 +175,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       );
       setLabs((labsRes.data ?? []).map((l: Record<string, unknown>) => ({ id: l.id as string, lab_name: l.lab_name as string })));
       setCaseTypes((caseTypesRes.data ?? []).map((ct: Record<string, unknown>) => ({ id: ct.id as string, name: ct.name as string })));
+      setMedicalHistoryOptions(toMedicalHistoryOptions(medHistRes.data ?? []));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
@@ -234,25 +261,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const addRecord = useCallback(
     async (
       recordData: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
+      patient: PatientPayloadType,
       initialPayment?: number
     ) => {
-      let activeCycle = cycle;
+      // New records always land in the current calendar month's bucket.
+      let activeCycle = allCycles.find((c) => c.month_year === currentMonthYear) ?? null;
 
       if (!activeCycle) {
-        // No OPEN cycle exists — auto-create one for the current month
-        const now = new Date();
-        const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
         const { data: newCycle, error: cycleError } = await supabase
           .from("monthly_cycles")
-          .insert({ month_year: monthYear, status: "OPEN" })
+          .insert({ month_year: currentMonthYear })
           .select()
           .single();
 
         if (cycleError || !newCycle) {
-          throw new Error(cycleError?.message ?? "Failed to create a new cycle. Please contact an admin.");
+          throw new Error(cycleError?.message ?? "Failed to create the month bucket.");
         }
 
-        activeCycle = { id: newCycle.id, month_year: newCycle.month_year, status: newCycle.status as "OPEN" | "LOCKED" };
+        activeCycle = { id: newCycle.id, month_year: newCycle.month_year };
         setAllCycles((prev) => [...prev, activeCycle!]);
       }
 
@@ -267,17 +293,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         ? { ...recordData, ...baseFields, is_carried_forward: false }
         : { ...recordData, ...baseFields };
 
-      const { data: newRecord, error: insertError } = await supabase
-        .from("patient_records")
-        .insert(insertData)
-        .select()
-        .single();
+      // One atomic RPC — patient + record commit together or not at all.
+      const newRecord = await registerPatientWithRecord(supabase, patient, insertData);
 
-      if (insertError || !newRecord) {
-        throw new Error(insertError?.message ?? "Failed to create record.");
-      }
-
-      setAllRecords((prev) => [...prev, toPatientRecord(newRecord)]);
+      setAllRecords((prev) => [...prev, newRecord]);
       setSelectedMonth(monthLabel);
 
       if (
@@ -301,20 +320,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
           throw new Error(paymentError?.message ?? "Record created but initial payment failed.");
         }
 
-      setAllPayments((prev) => [
-        ...prev,
-        {
-          id: newPayment.id,
-          record_id: newPayment.record_id,
-          payment_date: newPayment.payment_date,
-          paid_amount: newPayment.paid_amount,
-          payment_note: newPayment.payment_note,
-          payment_status: newPayment.payment_status,
-        },
-      ]);
+        setAllPayments((prev) => [
+          ...prev,
+          {
+            id: newPayment.id,
+            record_id: newPayment.record_id,
+            payment_date: newPayment.payment_date,
+            paid_amount: newPayment.paid_amount,
+            payment_note: newPayment.payment_note,
+            payment_status: newPayment.payment_status,
+          },
+        ]);
       }
     },
-    [cycle, supabase]
+    [allCycles, currentMonthYear, supabase]
   );
 
   const updateRecord = useCallback(
@@ -413,14 +432,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase]
   );
 
+  // One patient can have several visits — edit lookup opens the most recent.
   const findRecordByPatientId = useCallback(
     (patientId: string, category?: RecordCategory) =>
-      allRecords.find(
-        (r) =>
-          r.patient_id === patientId.trim() &&
-          (category ? r.category === category : true)
-      ),
+      allRecords
+        .filter(
+          (r) =>
+            r.patient_id === patientId.trim() &&
+            (category ? r.category === category : true)
+        )
+        .sort((a, b) => b.entry_date.localeCompare(a.entry_date))[0],
     [allRecords]
+  );
+
+  const updatePatient = useCallback(
+    async (patientId: string, updates: PatientUpdatesType) => {
+      await updatePatientRow(patientId, updates);
+
+      setAllRecords((prev) =>
+        prev.map((r) =>
+          r.patient_id === patientId.trim()
+            ? {
+                ...r,
+                patient_name: updates.patient_name ?? r.patient_name,
+                address: updates.address !== undefined ? updates.address : r.address,
+              }
+            : r
+        )
+      );
+    },
+    [updatePatientRow]
   );
 
   const carryForward = useCallback(async () => {
@@ -440,14 +481,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!nextCycle) {
       const { data: newCycle, error: cycleError } = await supabase
         .from("monthly_cycles")
-        .insert({ month_year: nextMonthYear, status: "OPEN" })
+        .insert({ month_year: nextMonthYear })
         .select()
         .single();
 
       if (cycleError || !newCycle) {
         throw new Error(cycleError?.message ?? "Failed to create next cycle.");
       }
-      nextCycle = { id: newCycle.id, month_year: newCycle.month_year, status: newCycle.status as "OPEN" | "LOCKED" };
+      nextCycle = { id: newCycle.id, month_year: newCycle.month_year };
       setAllCycles((prev) => [...prev, nextCycle!]);
     }
 
@@ -482,39 +523,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return { carriedCount: unsettledRecords.length };
   }, [cycle, allRecords, allCycles, supabase]);
 
-  const deleteMonth = useCallback(async () => {
-    if (!cycle) return 0;
-
-    // allRecords is already filtered to the current month
-    const recordIds = allRecords.map((r) => r.id);
-    const count = allRecords.length;
-
-    if (recordIds.length > 0) {
-      const { error: paymentsError } = await supabase
-        .from("case_payments")
-        .delete()
-        .in("record_id", recordIds);
-
-      if (paymentsError) {
-        throw new Error(paymentsError.message ?? "Failed to delete payments.");
-      }
-
-      const { error: recordsError } = await supabase
-        .from("patient_records")
-        .delete()
-        .in("id", recordIds);
-
-      if (recordsError) {
-        throw new Error(recordsError.message ?? "Failed to delete records.");
-      }
-    }
-
-    setAllRecords((prev) => prev.filter((r) => !recordIds.includes(r.id)));
-    setAllPayments((prev) => prev.filter((p) => !recordIds.includes(p.record_id)));
-
-    return count;
-  }, [cycle, allRecords, supabase]);
-
   return (
     <DataContext.Provider
       value={{
@@ -524,6 +532,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         financials,
         labs,
         caseTypes,
+        medicalHistoryOptions,
         loading,
         error,
         allMonths,
@@ -538,17 +547,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         deleteRecord,
         addPayment,
         findRecordByPatientId,
+        findPatientById,
+        updatePatient,
         updateFinancials: cycle
           ? (updates) => updateFinancials(cycle.id, updates)
-          : async () => { throw new Error("No open cycle found. Cannot update financials."); },
+          : async () => { throw new Error("No cycle for this month yet. Add a record first."); },
         addCustomOverhead: cycle
           ? (item) => addCustomOverhead(cycle.id, item)
-          : async () => { throw new Error("No open cycle found. Cannot add custom overhead."); },
+          : async () => { throw new Error("No cycle for this month yet. Add a record first."); },
         removeCustomOverhead: cycle
           ? (itemId) => removeCustomOverhead(cycle.id, itemId)
-          : async () => { throw new Error("No open cycle found. Cannot remove custom overhead."); },
+          : async () => { throw new Error("No cycle for this month yet. Add a record first."); },
         carryForward,
-        deleteMonth,
         addLab,
         updateLab,
         deleteLab,

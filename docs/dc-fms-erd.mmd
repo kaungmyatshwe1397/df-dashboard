@@ -1,5 +1,6 @@
 erDiagram
     USERS ||--o{ MONTHLY_CYCLES : "manages (admin)"
+    PATIENTS ||--o{ PATIENT_RECORDS : "visits (many per patient)"
     MONTHLY_CYCLES ||--o{ PATIENT_RECORDS : "contains"
     PATIENT_RECORDS ||--o{ CASE_PAYMENTS : "installments (CASE only)"
     PATIENT_RECORDS }o--|| LABS : "assigned to (CASE only)"
@@ -14,10 +15,28 @@ erDiagram
         timestamp created_at "account creation date"
     }
 
+    PATIENTS {
+        uuid id PK
+        string patient_id "globally unique forever, e.g. 0001/26"
+        string patient_name "not null"
+        integer age "not null, 0-120"
+        enum gender "MALE, FEMALE, OTHER — not null"
+        string address "optional"
+        string drug_allergy "optional free text"
+        string[] current_medications "optional list, assistant adds chips"
+        string[] past_medical_history "snapshot of selected option names"
+        string past_dental_history "optional free text"
+        timestamp created_at
+    }
+
+    MEDICAL_HISTORY_OPTIONS {
+        uuid id PK
+        string name "unique picklist entry — dynamic, admin-managed later"
+    }
+
     MONTHLY_CYCLES {
         uuid id PK
-        string month_year
-        enum status "OPEN or CLOSED"
+        string month_year "unique passive month bucket e.g. 2026-09 — no lock/close status"
     }
 
     LABS {
@@ -33,10 +52,10 @@ erDiagram
     PATIENT_RECORDS {
         uuid id PK
         uuid cycle_id FK
-        string patient_id "unique per cycle, e.g. 0001/26"
+        string patient_id "FK to PATIENTS.patient_id — one person = one ID"
         date entry_date
-        string patient_name
-        string address "optional"
+        string patient_name "denormalized display copy"
+        string address "denormalized display copy, optional"
         enum category "GP or CASE"
         string diagnosis
         integer total_cost
@@ -88,8 +107,28 @@ erDiagram
     %% Case tracks installments via CASE_PAYMENTS, shows balance and status.
     %% Lab Reconciliation groups case records by lab with a filter selector.
     %%
+    %% Cycle Notes:
+    %%   MONTHLY_CYCLES rows are passive month buckets (month_year UNIQUE).
+    %%   No OPEN/LOCKED status — cycles never lock or close. The app
+    %%   auto-creates a bucket on the first record of a month; carry-forward
+    %%   creates the next month's bucket when moving unsettled CASE balances.
+    %%
+    %% Patient Registry Notes:
+    %%   PATIENTS — one row per person; patient_id globally unique forever.
+    %%   Duplicate registration is impossible: UNIQUE(patient_id) + atomic RPC
+    %%   register_patient_with_record (patient + visit record in one transaction).
+    %%   A returning patient gets a NEW PATIENT_RECORDS row (visit) linked to
+    %%   the same PATIENTS row — demographics live only on PATIENTS.
+    %%   past_medical_history / current_medications are TEXT[] snapshots on
+    %%   PATIENTS — NOT a foreign key — so editing MEDICAL_HISTORY_OPTIONS
+    %%   later never corrupts existing patient history.
+    %%   Deleting a record (admin + assistant) never deletes the PATIENTS row.
+    %%   PATIENTS delete is admin-only.
+    %%
     %% Reference Tables:
     %%   LABS — managed via /admin/reconciliation/manage (add/edit/delete)
     %%   CASE_TYPES — managed via /admin/reconciliation/manage (add/edit/delete)
-    %%   Both are used in dropdowns for new records. Deleting does NOT cascade
-    %%   to patient_records (case_type stored as text, lab_name stored as text).
+    %%   MEDICAL_HISTORY_OPTIONS — admin manage UI later (add/edit/delete)
+    %%   Both LABS and CASE_TYPES are used in dropdowns for new records.
+    %%   Deleting does NOT cascade to patient_records (case_type stored as
+    %%   text, lab_name stored as text).

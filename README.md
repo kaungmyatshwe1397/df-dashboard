@@ -9,11 +9,11 @@ Built for a two-role workflow: **Admin** (clinic owner) and **Assistant** (clini
 DC-FMS replaces the manual paper logbook workflow with a digital system that handles:
 
 - **Patient record entry** — log treatments with diagnosis, cost, and payment status
-- **Monthly billing cycles** — automatically carry forward unpaid case balances across months
+- **Monthly buckets** — each month is a passive bucket; unpaid case balances carry forward on demand
 - **Payment tracking** — record installment payments and calculate remaining balances
 - **Lab fee reconciliation** — assign laboratory fees to specific case treatments
 - **Financial calculations** — compute doctor commission (40%), overhead expenses, and net profit/loss
-- **Month-end closeout** — lock completed records, carry forward unsettled cases, and open new cycles
+- **Carry forward** — move unsettled case balances into the next month (no lock/close workflow)
 
 ## Features
 
@@ -36,11 +36,11 @@ DC-FMS replaces the manual paper logbook workflow with a digital system that han
 - Input lab fees per case with auto-aggregation
 - Track lab payment status (paid/unpaid)
 
-### Month-End Closeout
+### Carry Forward
 
-- Carry forward unsettled cases to the next month
-- Hard delete of completed records
-- Auto-create next billing cycle
+- Move unsettled case balances to the next month
+- Auto-creates the next month bucket
+- Fully paid cases stay in the current month
 
 ### User Management
 

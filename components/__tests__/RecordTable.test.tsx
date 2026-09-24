@@ -74,20 +74,6 @@ describe("RecordTable", () => {
     });
   });
 
-  test("hides add buttons when cycle is locked", async () => {
-    renderWithProvider(<RecordTable onAdd={() => {}} onEdit={() => {}} />);
-    await waitFor(() => {
-      expect(screen.getAllByText("Patient Records").length).toBeGreaterThanOrEqual(1);
-    });
-
-    // Seed data has cycle OPEN, so add buttons should be visible
-    // We verify the locked badge appears when cycle is locked
-    // For unlocked cycle, no badge should be visible
-    const lockedBadges = screen.queryAllByText("Read-only");
-    // No badge when unlocked
-    expect(lockedBadges.length).toBe(0);
-  });
-
   test("shows record count per tab", async () => {
     renderWithProvider(<RecordTable onAdd={() => {}} onEdit={() => {}} />);
     await waitFor(() => {

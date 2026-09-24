@@ -6,8 +6,8 @@ import { vi, beforeEach } from "vitest";
 // ──────────────────────────────────────────────
 
 const SEED_CYCLES = [
-  { id: "cycle-001", month_year: "2026-09", status: "OPEN" },
-  { id: "cycle-002", month_year: "2026-08", status: "LOCKED" },
+  { id: "cycle-001", month_year: "2026-09" },
+  { id: "cycle-002", month_year: "2026-08" },
 ];
 
 const SEED_RECORDS = [
@@ -58,6 +58,33 @@ const SEED_CASE_TYPES = [
   { id: "ct-002", name: "Crown" },
 ];
 
+const SEED_PATIENTS = [
+  {
+    id: "pat-001", patient_id: "0001/26", patient_name: "John Doe", age: 34,
+    gender: "MALE", address: "123 Main St", drug_allergy: null,
+    past_dental_history: null, current_medications: [], past_medical_history: [],
+    created_at: "2026-09-01T00:00:00Z",
+  },
+  {
+    id: "pat-002", patient_id: "0003/26", patient_name: "Jane Smith", age: 45,
+    gender: "FEMALE", address: null, drug_allergy: "Penicillin",
+    past_dental_history: null, current_medications: ["Metformin"],
+    past_medical_history: ["Diabetes"], created_at: "2026-09-02T00:00:00Z",
+  },
+  {
+    id: "pat-003", patient_id: "0004/26", patient_name: "Robert Johnson", age: 52,
+    gender: "MALE", address: null, drug_allergy: null,
+    past_dental_history: null, current_medications: [],
+    past_medical_history: ["Hypertension"], created_at: "2026-09-04T00:00:00Z",
+  },
+];
+
+const SEED_MEDICAL_HISTORY_OPTIONS = [
+  { id: "mh-001", name: "Heart Disease" },
+  { id: "mh-002", name: "Hypertension" },
+  { id: "mh-003", name: "Diabetes" },
+];
+
 const SEED_PROFILES = [
   { id: "user-001", username: "admin", email: "admin@test.com", role: "ADMIN" },
   { id: "user-002", username: "assistant", email: "assistant@test.com", role: "ASSISTANT" },
@@ -92,6 +119,12 @@ function freshData(): Record<string, unknown[]> {
     monthly_financials: SEED_FINANCIALS.map((f) => ({ ...f, custom_overheads: [...f.custom_overheads] })),
     labs: SEED_LABS.map((l) => ({ ...l })),
     case_types: SEED_CASE_TYPES.map((ct) => ({ ...ct })),
+    patients: SEED_PATIENTS.map((p) => ({
+      ...p,
+      current_medications: [...p.current_medications],
+      past_medical_history: [...p.past_medical_history],
+    })),
+    medical_history_options: SEED_MEDICAL_HISTORY_OPTIONS.map((o) => ({ ...o })),
     profiles: SEED_PROFILES.map((u) => ({ ...u })),
   };
 }
@@ -135,6 +168,10 @@ function mockQuery(table: string, rows: unknown[]) {
   q.single = vi.fn().mockImplementation(() =>
     Promise.resolve({ data: data[0] ?? null, error: null })
   );
+  q.maybeSingle = vi.fn().mockImplementation(() =>
+    Promise.resolve({ data: data[0] ?? null, error: null })
+  );
+  q.limit = vi.fn().mockReturnValue(q);
 
   q.insert = vi.fn().mockImplementation((rowData: Record<string, unknown>) => {
     const row = { id: `mock-${Date.now()}-${Math.random()}`, ...rowData };
@@ -156,7 +193,31 @@ function mockQuery(table: string, rows: unknown[]) {
     };
   });
 
-  q.update = vi.fn().mockReturnValue(q);
+  q.update = vi.fn().mockImplementation((values: Record<string, unknown>) => {
+    // Persist on await: mutate the matching db rows in place so subsequent
+    // reads in the same test observe the update (mirrors PostgREST PATCH).
+    const apply = () => {
+      const matchedIds = new Set(
+        data.map((r) => (r as Record<string, unknown>).id)
+      );
+      const rows = (db[table] ?? []) as Record<string, unknown>[];
+      for (const row of rows) {
+        if (matchedIds.has(row.id)) Object.assign(row, values);
+      }
+      data = data.map((r) => ({ ...(r as Record<string, unknown>) }));
+    };
+    q.then = (
+      resolve: (v: unknown) => void,
+      reject?: (e: unknown) => void
+    ) => {
+      apply();
+      Promise.resolve({ data, error: null }).then(
+        (v) => resolve(v),
+        (e) => (reject ? reject(e) : undefined)
+      );
+    };
+    return q;
+  });
   q.delete = vi.fn().mockReturnValue(q);
   q.upsert = vi.fn().mockReturnValue(q);
 
@@ -191,6 +252,43 @@ function makeThenable(resolver: () => { data: unknown; error: null }) {
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(() => ({
     from: vi.fn((table: string) => mockQuery(table, db[table] || [])),
+    // Mirrors the atomic register_patient_with_record RPC: inserts the
+    // patient when missing, then the visit record, in one result.
+    rpc: vi.fn((fn: string, args: Record<string, unknown>) => {
+      if (fn !== "register_patient_with_record") {
+        return Promise.resolve({ data: null, error: { message: `Unknown function ${fn}` } });
+      }
+      const patient = args.p_patient as Record<string, unknown>;
+      const record = args.p_record as Record<string, unknown>;
+      if (!patient || !patient.patient_id) {
+        return Promise.resolve({ data: null, error: { code: "23502", message: "Patient ID is required." } });
+      }
+      const pid = patient.patient_id as string;
+      const existing = (db.patients as Record<string, unknown>[]).find(
+        (p) => p.patient_id === pid
+      );
+      let patientUuid: string;
+      if (existing) {
+        patientUuid = existing.id as string;
+      } else {
+        patientUuid = `mock-pat-${Date.now()}-${Math.random()}`;
+        (db.patients as Record<string, unknown>[]).push({
+          id: patientUuid,
+          created_at: new Date().toISOString(),
+          ...patient,
+        });
+      }
+      const row: Record<string, unknown> = {
+        id: `mock-rec-${Date.now()}-${Math.random()}`,
+        is_carried_forward: false,
+        ...record,
+      };
+      (db.patient_records as Record<string, unknown>[]).push(row);
+      return Promise.resolve({
+        data: { patient_id: patientUuid, record: row },
+        error: null,
+      });
+    }),
     auth: {
       signUp: vi.fn().mockImplementation(
         ({ email, password }: { email: string; password: string }) => {

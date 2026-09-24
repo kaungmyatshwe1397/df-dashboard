@@ -17,26 +17,36 @@ flowchart TD
         Edit[Edit Record]
         Pay[Record Payment]
         History[View Payment History]
+        DeleteRec[Delete Record]
     end
 
     Table --> RecordActions
 
-    Add --> Form[Fill Form\nName, Diagnosis, Cost]
-    Form --> Save1[Save] --> Table
+    Add --> IdInput[Enter Patient ID]
+    IdInput --> IdCheck{Already\nregistered?}
+
+    IdCheck -->|No — new patient| NewForm[Full Form\nDemographics, Medical History,\nTreatment, Cost]
+    NewForm --> Save1[Save — atomic RPC\npatient + record] --> Table
+
+    IdCheck -->|Yes — returning patient| LockedAlert["Alert: ID already registered to\nexisting patient name.\nIf different person — use a new ID"]
+    LockedAlert --> Prefill[Demographics prefilled + LOCKED]
+    Prefill --> TxForm[Edit treatment and cost only]
+    TxForm --> Save2[Save — new visit record] --> Table
+
+    IdCheck -->|ID changed after link| IdInput
 
     Edit --> Lookup[Search by Patient ID]
-    Lookup --> Prefill[Form Prefilled] --> Save2[Save] --> Table
+    Lookup --> Prefill2[Form Prefilled\nDemographics + Treatment] --> Save3[Save] --> Table
+
+    DeleteRec --> Confirm[Confirm Delete] --> Table
+    NoteDelete["Deletes record only —\npatient stays in registry"]
 
     Pay --> Dialog[Payment Dialog\nDate, Amount, Note]
-    Dialog --> Save3[Save Payment]
-    Save3 --> Sync[Sync Record Totals]
+    Dialog --> Save4[Save Payment]
+    Save4 --> Sync[Sync Record Totals]
     Sync --> Table
 
     History --> Expand[Expand Row\nShow Installments] --> Table
-
-    Table --> Lock{Cycle Locked?}
-    Lock -->|No| RecordActions
-    Lock -->|Yes| ReadOnly[Read-Only View]
 
     %% ==============================
     %% ADMIN ONLY: EXTRA MODULES
@@ -48,9 +58,10 @@ flowchart TD
         Dashboard[Dashboard]
         LabRecon[Lab Reconciliation]
         Overhead[Overhead Input]
-        Closeout[Month-End Closeout]
+        CarryFwd[Carry Forward]
         UserMgmt[User Management]
         ChangePw[Change Password]
+        MedHistOpts[Manage Medical History Options]
     end
 
     AdminModules --> AdminOnly
@@ -59,14 +70,11 @@ flowchart TD
     Overhead --> Expenses[Enter Expenses] --> Dashboard
     Dashboard --> KPIs[Revenue, Commission,\nProfit/Loss]
 
-    Closeout --> Step1[Preview] --> Step2[Confirm]
-    Step2 --> Partition{Settled?}
-    Partition -->|Yes| Delete[Hard Delete]
-    Partition -->|No| Carry[Carry Forward]
-    Delete --> NewCycle[New Cycle]
-    Carry --> NewCycle
-    NewCycle --> Table
+    CarryFwd --> CF[Move unsettled CASE\nbalances to next month]
+    CF --> NewBucket[Next month bucket auto-created]
+    NewBucket --> Table
 
     UserMgmt --> EditUser[Edit Username/Password]
     UserMgmt --> DeleteAssistant[Delete Assistant Account]
     ChangePw --> VerifyCurrent[Verify Current Password] --> SetNew[Set New Password]
+    MedHistOpts -.->|later| AddOpt[Add / Edit / Remove Option]

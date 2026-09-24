@@ -7,7 +7,6 @@ import {
   User,
   UserRole,
   MonthlyCycle,
-  CycleStatus,
   GPPatientRecordType,
   CasePatientRecordType,
   PatientRecord,
@@ -61,19 +60,17 @@ export const MOCK_CASE_TYPES: CaseType[] = [
 ];
 
 // ------------------------------------------
-// Mock Cycles
+// Mock Cycles (passive month buckets)
 // ------------------------------------------
 
 export const MOCK_CYCLES: MonthlyCycle[] = [
   {
     id: "cycle-001",
     month_year: "2026-09",
-    status: CycleStatus.OPEN,
   },
   {
     id: "cycle-002",
     month_year: "2026-08",
-    status: CycleStatus.LOCKED,
   },
 ];
 
@@ -227,8 +224,8 @@ export const MOCK_DATA: MockData = {
 // Data Helpers
 // ------------------------------------------
 
-export function getActiveCycle(): MonthlyCycle | undefined {
-  return MOCK_CYCLES.find((c) => c.status === CycleStatus.OPEN);
+export function getCycleByMonth(monthYear: string): MonthlyCycle | undefined {
+  return MOCK_CYCLES.find((c) => c.month_year === monthYear);
 }
 
 export function getRecordsByCycle(cycleId: string): PatientRecord[] {

@@ -8,10 +8,26 @@ import { describe, test, expect } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 import { DataProvider, useData } from "../DataContext";
-import { RecordCategory, PaymentStatus } from "@/lib/global";
+import {
+  Gender,
+  PatientPayloadType,
+  PaymentStatus,
+  RecordCategory,
+} from "@/lib/global";
 
 function wrapper({ children }: { children: ReactNode }) {
   return <DataProvider>{children}</DataProvider>;
+}
+
+function makePatient(patient_id: string, patient_name: string): PatientPayloadType {
+  return {
+    patient_id,
+    patient_name,
+    age: 25,
+    gender: Gender.FEMALE,
+    current_medications: [],
+    past_medical_history: [],
+  };
 }
 
 describe("DataContext — Mutation Error Handling", () => {
@@ -24,13 +40,16 @@ describe("DataContext — Mutation Error Handling", () => {
       });
 
       await act(async () => {
-        await result.current.addRecord({
-          patient_id: "ERR-001",
-          patient_name: "Month Test",
-          category: RecordCategory.GP,
-          diagnosis: "Test",
-          total_cost: 10000,
-        });
+        await result.current.addRecord(
+          {
+            patient_id: "ERR-001",
+            patient_name: "Month Test",
+            category: RecordCategory.GP,
+            diagnosis: "Test",
+            total_cost: 10000,
+          },
+          makePatient("ERR-001", "Month Test")
+        );
       });
 
       // After adding, selectedMonth should be "Sep 2026" (the open cycle's month)
@@ -47,13 +66,16 @@ describe("DataContext — Mutation Error Handling", () => {
       const recordsBefore = result.current.records.length;
 
       await act(async () => {
-        await result.current.addRecord({
-          patient_id: "NEW-001",
-          patient_name: "New Patient",
-          category: RecordCategory.GP,
-          diagnosis: "Checkup",
-          total_cost: 30000,
-        });
+        await result.current.addRecord(
+          {
+            patient_id: "NEW-001",
+            patient_name: "New Patient",
+            category: RecordCategory.GP,
+            diagnosis: "Checkup",
+            total_cost: 30000,
+          },
+          makePatient("NEW-001", "New Patient")
+        );
       });
 
       expect(result.current.records.length).toBe(recordsBefore + 1);

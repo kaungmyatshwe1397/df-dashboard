@@ -2,10 +2,14 @@
 
 ## Dental Clinic Financial Management System (DC-FMS)
 
-**Document Version:** 1.1 (Updated Architecture & Lifecycle)
+**Document Version:** 1.2 (Cycle lock/close removed — carry-forward only)
 **Target Platform:** Fullstack Next.js (Vercel + Supabase)
-**Date:** August 2026
+**Date:** September 2026
 **Status:** Final Approved for MVP Development
+
+> **v1.2 change:** Month-end lock/close/purge has been removed from the product.
+> Monthly cycles are passive buckets that never lock; the only month-boundary
+> action is manually carrying forward unsettled case balances.
 
 ---
 
@@ -23,8 +27,7 @@ The system is architected as a modern Full-Stack Next.js application deployed se
 
 - Eliminate physical logbook re-entry and fragmented chat communications.
 - Enforce strict separation of operational data entry from clinic financial intelligence.
-- **Multi-Session Case Lifecycle:** Automatically carry forward active, unpaid case balances across monthly billing boundaries without manual data duplication.
-- **High-Performance Data Purging:** Execute a secure hard delete for closed/completed transactions at month-end while preserving unsettled cases into the new billing cycle.
+- **Multi-Session Case Lifecycle:** Carry forward active, unpaid case balances across monthly boundaries without manual data duplication.
 
 ---
 
@@ -35,12 +38,12 @@ The system enforces a dual-role access control architecture to ensure operationa
 | System Module / Feature | Assistant Role | Admin Role (Owner) |
 |---|---|---|
 | Daily Patient Data Entry | Create & View current active month entries | Full Access (Create, Read, Update, Delete) |
-| Data Modification / Editing | Editable until Admin executes month closeout | Unrestricted edit/override capabilities |
+| Data Modification / Editing | Editable while the month is active | Unrestricted edit/override capabilities |
 | Installment & Balance Tracking | Input paid amounts; view real-time remaining balance | Full visibility across current and rolled-over cases |
 | Financial Dashboard & Totals | Strictly Hidden (No Access) | Full visibility (Gross Income, Profit/Loss) |
 | Lab Fee Input & Assignment | Strictly Hidden (No Access) | Filter active cases; assign specific lab costs |
 | Monthly Overhead & Expenses | Input single general expense (if granted) | Manage salaries, bonuses, rent, and utilities |
-| Month Closeout & Purge | Strictly Hidden (No Access) | Execute hard delete of settled data & auto-carryover |
+| Carry Forward | Strictly Hidden (No Access) | Move unsettled case balances into the next month |
 
 ---
 
@@ -71,12 +74,10 @@ Doctor Commission Fee = Commission Base × 40% (0.40)
 
 - Net Profit / Loss > 0 indicates Net Profit; Net Profit / Loss < 0 indicates Net Loss.
 
-### 3.4 Cross-Month Case Rollover & Hard Delete Logic
+### 3.4 Cross-Month Case Carry-Forward Logic
 
-1. **Cycle Status Closure:** When the Admin initiates the month-end closeout, the system queries all records under the current active cycle.
-2. **Partitioning Logic:**
-   - **Fully Settled Records** (All GP records and Cases where Remaining Balance = 0): Purged permanently (Hard Delete) after monthly summary aggregation is finalized.
-   - **Incomplete Cases** (Cases where Remaining Balance > 0): Automatically migrated/carried forward into the new billing cycle.
+1. **Manual trigger:** Admin opens the Carry Forward screen and runs the action for the current month.
+2. **Selection Logic:** Cases where Remaining Balance > 0 are moved into the next month's bucket; fully settled records stay in the current month (nothing is purged).
 3. **Carried-Forward Record State:** Preserves original Total Cost, historical accumulated payments, and outstanding balance, allowing staff to log subsequent installments until final completion.
 
 ---
@@ -87,14 +88,14 @@ Doctor Commission Fee = Commission Base × 40% (0.40)
 
 - **Patient Record Entry Form:** Fields include Patient Name, Address (Optional), Category Selector (GP / Case), Diagnosis & Treatment Description, Total Treatment Cost, and Amount Paid Today.
 - **Active Cycle Record Table:** Displays active and carried-forward patient visits for the current month. Aggregated totals, profit margins, and doctor commission numbers are strictly suppressed.
-- **Inline Editing:** Assistant can edit records during the open cycle. When the Admin executes "Lock / Close Month", all assistant editing capabilities are revoked.
+- **Inline Editing:** Assistant can edit records at any time — months never lock.
 
 ### 4.2 Admin Portal (Financial Reconciliation & Analytics)
 
 - **Case & Lab Fee Reconciliation Engine:** Automated table isolating all active "Case" treatments. Admin inputs specific laboratory fees incurred for each case. Total lab fees auto-aggregate instantly.
 - **Monthly Overhead Input Module:** Single-input form for General Monthly Expense, Assistant Salary, Performance Bonus, Property Rent, and Utility Bills.
 - **Live Financial Dashboard:** Displays real-time KPIs: Total GP Revenue, Total Case Revenue, Total Lab Deductions, Doctor Commission (40%), Operating Overhead, and Net Profit/Loss.
-- **Month-End Closeout & Purge Trigger:** A two-step confirmation workflow that saves the final financial summary, hard-deletes completed records, migrates active unsettled cases, and opens the new month.
+- **Carry Forward Action:** Moves unsettled case balances into the next month's bucket; the next bucket is auto-created on demand.
 
 ---
 
@@ -115,7 +116,7 @@ Doctor Commission Fee = Commission Base × 40% (0.40)
 | Table Name | Key Attributes | Functional Purpose |
 |---|---|---|
 | users | id, email, username, password_hash, role (ADMIN/ASSISTANT) | User credentials and RBAC enforcement. Email used for auth, username is display name. |
-| monthly_cycles | id, month_year, status (ACTIVE/LOCKED/CLOSED) | Billing period demarcation and cycle state |
+| monthly_cycles | id, month_year (unique) | Passive month bucket; no lock/close state |
 | patient_records | id, cycle_id, entry_date, patient_name, category, total_cost, lab_fee, payment_status, is_carried_forward | Patient treatments and lab fee assignments |
 | case_payments | id, record_id, payment_date, paid_amount, payment_note | Timestamped installment payment tracking |
 | monthly_financials | id, cycle_id, total_gp, total_case, gross_income, lab_fee, doc_comm, expenses, net_profit | Persistent monthly financial performance records |
@@ -126,7 +127,7 @@ Doctor Commission Fee = Commission Base × 40% (0.40)
 
 ### Phase 1: MVP Core Launch
 
-Fullstack Next.js + Supabase setup, RBAC Auth, Assistant Daily Entry Form, Split Installment tracking, Admin Dynamic Financial Engine, Hard Delete for completed records, and Auto-Carry Forward for incomplete cases.
+Fullstack Next.js + Supabase setup, RBAC Auth, Assistant Daily Entry Form, Split Installment tracking, Admin Dynamic Financial Engine, and Carry Forward for incomplete cases.
 
 ### Phase 2: Client-Side PDF Generation & Advanced Filters
 

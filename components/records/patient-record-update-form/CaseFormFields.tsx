@@ -1,6 +1,7 @@
-// Case form fields — Patient ID, Name, Address, Case Type, Tooth Numbers,
+// Case treatment fields — Case Type, Tooth Numbers,
 // Total Cost, Lab Name (required Select), Lab Send Date, Delivery Date, Paid, Remaining.
 // Diagnosis is auto-generated from case type + teeth selection.
+// Identity/demographics live in PatientInfoSection.
 
 "use client";
 
@@ -13,9 +14,6 @@ import { LabSelector } from "./LabSelector";
 
 interface CaseFormFieldsProps {
   form: {
-    patientId: string;
-    patientName: string;
-    address: string;
     category: RecordCategory;
     diagnosis: string;
     caseType: string;
@@ -27,8 +25,6 @@ interface CaseFormFieldsProps {
     paid: string;
   };
   errors: {
-    patientId?: string;
-    patientName?: string;
     diagnosis?: string;
     caseType?: string;
     teeth?: string;
@@ -58,53 +54,6 @@ export function CaseFormFields({
 
   return (
     <>
-      <FormField
-        label="Patient ID"
-        htmlFor="patientId"
-        required
-        hint="(e.g. 0001/26)"
-        error={errors.patientId}
-      >
-        <Input
-          id="patientId"
-          placeholder="e.g. 0001/26"
-          value={form.patientId}
-          onChange={(e) => updateField("patientId", e.target.value)}
-          aria-invalid={!!errors.patientId}
-          disabled={saving}
-        />
-      </FormField>
-
-      <FormField
-        label="Patient Name"
-        htmlFor="patientName"
-        required
-        error={errors.patientName}
-      >
-        <Input
-          id="patientName"
-          placeholder="e.g. John Doe"
-          value={form.patientName}
-          onChange={(e) => updateField("patientName", e.target.value)}
-          aria-invalid={!!errors.patientName}
-          disabled={saving}
-        />
-      </FormField>
-
-      <FormField
-        label="Address"
-        htmlFor="address"
-        hint="(optional)"
-      >
-        <Input
-          id="address"
-          placeholder="e.g. 123 Main St"
-          value={form.address}
-          onChange={(e) => updateField("address", e.target.value)}
-          disabled={saving}
-        />
-      </FormField>
-
       <FormField
         label="Case Type"
         htmlFor="caseType"
