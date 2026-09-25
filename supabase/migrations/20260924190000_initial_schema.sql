@@ -495,7 +495,8 @@ CREATE POLICY "medical_history_options_delete_admin"
 
 CREATE OR REPLACE FUNCTION register_patient_with_record(
   p_patient jsonb,
-  p_record jsonb
+  p_record jsonb,
+  p_is_new_patient boolean
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -504,18 +505,22 @@ AS $$
 DECLARE
   v_patient_id TEXT := NULLIF(BTRIM(p_patient->>'patient_id'), '');
   v_patient_uuid UUID;
+  v_patient_name TEXT;
+  v_address TEXT;
   v_record jsonb;
 BEGIN
   IF v_patient_id IS NULL THEN
     RAISE EXCEPTION 'Patient ID is required.' USING ERRCODE = '23502';
   END IF;
 
-  SELECT id INTO v_patient_uuid FROM patients WHERE patient_id = v_patient_id;
+  SELECT id, patient_name, address
+    INTO v_patient_uuid, v_patient_name, v_address
+    FROM patients WHERE patient_id = v_patient_id;
 
-  IF v_patient_uuid IS NULL THEN
-    IF p_patient IS NULL THEN
-      RAISE EXCEPTION 'Patient ID is not registered.'
-        USING ERRCODE = '23503';
+  IF p_is_new_patient THEN
+    IF v_patient_uuid IS NOT NULL THEN
+      RAISE EXCEPTION 'The patient ID is already registered for another person. Check your patient ID again.'
+        USING ERRCODE = '23505';
     END IF;
 
     BEGIN
@@ -541,11 +546,14 @@ BEGIN
           '{}'
         )
       )
-      RETURNING id INTO v_patient_uuid;
+      RETURNING id, patient_name, address
+        INTO v_patient_uuid, v_patient_name, v_address;
     EXCEPTION WHEN unique_violation THEN
       RAISE EXCEPTION 'The patient ID is already registered for another person. Check your patient ID again.'
         USING ERRCODE = '23505';
     END;
+  ELSIF v_patient_uuid IS NULL THEN
+    RAISE EXCEPTION 'Patient ID is not registered.' USING ERRCODE = '23503';
   END IF;
 
   INSERT INTO patient_records (
@@ -558,8 +566,8 @@ BEGIN
     (p_record->>'cycle_id')::uuid,
     v_patient_id,
     (p_record->>'entry_date')::date,
-    p_record->>'patient_name',
-    NULLIF(BTRIM(p_record->>'address'), ''),
+    v_patient_name,
+    NULLIF(BTRIM(v_address), ''),
     (p_record->>'category')::record_category,
     p_record->>'diagnosis',
     (p_record->>'total_cost')::integer,
@@ -579,5 +587,5 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION register_patient_with_record(jsonb, jsonb) IS
-  'Atomic: inserts patient (if new) + visit record in one transaction. Rolls back both on any failure. Duplicate patient_id raises 23505 with a friendly message.';
+COMMENT ON FUNCTION register_patient_with_record(jsonb, jsonb, boolean) IS
+  'Atomic: p_is_new_patient = true inserts the patient (existing ID raises 23505); false requires an existing registry row (missing ID raises 23503) and writes the registry''s name/address onto the visit record. Patient and record commit together or not at all.';

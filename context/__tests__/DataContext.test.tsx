@@ -198,7 +198,8 @@ describe("DataContext — CRUD Operations", () => {
             diagnosis: "Test diagnosis",
             total_cost: 75000,
           },
-          makePatient("0099/26", "Test Patient")
+          makePatient("0099/26", "Test Patient"),
+          true
         );
       });
 
@@ -234,6 +235,7 @@ describe("DataContext — CRUD Operations", () => {
             teeth: "11",
           } as Omit<CasePatientRecordType, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
           makePatient("0098/26", "Case Patient"),
+          true,
           100000
         );
       });

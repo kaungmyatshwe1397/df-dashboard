@@ -92,7 +92,8 @@ describe("DataContext — Patient Registry", () => {
             gender: Gender.MALE,
             current_medications: [],
             past_medical_history: [],
-          }
+          },
+          false
         );
       });
 

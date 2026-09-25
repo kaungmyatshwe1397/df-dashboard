@@ -48,7 +48,8 @@ describe("DataContext — Mutation Error Handling", () => {
             diagnosis: "Test",
             total_cost: 10000,
           },
-          makePatient("ERR-001", "Month Test")
+          makePatient("ERR-001", "Month Test"),
+          true
         );
       });
 
@@ -74,7 +75,8 @@ describe("DataContext — Mutation Error Handling", () => {
             diagnosis: "Checkup",
             total_cost: 30000,
           },
-          makePatient("NEW-001", "New Patient")
+          makePatient("NEW-001", "New Patient"),
+          true
         );
       });
 

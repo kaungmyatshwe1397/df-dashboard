@@ -51,6 +51,7 @@ interface DataContextType {
   addRecord: (
     record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
     patient: PatientPayloadType,
+    isNewPatient: boolean,
     initialPayment?: number
   ) => Promise<void>;
   updateRecord: (recordId: string, updates: Partial<PatientRecord>) => Promise<void>;
@@ -262,6 +263,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     async (
       recordData: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
       patient: PatientPayloadType,
+      isNewPatient: boolean,
       initialPayment?: number
     ) => {
       // New records always land in the current calendar month's bucket.
@@ -294,7 +296,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         : { ...recordData, ...baseFields };
 
       // One atomic RPC — patient + record commit together or not at all.
-      const newRecord = await registerPatientWithRecord(supabase, patient, insertData);
+      const newRecord = await registerPatientWithRecord(supabase, patient, insertData, isNewPatient);
 
       setAllRecords((prev) => [...prev, newRecord]);
       setSelectedMonth(monthLabel);
