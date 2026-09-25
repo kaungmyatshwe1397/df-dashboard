@@ -74,6 +74,10 @@ export function PatientRecordUpdateForm({
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // True only when the patients registry row was fetched for the current
+  // record; guards demographic writes when the fetch failed or no row exists.
+  const [registryRowLoaded, setRegistryRowLoaded] = useState(false);
+
   const [returningPatient, setReturningPatient] = useState<PatientType | null>(null);
   const [lookupNotice, setLookupNotice] = useState<string | null>(null);
   const [checkingPatient, setCheckingPatient] = useState(false);
@@ -90,6 +94,7 @@ export function PatientRecordUpdateForm({
     setLookupNotice(null);
     setIdCheckError(null);
     setCheckingPatient(false);
+    setRegistryRowLoaded(false);
 
     if (isAdding) {
       setFoundRecord(null);
@@ -104,6 +109,7 @@ export function PatientRecordUpdateForm({
       findPatientById(editRecord.patient_id)
         .then((patient) => {
           if (!cancelled && patient) {
+            setRegistryRowLoaded(true);
             setForm(getInitialForm(editRecord, patient));
           }
         })
@@ -142,6 +148,7 @@ export function PatientRecordUpdateForm({
         return;
       }
       const patient = await findPatientById(record.patient_id).catch(() => null);
+      setRegistryRowLoaded(patient !== null);
       setLookupError(null);
       setFoundRecord(record);
       setForm(getInitialForm(record, patient));
@@ -160,6 +167,7 @@ export function PatientRecordUpdateForm({
     setReturningPatient(null);
     setLookupNotice(null);
     setIdCheckError(null);
+    setRegistryRowLoaded(false);
   }
 
   function updateField(field: string, value: string) {
@@ -365,7 +373,11 @@ export function PatientRecordUpdateForm({
 
         await addRecord(recordData, identity);
       } else if (foundRecord) {
-        await updatePatient(foundRecord.patient_id, buildDemographics());
+        // Without a loaded registry row the form holds record-only prefill;
+        // writing it back would overwrite real demographics (or miss the row).
+        if (registryRowLoaded) {
+          await updatePatient(foundRecord.patient_id, buildDemographics());
+        }
         await updateRecord(foundRecord.id, treatment as Partial<PatientRecord>);
       }
 
