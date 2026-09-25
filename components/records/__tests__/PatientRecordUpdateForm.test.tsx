@@ -20,6 +20,7 @@ import { RecordCategory, GPPatientRecordType } from "@/lib/global";
 // failure) without replacing the real DataContext provider.
 const saveState = vi.hoisted(() => ({
   addRecordCalls: [] as unknown[][],
+  updatePatientCalls: [] as unknown[][],
   failDuplicate: false,
 }));
 
@@ -40,6 +41,10 @@ vi.mock("@/context/DataContext", async (importOriginal) => {
           }
           saveState.addRecordCalls.push(args);
           return ctx.addRecord(...args);
+        },
+        updatePatient: async (...args: Parameters<typeof ctx.updatePatient>) => {
+          saveState.updatePatientCalls.push(args);
+          return ctx.updatePatient(...args);
         },
       };
     },
@@ -65,6 +70,7 @@ function renderWithProvider(ui: React.ReactElement) {
 
 beforeEach(() => {
   saveState.addRecordCalls = [];
+  saveState.updatePatientCalls = [];
   saveState.failDuplicate = false;
 });
 
@@ -545,6 +551,36 @@ describe("PatientRecordUpdateForm — Patient Registry", () => {
 // Task — Save flows (new / returning / duplicate)
 // ------------------------------------------
 describe("PatientRecordUpdateForm — Save", () => {
+  test("Save (edit) clears empty optional demographics", async () => {
+    const onOpenChange = vi.fn();
+    renderWithProvider(
+      <PatientRecordUpdateForm
+        open={true}
+        onOpenChange={onOpenChange}
+        defaultCategory={RecordCategory.GP}
+        isAdding={false}
+        editRecord={gpRecord}
+      />
+    );
+    const dialog = getLastDialogContent();
+    await waitFor(() =>
+      expect((within(dialog).getByPlaceholderText("e.g. 30") as HTMLInputElement).value).toBe("34")
+    );
+
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 123 Main St"), {
+      target: { value: "   " },
+    });
+    fireEvent.click(within(dialog).getByText("Save Changes"));
+
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    expect(saveState.updatePatientCalls).toHaveLength(1);
+    expect(saveState.updatePatientCalls[0][1]).toMatchObject({
+      address: null,
+      drug_allergy: null,
+      past_dental_history: null,
+    });
+  });
+
   async function fillNewPatient(dialog: HTMLElement) {
     fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
       target: { value: "8888/26" },

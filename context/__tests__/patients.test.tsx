@@ -130,6 +130,32 @@ describe("DataContext — Patient Registry", () => {
       expect(record!.address).toBe("42 New Street");
     });
 
+    test("clears optional registry fields and the local record address", async () => {
+      const { result } = renderHook(() => useData(), { wrapper });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.updatePatient("0001/26", {
+          drug_allergy: "Penicillin",
+          past_dental_history: "Crown on 16",
+        });
+      });
+
+      await act(async () => {
+        await result.current.updatePatient("0001/26", {
+          address: null,
+          drug_allergy: null,
+          past_dental_history: null,
+        });
+      });
+
+      const patient = await result.current.findPatientById("0001/26");
+      expect(patient?.address).toBeUndefined();
+      expect(patient?.drug_allergy).toBeUndefined();
+      expect(patient?.past_dental_history).toBeUndefined();
+      expect(result.current.findRecordByPatientId("0001/26")?.address).toBeUndefined();
+    });
+
     test("rejects an empty patient ID", async () => {
       const { result } = renderHook(() => useData(), { wrapper });
       await waitFor(() => expect(result.current.loading).toBe(false));

@@ -99,7 +99,11 @@ export interface PatientPayloadType {
   past_medical_history: string[];
 }
 
-export type PatientUpdatesType = Partial<Omit<PatientPayloadType, "patient_id">>;
+type NullablePatientField = "address" | "drug_allergy" | "past_dental_history";
+
+export type PatientUpdatesType =
+  Partial<Omit<PatientPayloadType, "patient_id" | NullablePatientField>> &
+  Partial<Record<NullablePatientField, string | null>>;
 
 // ------------------------------------------
 // Patient Record Types

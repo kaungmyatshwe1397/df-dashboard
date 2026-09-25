@@ -376,7 +376,12 @@ export function PatientRecordUpdateForm({
         // Without a loaded registry row the form holds record-only prefill;
         // writing it back would overwrite real demographics (or miss the row).
         if (registryRowLoaded) {
-          await updatePatient(foundRecord.patient_id, buildDemographics());
+          await updatePatient(foundRecord.patient_id, {
+            ...buildDemographics(),
+            address: form.address.trim() || null,
+            drug_allergy: form.drugAllergy.trim() || null,
+            past_dental_history: form.pastDentalHistory.trim() || null,
+          });
         }
         await updateRecord(foundRecord.id, treatment as Partial<PatientRecord>);
       }

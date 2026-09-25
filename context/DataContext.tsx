@@ -104,6 +104,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => createClient());
   const initialLoadDone = useRef(false);
   const fetchMonthDataRef = useRef<(month: string) => Promise<void>>(null);
+  const monthRequestIdRef = useRef(0);
 
   // Cycles are passive month buckets — the active cycle is simply the one
   // matching the month being viewed (default: current calendar month).
@@ -112,6 +113,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   }, []);
   const effectiveMonth = selectedMonth || getMonthLabel(currentMonthYear);
+  const effectiveMonthRef = useRef(effectiveMonth);
   const cycle = allCycles.find((c) => getMonthLabel(c.month_year) === effectiveMonth) ?? null;
   const financials = cycle ? getFinancialsForCycle(cycle.id) : null;
 
@@ -127,6 +129,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return bIdx - aIdx;
     });
   }, [allCycles]);
+
+  useEffect(() => {
+    effectiveMonthRef.current = effectiveMonth;
+  }, [effectiveMonth]);
 
   // ------------------------------------------
   // Phase 1: Fetch reference data (runs once on mount)
@@ -182,7 +188,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
       initialLoadDone.current = true;
-      fetchMonthDataRef.current?.(effectiveMonth);
+      fetchMonthDataRef.current?.(effectiveMonthRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
@@ -193,12 +199,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const fetchMonthData = useCallback(async (month: string) => {
     if (!month) return;
+    const requestId = ++monthRequestIdRef.current;
     setError(null);
     try {
       const [recordsRes, paymentsRes] = await Promise.all([
         supabase.from("patient_records").select("*").eq("month_label", month).order("entry_date", { ascending: true }),
         supabase.from("case_payments").select("*").order("payment_date", { ascending: true }),
       ]);
+
+      if (requestId !== monthRequestIdRef.current) return;
 
       if (recordsRes.error) throw recordsRes.error;
       if (paymentsRes.error) throw paymentsRes.error;
@@ -215,7 +224,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }))
       );
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load month data");
+      if (requestId === monthRequestIdRef.current) {
+        setError(err instanceof Error ? err.message : "Failed to load month data");
+      }
     }
   }, [supabase]);
 
@@ -457,7 +468,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ? {
                 ...r,
                 patient_name: updates.patient_name ?? r.patient_name,
-                address: updates.address !== undefined ? updates.address : r.address,
+                address: updates.address !== undefined ? updates.address ?? undefined : r.address,
               }
             : r
         )
