@@ -10,11 +10,46 @@
 // Portal elements accumulate across tests, so queries use getAllBy* or
 // scope to the last dialog-content element.
 
-import { describe, test, expect, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { describe, test, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { DataProvider } from "@/context/DataContext";
 import { PatientRecordUpdateForm } from "../patient-record-update-form";
 import { RecordCategory, GPPatientRecordType } from "@/lib/global";
+
+// Capture addRecord calls (and optionally simulate a duplicate-ID RPC
+// failure) without replacing the real DataContext provider.
+const saveState = vi.hoisted(() => ({
+  addRecordCalls: [] as unknown[][],
+  updatePatientCalls: [] as unknown[][],
+  failDuplicate: false,
+}));
+
+vi.mock("@/context/DataContext", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/context/DataContext")>();
+  return {
+    ...actual,
+    useData: () => {
+      const ctx = actual.useData();
+      return {
+        ...ctx,
+        addRecord: async (...args: Parameters<typeof ctx.addRecord>) => {
+          if (saveState.failDuplicate) {
+            saveState.failDuplicate = false;
+            throw new Error(
+              "The patient ID is already registered for another person. Check your patient ID again."
+            );
+          }
+          saveState.addRecordCalls.push(args);
+          return ctx.addRecord(...args);
+        },
+        updatePatient: async (...args: Parameters<typeof ctx.updatePatient>) => {
+          saveState.updatePatientCalls.push(args);
+          return ctx.updatePatient(...args);
+        },
+      };
+    },
+  };
+});
 
 const gpRecord: GPPatientRecordType = {
   id: "rec-001",
@@ -32,6 +67,12 @@ const gpRecord: GPPatientRecordType = {
 function renderWithProvider(ui: React.ReactElement) {
   return render(<DataProvider>{ui}</DataProvider>);
 }
+
+beforeEach(() => {
+  saveState.addRecordCalls = [];
+  saveState.updatePatientCalls = [];
+  saveState.failDuplicate = false;
+});
 
 function getLastDialogContent(): HTMLElement {
   const dialogs = document.querySelectorAll("[data-slot='dialog-content']");
@@ -401,5 +442,356 @@ describe("PatientRecordUpdateForm — Form Reset", () => {
     const newDialog = getLastDialogContent();
     const newNameInput = within(newDialog).getByLabelText(/patient name/i) as HTMLInputElement;
     expect(newNameInput.value).toBe("");
+  });
+});
+
+// ------------------------------------------
+// Task 7 — Patient registry: demographics + returning patient
+// ------------------------------------------
+describe("PatientRecordUpdateForm — Patient Registry", () => {
+  function renderAddMode() {
+    return renderWithProvider(
+      <PatientRecordUpdateForm
+        open={true}
+        onOpenChange={() => {}}
+        defaultCategory={RecordCategory.GP}
+        isAdding={true}
+        editRecord={null}
+      />
+    );
+  }
+
+  test("Add mode shows demographic fields (age, gender, allergy)", () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+    expect(within(dialog).getByPlaceholderText("e.g. 30")).toBeInTheDocument();
+    expect(within(dialog).getByPlaceholderText("e.g. Penicillin")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Male")).toBeInTheDocument();
+    expect(within(dialog).getByPlaceholderText(/metformin/i)).toBeInTheDocument();
+  });
+
+  test("Existing Patient ID locks demographics and shows registered-owner alert", async () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+    fireEvent.change(idInput, { target: { value: "0001/26" } });
+    fireEvent.blur(idInput);
+
+    const alert = await within(dialog).findByText(/already registered to John Doe/i);
+    expect(alert).toBeInTheDocument();
+
+    const nameInput = within(dialog).getByPlaceholderText("e.g. John Doe") as HTMLInputElement;
+    const ageInput = within(dialog).getByPlaceholderText("e.g. 30") as HTMLInputElement;
+    expect(nameInput).toBeDisabled();
+    expect(ageInput).toBeDisabled();
+    expect(nameInput.value).toBe("John Doe");
+    expect(ageInput.value).toBe("34");
+    expect(idInput).toBeDisabled();
+  });
+
+  test("Changing Patient ID after linking unlocks identity fields", async () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+    fireEvent.change(idInput, { target: { value: "0001/26" } });
+    fireEvent.blur(idInput);
+    await within(dialog).findByText(/already registered to John Doe/i);
+
+    fireEvent.change(idInput, { target: { value: "0099/26" } });
+
+    expect(within(dialog).queryByText(/already registered/i)).not.toBeInTheDocument();
+    const nameInput = within(dialog).getByPlaceholderText("e.g. John Doe") as HTMLInputElement;
+    expect(nameInput).toBeEnabled();
+    expect(nameInput.value).toBe("");
+    expect(idInput).toBeEnabled();
+  });
+
+  test("Unknown Patient ID stays editable (new patient flow)", async () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+    fireEvent.change(idInput, { target: { value: "7777/26" } });
+    fireEvent.blur(idInput);
+
+    // Give the registry lookup a tick to run — no alert must appear
+    await new Promise((r) => setTimeout(r, 20));
+    expect(within(dialog).queryByText(/already registered/i)).not.toBeInTheDocument();
+    const nameInput = within(dialog).getByPlaceholderText("e.g. John Doe") as HTMLInputElement;
+    expect(nameInput).toBeEnabled();
+  });
+
+  test("Save validates required age (gender defaults to Male)", async () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
+      target: { value: "8888/26" },
+    });
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. John Doe"), {
+      target: { value: "New Patient" },
+    });
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. Common cold, Fracture - left arm"), {
+      target: { value: "Checkup" },
+    });
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 50000"), {
+      target: { value: "10000" },
+    });
+
+    fireEvent.click(within(dialog).getByText("Add Record"));
+
+    expect(await within(dialog).findByText(/enter a valid age/i)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/gender is required/i)).not.toBeInTheDocument();
+  });
+});
+
+// ------------------------------------------
+// Task — Save flows (new / returning / duplicate)
+// ------------------------------------------
+describe("PatientRecordUpdateForm — Save", () => {
+  test("Save (edit) clears empty optional demographics", async () => {
+    const onOpenChange = vi.fn();
+    renderWithProvider(
+      <PatientRecordUpdateForm
+        open={true}
+        onOpenChange={onOpenChange}
+        defaultCategory={RecordCategory.GP}
+        isAdding={false}
+        editRecord={gpRecord}
+      />
+    );
+    const dialog = getLastDialogContent();
+    await waitFor(() =>
+      expect((within(dialog).getByPlaceholderText("e.g. 30") as HTMLInputElement).value).toBe("34")
+    );
+
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 123 Main St"), {
+      target: { value: "   " },
+    });
+    fireEvent.click(within(dialog).getByText("Save Changes"));
+
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    expect(saveState.updatePatientCalls).toHaveLength(1);
+    expect(saveState.updatePatientCalls[0][1]).toMatchObject({
+      address: null,
+      drug_allergy: null,
+      past_dental_history: null,
+    });
+  });
+
+  async function fillNewPatient(dialog: HTMLElement) {
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
+      target: { value: "8888/26" },
+    });
+    fireEvent.blur(within(dialog).getByPlaceholderText("e.g. 0001/26"));
+    // Save stays disabled until the registry lookup settles
+    await waitFor(() =>
+      expect(within(dialog).queryByText(/checking patient id/i)).not.toBeInTheDocument()
+    );
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. John Doe"), {
+      target: { value: "New Patient" },
+    });
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 30"), {
+      target: { value: "30" },
+    });
+    fireEvent.click(within(dialog).getByRole("radio", { name: "Male" }));
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. Common cold, Fracture - left arm"), {
+      target: { value: "Checkup" },
+    });
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 50000"), {
+      target: { value: "10000" },
+    });
+  }
+
+  test("Save (new patient) sends patient + record payload through addRecord", async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <DataProvider>
+        <PatientRecordUpdateForm
+          open={true}
+          onOpenChange={onOpenChange}
+          defaultCategory={RecordCategory.GP}
+          isAdding={true}
+          editRecord={null}
+        />
+      </DataProvider>
+    );
+    const dialog = getLastDialogContent();
+    await fillNewPatient(dialog);
+
+    fireEvent.click(within(dialog).getByText("Add Record"));
+
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    expect(saveState.addRecordCalls).toHaveLength(1);
+    const [recordData, identity] = saveState.addRecordCalls[0] as [
+      Record<string, unknown>,
+      Record<string, unknown>,
+    ];
+    expect(identity.patient_id).toBe("8888/26");
+    expect(identity.patient_name).toBe("New Patient");
+    expect(identity.age).toBe(30);
+    expect(identity.gender).toBe("MALE");
+    expect(recordData.diagnosis).toBe("Checkup");
+    expect(recordData.total_cost).toBe(10000);
+    expect(recordData.patient_id).toBe("8888/26");
+  });
+
+  test("Save (returning patient) sends locked registry demographics + new visit", async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <DataProvider>
+        <PatientRecordUpdateForm
+          open={true}
+          onOpenChange={onOpenChange}
+          defaultCategory={RecordCategory.GP}
+          isAdding={true}
+          editRecord={null}
+        />
+      </DataProvider>
+    );
+    const dialog = getLastDialogContent();
+
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26");
+    fireEvent.change(idInput, { target: { value: "0001/26" } });
+    fireEvent.blur(idInput);
+    await within(dialog).findByText(/already registered to John Doe/i);
+
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. Common cold, Fracture - left arm"), {
+      target: { value: "Follow-up visit" },
+    });
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 50000"), {
+      target: { value: "20000" },
+    });
+
+    fireEvent.click(within(dialog).getByText("Add Record"));
+
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    expect(saveState.addRecordCalls).toHaveLength(1);
+    const [recordData, identity] = saveState.addRecordCalls[0] as [
+      Record<string, unknown>,
+      Record<string, unknown>,
+    ];
+    // Demographics come from the registry row — untouched by the form
+    expect(identity.patient_id).toBe("0001/26");
+    expect(identity.patient_name).toBe("John Doe");
+    expect(identity.age).toBe(34);
+    expect(identity.gender).toBe("MALE");
+    expect(recordData.diagnosis).toBe("Follow-up visit");
+    expect(recordData.total_cost).toBe(20000);
+  });
+
+  test("Unique-violation at save shows the exact warning and keeps the dialog open", async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <DataProvider>
+        <PatientRecordUpdateForm
+          open={true}
+          onOpenChange={onOpenChange}
+          defaultCategory={RecordCategory.GP}
+          isAdding={true}
+          editRecord={null}
+        />
+      </DataProvider>
+    );
+    const dialog = getLastDialogContent();
+    await fillNewPatient(dialog);
+
+    saveState.failDuplicate = true;
+    fireEvent.click(within(dialog).getByText("Add Record"));
+
+    const alert = await within(dialog).findByText(
+      "The patient ID is already registered for another person. Check your patient ID again."
+    );
+    expect(alert).toBeInTheDocument();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(saveState.addRecordCalls).toHaveLength(0);
+  });
+
+  test("Edit mode: Patient ID is disabled, demographics stay editable", async () => {
+    renderWithProvider(
+      <PatientRecordUpdateForm
+        open={true}
+        onOpenChange={() => {}}
+        defaultCategory={RecordCategory.GP}
+        isAdding={false}
+        editRecord={gpRecord}
+      />
+    );
+    const dialog = getLastDialogContent();
+
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+    expect(idInput).toBeDisabled();
+    expect(idInput.value).toBe("0001/26");
+
+    const nameInput = within(dialog).getByPlaceholderText("e.g. John Doe") as HTMLInputElement;
+    expect(nameInput).toBeEnabled();
+
+    const ageInput = within(dialog).getByPlaceholderText("e.g. 30") as HTMLInputElement;
+    expect(ageInput).toBeEnabled();
+
+    fireEvent.change(nameInput, { target: { value: "John Doe Edited" } });
+    expect(nameInput.value).toBe("John Doe Edited");
+  });
+});
+
+// ------------------------------------------
+// Task — Medication chips & medical history
+// ------------------------------------------
+describe("PatientRecordUpdateForm — CurrentMedicationList & MedicalHistory", () => {
+  function renderAddMode() {
+    return renderWithProvider(
+      <PatientRecordUpdateForm
+        open={true}
+        onOpenChange={() => {}}
+        defaultCategory={RecordCategory.GP}
+        isAdding={true}
+        editRecord={null}
+      />
+    );
+  }
+
+  test("Medication chip can be added and removed; empty list allowed", () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+
+    // Empty by default — no chips rendered
+    expect(within(dialog).queryByLabelText(/^remove /i)).not.toBeInTheDocument();
+
+    const medInput = within(dialog).getByPlaceholderText("e.g. Metformin");
+    fireEvent.change(medInput, { target: { value: "Metformin" } });
+    fireEvent.click(within(dialog).getByLabelText("Add medication"));
+
+    expect(within(dialog).getByText("Metformin")).toBeInTheDocument();
+    expect((medInput as HTMLInputElement).value).toBe("");
+
+    fireEvent.click(within(dialog).getByLabelText("Remove Metformin"));
+    expect(within(dialog).queryByText("Metformin")).not.toBeInTheDocument();
+  });
+
+  test("Past medical history checkboxes toggle and start unchecked", async () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+
+    const diabetes = await within(dialog).findByRole("checkbox", {
+      name: "Diabetes",
+    });
+    const heart = within(dialog).getByRole("checkbox", { name: "Heart Disease" });
+    expect(diabetes).toHaveAttribute("aria-checked", "false");
+    expect(heart).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(diabetes);
+    const diabetesAfter = within(dialog).getByRole("checkbox", { name: "Diabetes" });
+    expect(diabetesAfter).toHaveAttribute("aria-checked", "true");
+    // Independent toggle — the other option is unaffected
+    expect(
+      within(dialog).getByRole("checkbox", { name: "Heart Disease" })
+    ).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(diabetesAfter);
+    expect(
+      within(dialog).getByRole("checkbox", { name: "Diabetes" })
+    ).toHaveAttribute("aria-checked", "false");
   });
 });

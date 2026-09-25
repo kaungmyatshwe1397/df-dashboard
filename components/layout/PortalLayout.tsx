@@ -10,7 +10,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <TopNav />
-      <main className="px-8 py-8 max-w-[1200px] mx-auto">
+      <main className="px-8 py-8 max-w-300 mx-auto">
         {children}
       </main>
     </div>

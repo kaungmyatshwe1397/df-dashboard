@@ -4,37 +4,43 @@
 
 | Metric | Count |
 |--------|-------|
-| Test files | 13 |
-| Total tests | 104 |
-| Passing | 94 |
+| Test files | 19 |
+| Total tests | 166 |
+| Passing | 156 |
 | Skipped | 10 |
 
-## Unit Tests (6 files, 46 tests)
+## Unit Tests (7 files, 45 tests)
 
 Pure function tests — no React/DOM.
 
 | File | Tests | What it covers |
 |------|-------|---------------|
-| `lib/__tests__/mock-data.test.ts` | 10 | `authenticateUser`, `getActiveCycle`, `getRecordsByCycle`, `getPaymentsByRecord` |
-| `lib/data-helpers.test.ts` | 18 | `getMonthLabel`, `getNextMonthLabel`, `toPatientRecord`, `toCustomOverhead` |
+| `lib/__tests__/mock-data.test.ts` | 7 | `getCycleByMonth`, `getRecordsByCycle`, `getPaymentsByRecord` |
+| `lib/data-helpers.test.ts` | 15 | `getMonthLabel`, `getNextMonthLabel`, `toPatientRecord`, `toCustomOverhead` |
 | `lib/utils.test.ts` | 3 | `cn()` Tailwind class merger |
-| `components/records/patient-record-update-form/Types.test.ts` | 3 | `getInitialForm()` for GP and Case records |
+| `components/records/patient-record-update-form/Types.test.ts` | 4 | `getInitialForm()` for GP/Case records, optional-field fallbacks, registry patient prefill |
 | `components/overhead/Types.test.ts` | 6 | `financialsToFields`, `customOverheadsToForm` |
 | `components/records/record-table/RecordTableHelpers.test.ts` | 6 | `formatCurrency`, `formatDate` |
+| `lib/services/__tests__/patientRecordService.test.ts` | 4 | `registerPatientWithRecord` RPC success, duplicate-ID (23505) mapping, error passthrough |
 
-## Component Tests (7 files, 58 tests)
+## Component Tests (12 files, 121 tests)
 
-React component rendering with React Testing Library.
+React component and hook rendering with Testing Library.
 
 | File | Tests | What it covers |
 |------|-------|---------------|
-| `components/__tests__/CaseTable.test.tsx` | 4 | Empty state, locked state, add button |
-| `components/__tests__/RecordTable.test.tsx` | 7 | Tab rendering, tab switching, add buttons, record count |
+| `components/__tests__/CaseTable.test.tsx` | 3 | Empty state, add button |
+| `components/__tests__/RecordTable.test.tsx` | 6 | Tab rendering, tab switching, add buttons, record count |
 | `components/__tests__/PaymentDialog.test.tsx` | 2 | Form validation (empty amount, exceeds remaining) |
-| `components/records/__tests__/PatientRecordUpdateForm.test.tsx` | 16 | Dialog close, edit/add mode, delete button, form validation |
+| `components/records/__tests__/PatientRecordUpdateForm.test.tsx` | 27 | Dialog close, edit/add mode, delete button, form validation, patient registry (returning/locking), save flows, medication chips, medical history |
 | `components/records/record-table/RecordTableHelpers-components.test.tsx` | 6 | `TableEmpty`, `TableError`, `TableSkeleton`, `TablePagination` |
 | `components/dashboard/useDashboardKPIs.test.tsx` | 8 | KPI calculations (revenue, commission, overhead, profit) |
-| `context/__tests__/DataContext.test.tsx` | 14 | Payment logic, CRUD operations, record lookup, cycle toggle |
+| `context/__tests__/DataContext.test.tsx` | 14 | Payment logic, CRUD operations, record lookup |
+| `context/__tests__/DataContext-mutations.test.tsx` | 13 | Record/patient mutation flows through DataContext |
+| `context/__tests__/patients.test.tsx` | 7 | Patient registry lookup and persistence |
+| `context/__tests__/useFinancials.test.ts` | 13 | Monthly financials hook |
+| `context/__tests__/useLab.test.ts` | 11 | Labs hook |
+| `context/__tests__/useCaseType.test.ts` | 11 | Case types hook |
 
 ## Skipped Tests (10)
 

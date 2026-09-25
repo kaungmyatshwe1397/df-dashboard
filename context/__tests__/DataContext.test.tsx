@@ -7,10 +7,27 @@ import { describe, test, expect } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 import { DataProvider, useData } from "../DataContext";
-import { CasePatientRecordType, PaymentStatus, RecordCategory } from "@/lib/global";
+import {
+  CasePatientRecordType,
+  Gender,
+  PatientPayloadType,
+  PaymentStatus,
+  RecordCategory,
+} from "@/lib/global";
 
 function wrapper({ children }: { children: ReactNode }) {
   return <DataProvider>{children}</DataProvider>;
+}
+
+function makePatient(patient_id: string, patient_name: string): PatientPayloadType {
+  return {
+    patient_id,
+    patient_name,
+    age: 30,
+    gender: Gender.MALE,
+    current_medications: [],
+    past_medical_history: [],
+  };
 }
 
 describe("DataContext — Payment Logic", () => {
@@ -173,13 +190,17 @@ describe("DataContext — CRUD Operations", () => {
       const recordsBefore = result.current.records.length;
 
       await act(async () => {
-        await result.current.addRecord({
-          patient_id: "0099/26",
-          patient_name: "Test Patient",
-          category: RecordCategory.GP,
-          diagnosis: "Test diagnosis",
-          total_cost: 75000,
-        });
+        await result.current.addRecord(
+          {
+            patient_id: "0099/26",
+            patient_name: "Test Patient",
+            category: RecordCategory.GP,
+            diagnosis: "Test diagnosis",
+            total_cost: 75000,
+          },
+          makePatient("0099/26", "Test Patient"),
+          true
+        );
       });
 
       expect(result.current.records.length).toBe(recordsBefore + 1);
@@ -213,6 +234,8 @@ describe("DataContext — CRUD Operations", () => {
             case_type: "Crown",
             teeth: "11",
           } as Omit<CasePatientRecordType, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
+          makePatient("0098/26", "Case Patient"),
+          true,
           100000
         );
       });

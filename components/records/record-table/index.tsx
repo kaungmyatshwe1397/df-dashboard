@@ -1,22 +1,30 @@
 // Record Table — displays patient records in a tabbed view (GP | Case).
-// Month filter dropdown to switch between months.
+// Combobox month picker with 12 hardcoded months, localStorage persistence.
 // Reads from DataContext. Triggers onAdd/onEdit callbacks — does not modify data itself.
 
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import { useData } from "@/context/DataContext";
 import { RecordCategory, PatientRecord, GPPatientRecordType, CasePatientRecordType } from "@/lib/global";
 import { TableSkeleton, TableError } from "./RecordTableHelpers";
 import { GpTable } from "./GpTable";
 import { CaseTable } from "./CaseTable";
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+const CURRENT_YEAR = new Date().getFullYear();
+
+function toFullLabel(month: string): string {
+  return `${month} ${CURRENT_YEAR}`;
+}
 
 export function RecordTable({
   onAdd,
@@ -25,10 +33,12 @@ export function RecordTable({
   onAdd: (category: RecordCategory) => void;
   onEdit: (record: PatientRecord | null, category: RecordCategory) => void;
 }) {
-  const { records, loading, error, refreshData, allMonths, selectedMonth, setSelectedMonth } = useData();
+  const { records, loading, error, refreshData, selectedMonth, setSelectedMonth } = useData();
 
   const gpRecords = records.filter((r) => r.category === RecordCategory.GP) as GPPatientRecordType[];
   const caseRecords = records.filter((r) => r.category === RecordCategory.CASE) as CasePatientRecordType[];
+
+  const selectedMonthAbbr = selectedMonth ? selectedMonth.split(" ")[0] : "";
 
   if (loading) {
     return <TableSkeleton columns={7} />;
@@ -43,20 +53,23 @@ export function RecordTable({
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium text-muted-foreground">Patient Records</h2>
 
-        {allMonths.length > 0 && (
-          <Select value={selectedMonth} onValueChange={(v) => v && setSelectedMonth(v)}>
-            <SelectTrigger className="w-[160px] bg-input border-border">
-              <SelectValue placeholder="Select month" />
-            </SelectTrigger>
-            <SelectContent>
-              {allMonths.map((month) => (
-                <SelectItem key={month} value={month}>
-                  {month}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <Combobox
+          items={MONTHS}
+          value={selectedMonthAbbr}
+          onValueChange={(v) => v && setSelectedMonth(toFullLabel(v))}
+        >
+          <ComboboxInput placeholder="Select month" className="w-40 h-6" />
+          <ComboboxContent>
+            <ComboboxEmpty>No months found.</ComboboxEmpty>
+            <ComboboxList>
+              {(item) => (
+                <ComboboxItem key={item} value={item}>
+                  {item}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       </div>
 
       <Tabs defaultValue="gp">

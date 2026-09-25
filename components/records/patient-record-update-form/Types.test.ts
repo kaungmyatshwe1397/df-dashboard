@@ -5,7 +5,13 @@
 
 import { describe, test, expect } from "vitest";
 import { getInitialForm } from "./Types";
-import { RecordCategory, GPPatientRecordType, CasePatientRecordType } from "@/lib/global";
+import {
+  RecordCategory,
+  GPPatientRecordType,
+  CasePatientRecordType,
+  PatientType,
+  Gender,
+} from "@/lib/global";
 
 const gpRecord: GPPatientRecordType = {
   id: "rec-001",
@@ -40,7 +46,7 @@ const caseRecord: CasePatientRecordType = {
 
 describe("getInitialForm", () => {
   test("returns correct fields for GP record", () => {
-    const form = getInitialForm(gpRecord);
+    const form = getInitialForm(gpRecord, null);
 
     expect(form.patientId).toBe("0001/26");
     expect(form.patientName).toBe("John Doe");
@@ -50,10 +56,14 @@ describe("getInitialForm", () => {
     expect(form.caseType).toBe("");
     expect(form.teeth).toBe("");
     expect(form.labName).toBe("");
+    expect(form.age).toBe("");
+    expect(form.gender).toBe(Gender.MALE);
+    expect(form.pastMedicalHistory).toEqual([]);
+    expect(form.currentMedications).toEqual([]);
   });
 
   test("returns correct fields for Case record including case-specific data", () => {
-    const form = getInitialForm(caseRecord);
+    const form = getInitialForm(caseRecord, null);
 
     expect(form.patientId).toBe("0002/26");
     expect(form.patientName).toBe("Jane Smith");
@@ -67,8 +77,36 @@ describe("getInitialForm", () => {
 
   test("converts undefined optional fields to empty strings", () => {
     const recordWithoutAddress = { ...gpRecord, address: undefined };
-    const form = getInitialForm(recordWithoutAddress);
+    const form = getInitialForm(recordWithoutAddress, null);
 
     expect(form.address).toBe("");
+  });
+
+  test("prefills demographics from the registry patient when provided", () => {
+    const patient: PatientType = {
+      id: "pat-001",
+      patient_id: "0001/26",
+      patient_name: "John Doe Registry",
+      age: 41,
+      gender: Gender.FEMALE,
+      address: "42 Registry St",
+      drug_allergy: "Penicillin",
+      past_dental_history: "Extracted 36",
+      current_medications: ["Metformin", "Amlodipine"],
+      past_medical_history: ["Diabetes", "Hypertension"],
+    };
+
+    const form = getInitialForm(gpRecord, patient);
+
+    expect(form.patientName).toBe("John Doe Registry");
+    expect(form.age).toBe("41");
+    expect(form.gender).toBe(Gender.FEMALE);
+    expect(form.address).toBe("42 Registry St");
+    expect(form.drugAllergy).toBe("Penicillin");
+    expect(form.pastDentalHistory).toBe("Extracted 36");
+    expect(form.currentMedications).toEqual(["Metformin", "Amlodipine"]);
+    expect(form.pastMedicalHistory).toEqual(["Diabetes", "Hypertension"]);
+    // treatment fields still come from the record
+    expect(form.diagnosis).toBe("Common cold");
   });
 });

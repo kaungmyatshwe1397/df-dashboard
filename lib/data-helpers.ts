@@ -6,6 +6,9 @@ import {
   RecordCategory,
   CasePatientRecordType,
   CustomOverhead,
+  Gender,
+  PatientType,
+  MedicalHistoryOptionType,
 } from "./global";
 
 export function getMonthLabel(monthYear: string): string {
@@ -59,6 +62,28 @@ export function toPatientRecord(row: Record<string, unknown>): PatientRecord {
     total_cost: row.total_cost as number,
     month_label: row.month_label as string,
   };
+}
+
+export function toPatientType(row: Record<string, unknown>): PatientType {
+  return {
+    id: row.id as string,
+    patient_id: row.patient_id as string,
+    patient_name: row.patient_name as string,
+    age: row.age as number,
+    gender: row.gender as Gender,
+    address: (row.address as string | null) ?? undefined,
+    drug_allergy: (row.drug_allergy as string | null) ?? undefined,
+    past_dental_history: (row.past_dental_history as string | null) ?? undefined,
+    current_medications: (row.current_medications as string[] | null) ?? [],
+    past_medical_history: (row.past_medical_history as string[] | null) ?? [],
+    created_at: row.created_at as string | undefined,
+  };
+}
+
+export function toMedicalHistoryOptions(
+  rows: Record<string, unknown>[]
+): MedicalHistoryOptionType[] {
+  return rows.map((r) => ({ id: r.id as string, name: r.name as string }));
 }
 
 export function toCustomOverhead(raw: unknown): CustomOverhead[] {

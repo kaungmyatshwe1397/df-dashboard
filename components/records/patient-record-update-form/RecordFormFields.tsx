@@ -1,4 +1,5 @@
-// GP form fields — Patient ID, Name, Address, Diagnosis, Total Cost.
+// GP treatment fields — Diagnosis and Total Cost.
+// Identity/demographics live in PatientInfoSection.
 
 import { Input } from "@/components/ui/input";
 import { RecordCategory } from "@/lib/global";
@@ -6,16 +7,11 @@ import { FormField } from "@/components/shared/formField";
 
 interface RecordFormFieldsProps {
   form: {
-    patientId: string;
-    patientName: string;
-    address: string;
     category: RecordCategory;
     diagnosis: string;
     totalCost: string;
   };
   errors: {
-    patientId?: string;
-    patientName?: string;
     diagnosis?: string;
     totalCost?: string;
   };
@@ -31,53 +27,6 @@ export function RecordFormFields({
 }: RecordFormFieldsProps) {
   return (
     <>
-      <FormField
-        label="Patient ID"
-        htmlFor="patientId"
-        required
-        hint="(e.g. 0001/26)"
-        error={errors.patientId}
-      >
-        <Input
-          id="patientId"
-          placeholder="e.g. 0001/26"
-          value={form.patientId}
-          onChange={(e) => updateField("patientId", e.target.value)}
-          aria-invalid={!!errors.patientId}
-          disabled={saving}
-        />
-      </FormField>
-
-      <FormField
-        label="Patient Name"
-        htmlFor="patientName"
-        required
-        error={errors.patientName}
-      >
-        <Input
-          id="patientName"
-          placeholder="e.g. John Doe"
-          value={form.patientName}
-          onChange={(e) => updateField("patientName", e.target.value)}
-          aria-invalid={!!errors.patientName}
-          disabled={saving}
-        />
-      </FormField>
-
-      <FormField
-        label="Address"
-        htmlFor="address"
-        hint="(optional)"
-      >
-        <Input
-          id="address"
-          placeholder="e.g. 123 Main St"
-          value={form.address}
-          onChange={(e) => updateField("address", e.target.value)}
-          disabled={saving}
-        />
-      </FormField>
-
       <FormField
         label="Diagnosis & Treatment"
         htmlFor="diagnosis"

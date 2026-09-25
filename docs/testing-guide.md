@@ -175,11 +175,6 @@ describe("RecordTable", () => {
     render(<RecordTable records={records} />);
     expect(screen.getByText("John Doe")).toBeInTheDocument();
   });
-
-  test("hides add button when cycle is locked", () => {
-    render(<RecordTable records={[]} cycleLocked={true} />);
-    expect(screen.queryByText("Add Record")).not.toBeInTheDocument();
-  });
 });
 ```
 

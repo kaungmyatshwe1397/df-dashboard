@@ -7,25 +7,24 @@
 
 import { describe, test, expect } from "vitest";
 import {
-  getActiveCycle,
+  getCycleByMonth,
   getRecordsByCycle,
   getPaymentsByRecord,
 } from "../mock-data";
-import { CycleStatus, RecordCategory } from "../global";
+import { RecordCategory } from "../global";
 
 // ------------------------------------------
-// getActiveCycle()
+// getCycleByMonth()
 // ------------------------------------------
-describe("getActiveCycle", () => {
-  test("returns the cycle with OPEN status", () => {
-    const cycle = getActiveCycle();
+describe("getCycleByMonth", () => {
+  test("returns the cycle for a known month", () => {
+    const cycle = getCycleByMonth("2026-09");
     expect(cycle).toBeDefined();
-    expect(cycle?.status).toBe(CycleStatus.OPEN);
+    expect(cycle?.month_year).toBe("2026-09");
   });
 
-  test("returns the September 2026 cycle", () => {
-    const cycle = getActiveCycle();
-    expect(cycle?.month_year).toBe("2026-09");
+  test("returns undefined for an unknown month", () => {
+    expect(getCycleByMonth("1999-01")).toBeUndefined();
   });
 });
 

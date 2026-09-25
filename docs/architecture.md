@@ -52,7 +52,7 @@ Central data layer that:
 | Patient data entry | Create, read, update | Full CRUD |
 | Financial dashboard | Hidden | Full access |
 | Lab fee assignment | Hidden | Full access |
-| Month closeout | Hidden | Full access |
+| Carry forward | Hidden | Full access |
 | User management | Hidden | Full access |
 
 ## Database Schema
@@ -60,7 +60,7 @@ Central data layer that:
 See [ERD](./dc-fms-erd.mmd) for the full schema.
 
 Core tables:
-- `monthly_cycles` — billing periods (OPEN/LOCKED)
+- `monthly_cycles` — passive month buckets (`month_year` unique; no lock/close status)
 - `patient_records` — treatment records (GP/Case)
 - `case_payments` — installment payments
 - `monthly_financials` — monthly expense summary

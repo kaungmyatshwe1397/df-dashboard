@@ -12,11 +12,6 @@ export enum UserRole {
   ASSISTANT = "ASSISTANT",
 }
 
-export enum CycleStatus {
-  OPEN = "OPEN",
-  LOCKED = "LOCKED",
-}
-
 export enum RecordCategory {
   GP = "GP",
   CASE = "CASE",
@@ -32,6 +27,12 @@ export enum PaymentStatus {
   UNPAID = "INCOMPLETE",
 }
 
+export enum Gender {
+  MALE = "MALE",
+  FEMALE = "FEMALE",
+  OTHER = "OTHER",
+}
+
 // ------------------------------------------
 // Base Interfaces
 // ------------------------------------------
@@ -43,10 +44,11 @@ export interface User {
   role: UserRole;
 }
 
+// MonthlyCycle is a passive month bucket — no lock/close status;
+// one row per month_year, auto-created on first record / carry-forward.
 export interface MonthlyCycle {
   id: string;
   month_year: string;
-  status: "OPEN" | "LOCKED";
 }
 
 export interface Lab {
@@ -58,6 +60,50 @@ export interface CaseType {
   id: string;
   name: string;
 }
+
+// ------------------------------------------
+// Patient Registry Types
+// patients = one row per person (global unique ID);
+// medical_history_options = dynamic PMH picklist.
+// ------------------------------------------
+
+export interface PatientType {
+  id: string;
+  patient_id: string;
+  patient_name: string;
+  age: number;
+  gender: Gender;
+  address?: string;
+  drug_allergy?: string;
+  past_dental_history?: string;
+  current_medications: string[];
+  past_medical_history: string[];
+  created_at?: string;
+}
+
+export interface MedicalHistoryOptionType {
+  id: string;
+  name: string;
+}
+
+// Payload for atomic patient+record registration and patient updates.
+export interface PatientPayloadType {
+  patient_id: string;
+  patient_name: string;
+  age: number;
+  gender: Gender;
+  address?: string;
+  drug_allergy?: string;
+  past_dental_history?: string;
+  current_medications: string[];
+  past_medical_history: string[];
+}
+
+type NullablePatientField = "address" | "drug_allergy" | "past_dental_history";
+
+export type PatientUpdatesType =
+  Partial<Omit<PatientPayloadType, "patient_id" | NullablePatientField>> &
+  Partial<Record<NullablePatientField, string | null>>;
 
 // ------------------------------------------
 // Patient Record Types

@@ -36,7 +36,7 @@ const adminNavItems: NavItem[] = [
   { title: "Records", href: "/admin/records" },
   { title: "Lab Reconciliation", href: "/admin/reconciliation" },
   { title: "Overhead", href: "/admin/overhead" },
-  { title: "Closeout", href: "/admin/closeout" },
+  { title: "Carry Forward", href: "/admin/carry-forward" },
   { title: "Users", href: "/admin/users" },
 ];
 
@@ -99,7 +99,7 @@ export function TopNav() {
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <button className="w-[30px] h-[30px] rounded-full bg-accent-dark text-accent flex items-center justify-center text-xs font-bold cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                <button className="w-7.5 h-7.5 rounded-full bg-accent-dark text-accent flex items-center justify-center text-xs font-bold cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring" />
               }
             >
               {userInitial}
