@@ -100,10 +100,10 @@ export function TableEmpty({
 
 export function TableError({ onRetry }: { onRetry: () => void }) {
   return (
-    <Alert variant="destructive" className="border-danger/30 bg-danger-bg text-danger">
+    <Alert variant="destructive" className="border-destructive/30 bg-destructive/10 text-destructive">
       <AlertDescription className="flex items-center justify-between">
         <span>Failed to load records. Please try again.</span>
-        <Button variant="outline" size="sm" onClick={onRetry} className="border-danger/30 text-danger hover:bg-danger/10">
+        <Button variant="outline" size="sm" onClick={onRetry} className="border-destructive/30 text-destructive hover:bg-destructive/10">
           <RefreshCw className="mr-1.5 h-4 w-4" />
           Retry
         </Button>

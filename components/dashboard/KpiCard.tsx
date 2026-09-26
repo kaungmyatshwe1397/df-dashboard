@@ -29,7 +29,7 @@ export function KpiCard({
       className={cn(
         "rounded-[14px] border p-[18px] transition-colors h-full flex flex-col justify-between",
         variant === "profit"
-          ? "bg-accent-dark border-accent/20"
+          ? "bg-accent/10 border-accent/20"
           : "bg-card border-border",
         className
       )}
@@ -57,7 +57,7 @@ export function KpiCard({
           className={cn(
             "text-[11px] font-semibold mt-1.5",
             changeType === "up" && "text-accent",
-            changeType === "down" && "text-danger",
+            changeType === "down" && "text-destructive",
             changeType === "neutral" && "text-muted-foreground"
           )}
         >

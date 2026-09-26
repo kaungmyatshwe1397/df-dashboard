@@ -65,7 +65,7 @@ export function CarryForwardPanel() {
       </div>
 
       {result && (
-        <Alert className="border-accent/30 bg-accent-dark text-accent">
+        <Alert className="border-accent/30 bg-accent/10 text-accent">
           <CheckCircle2 className="h-4 w-4" />
           {result}
         </Alert>

@@ -83,9 +83,9 @@ function CustomTooltip({
             style={{
               backgroundColor:
                 entry.name === "gpRevenue"
-                  ? "var(--accent)"
+                  ? "var(--chart-1)"
                   : entry.name === "caseRevenue"
-                    ? "#34D399"
+                    ? "var(--chart-2)"
                     : "var(--foreground)",
             }}
           />
@@ -310,12 +310,12 @@ export function RevenueChart() {
         <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="gpGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+              <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+              <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="caseGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#34D399" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#34D399" stopOpacity={0} />
+              <stop offset="0%" stopColor="var(--chart-2)" stopOpacity={0.3} />
+              <stop offset="100%" stopColor="var(--chart-2)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid
@@ -340,7 +340,7 @@ export function RevenueChart() {
           <Area
             type="monotone"
             dataKey="gpRevenue"
-            stroke="var(--accent)"
+            stroke="var(--chart-1)"
             strokeWidth={2}
             fill="url(#gpGradient)"
             isAnimationActive={true}
@@ -350,7 +350,7 @@ export function RevenueChart() {
           <Area
             type="monotone"
             dataKey="caseRevenue"
-            stroke="#34D399"
+            stroke="var(--chart-2)"
             strokeWidth={2}
             fill="url(#caseGradient)"
             isAnimationActive={true}

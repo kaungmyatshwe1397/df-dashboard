@@ -18,8 +18,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Search, Trash2 } from "lucide-react";
+import { AlignCenter, Loader2, Search, Trash2 } from "lucide-react";
 import { useData } from "@/context/DataContext";
 import {
   RecordCategory,
@@ -427,7 +428,7 @@ export function PatientRecordUpdateForm({
                   ? "Add Case Record"
                   : "Add GP Record"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription >
             {isLookupMode && !foundRecord
               ? "Enter the Patient ID to find and edit a record."
               : foundRecord
@@ -444,10 +445,10 @@ export function PatientRecordUpdateForm({
 
         {/* Lookup step — only when opened from Update/Edit button */}
         {isLookupMode && !foundRecord ? (
-          <div className="grid gap-4 py-2">
-            <div className="grid gap-2">
+          <div>
+            <div className="grid gap-3">
               <Label htmlFor="lookupId">
-                Patient ID <span className="text-destructive">*</span>
+                Patient ID 
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -482,7 +483,8 @@ export function PatientRecordUpdateForm({
         ) : form ? (
           /* Form step — pre-filled with found record or blank for add */
           <>
-            <div className="grid gap-4 py-2 max-h-[60vh] overflow-y-auto themed-scrollbar pr-1">
+            <ScrollArea className="max-h-[60vh] px-3.5">
+              <div className="grid gap-4 py-2">
               <PatientInfoSection
                 form={form}
                 errors={errors}
@@ -526,9 +528,10 @@ export function PatientRecordUpdateForm({
                   updateField={updateField}
                 />
               )}
-            </div>
+              </div>
+            </ScrollArea>
 
-            <DialogFooter>
+            <DialogFooter className="py-1.5 px-3.5">
               {foundRecord && (
                 <Button
                   variant="destructive"

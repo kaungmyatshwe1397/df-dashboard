@@ -250,7 +250,7 @@ export function OverheadForm() {
               disabled={saving}
               title="Remove item"
             >
-              <Trash2 className="h-4 w-4 text-danger" />
+              <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>
         ))}
@@ -259,13 +259,13 @@ export function OverheadForm() {
       <Separator className="my-6 border-border" />
 
       {submitError && (
-        <Alert variant="destructive" className="mb-4 border-danger/30 bg-danger-bg text-danger">
+        <Alert variant="destructive" className="mb-4 border-destructive/30 bg-destructive/10 text-destructive">
           {submitError}
         </Alert>
       )}
 
       {saved && (
-        <Alert className="mb-4 border-accent/30 bg-accent-dark text-accent">
+        <Alert className="mb-4 border-accent/30 bg-accent/10 text-accent">
           <Check className="h-4 w-4" />
           Overhead expenses saved successfully.
         </Alert>

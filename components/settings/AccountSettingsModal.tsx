@@ -1,5 +1,5 @@
 // AccountSettingsModal — profile and password sections.
-// Opened from the TopNav avatar dropdown. Uses Dialog for the main modal.
+// Opened from the AppSidebar footer dropdown. Uses Dialog for the main modal.
 
 "use client";
 
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 
@@ -27,7 +28,7 @@ export function AccountSettingsModal({
 }: AccountSettingsModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto themed-scrollbar">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Account Settings</DialogTitle>
           <DialogDescription>
@@ -35,10 +36,12 @@ export function AccountSettingsModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-6 py-2">
-          <ProfileSection />
-          <PasswordSection />
-        </div>
+        <ScrollArea className="max-h-[65vh]">
+          <div className="flex flex-col gap-6 py-2">
+            <ProfileSection />
+            <PasswordSection />
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
@@ -94,7 +97,7 @@ function ProfileSection() {
       <h3 className="text-sm font-semibold text-foreground mb-3">Profile</h3>
       <div className="flex flex-col gap-3">
         {error && (
-          <div className="rounded-lg px-3 py-2 text-xs bg-danger-bg text-danger border border-danger/20">
+          <div className="rounded-lg px-3 py-2 text-xs bg-destructive/10 text-destructive border border-destructive/20">
             {error}
           </div>
         )}
@@ -116,7 +119,7 @@ function ProfileSection() {
             {saving ? <Spinner className="size-3" /> : "Save changes"}
           </Button>
           {saved && (
-            <span className="text-xs text-success">Saved</span>
+            <span className="text-xs text-chart-2">Saved</span>
           )}
         </div>
       </div>
@@ -187,7 +190,7 @@ function PasswordSection() {
       <h3 className="text-sm font-semibold text-foreground mb-3">Password</h3>
       <div className="flex flex-col gap-3">
         {error && (
-          <div className="rounded-lg px-3 py-2 text-xs bg-danger-bg text-danger border border-danger/20">
+          <div className="rounded-lg px-3 py-2 text-xs bg-destructive/10 text-destructive border border-destructive/20">
             {error}
           </div>
         )}
@@ -227,7 +230,7 @@ function PasswordSection() {
             {saving ? <Spinner className="size-3" /> : "Update password"}
           </Button>
           {saved && (
-            <span className="text-xs text-success">Updated</span>
+            <span className="text-xs text-chart-2">Updated</span>
           )}
         </div>
       </div>

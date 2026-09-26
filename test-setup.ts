@@ -2,6 +2,42 @@ import "@testing-library/jest-dom/vitest";
 import { vi, beforeEach } from "vitest";
 
 // ──────────────────────────────────────────────
+// Browser API polyfills (jsdom gaps)
+// Required by hooks/use-mobile (matchMedia) and Base UI overlays.
+// ──────────────────────────────────────────────
+
+if (typeof window !== "undefined") {
+  if (!window.matchMedia) {
+    window.matchMedia = (query: string) =>
+      ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(() => false),
+      }) as unknown as MediaQueryList;
+  }
+
+  if (!window.ResizeObserver) {
+    window.ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+  }
+
+  // Base UI ScrollArea waits on subtree animations to settle thumb geometry;
+  // jsdom implements no animations, so an empty list is the correct answer.
+  if (!Element.prototype.getAnimations) {
+    Element.prototype.getAnimations = () => [];
+  }
+}
+
+
+// ──────────────────────────────────────────────
 // Mock data
 // ──────────────────────────────────────────────
 

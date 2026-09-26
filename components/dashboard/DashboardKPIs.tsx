@@ -51,7 +51,7 @@ export function DashboardKPIs() {
     >
       {/* Gross Income — hero, spans 2 cols */}
       <motion.div variants={fadeUp} className="col-span-2">
-        <div className="rounded-[14px] border border-border p-5 h-full bg-gradient-to-br from-accent-dark to-card flex flex-col justify-between">
+        <div className="rounded-[14px] border border-border p-5 h-full bg-gradient-to-br from-accent/10 to-card flex flex-col justify-between">
           <div className="flex justify-between items-start">
             <div>
               <div className="text-xs text-muted-foreground mb-2">Gross income</div>

@@ -73,7 +73,7 @@ export function PaymentHistoryRow({
                       {payment.payment_status === PaymentStatus.PAID ? (
                         <Badge
                           variant="default"
-                          className="bg-success text-text-inverse text-caption"
+                          className="bg-chart-2 text-background text-caption"
                         >
                           Completed
                         </Badge>
