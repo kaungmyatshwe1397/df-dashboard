@@ -41,6 +41,13 @@ import {
   getEmptyForm,
   getInitialForm,
 } from "./Types";
+import {
+  filterPatientIdInput,
+  isPatientIdShapeValid,
+  isCurrentYearPatientIdValid,
+  PATIENT_ID_FORMAT_ERROR,
+  PATIENT_ID_YEAR_ERROR,
+} from "./schema";
 
 export function PatientRecordUpdateForm({
   open,
@@ -135,16 +142,22 @@ export function PatientRecordUpdateForm({
   const remaining = totalCost - paid;
 
   async function handleLookup() {
-    if (!lookupId.trim()) {
+    const trimmedId = lookupId.trim();
+    if (!trimmedId) {
       setLookupError("Enter a Patient ID to search.");
+      return;
+    }
+    // Any two-digit year is valid here so older records stay findable.
+    if (!isPatientIdShapeValid(trimmedId)) {
+      setLookupError(PATIENT_ID_FORMAT_ERROR);
       return;
     }
     setCheckingPatient(true);
     try {
-      const record = findRecordByPatientId(lookupId, defaultCategory);
+      const record = findRecordByPatientId(trimmedId, defaultCategory);
       if (!record) {
         setLookupError(
-          `No ${isCase ? "case" : "GP"} patient found with ID "${lookupId.trim()}".`
+          `No ${isCase ? "case" : "GP"} patient found with ID "${trimmedId}".`
         );
         return;
       }
@@ -189,9 +202,11 @@ export function PatientRecordUpdateForm({
 
   // Editing the ID after linking unlinks the returning patient and clears
   // identity fields so a different person can be entered from scratch.
+  // Value is filtered to digits + auto-inserted "/" so only NNNN/YY can form.
   function handlePatientIdChange(value: string) {
-    updateField("patientId", value);
-    if (returningPatient && value.trim() !== returningPatient.patient_id) {
+    const nextId = filterPatientIdInput(value);
+    updateField("patientId", nextId);
+    if (returningPatient && nextId.trim() !== returningPatient.patient_id) {
       setReturningPatient(null);
       setLookupNotice(null);
       setIdCheckError(null);
@@ -219,6 +234,8 @@ export function PatientRecordUpdateForm({
     if (!isAdding || !form || saving) return;
     const id = form.patientId.trim();
     if (!id) return;
+    // Malformed IDs never reach the registry — format errors are shown on save.
+    if (!isPatientIdShapeValid(id)) return;
     if (returningPatient && returningPatient.patient_id === id) return;
 
     setCheckingPatient(true);
@@ -270,6 +287,15 @@ export function PatientRecordUpdateForm({
 
     if (!form.patientId.trim()) {
       newErrors.patientId = "Patient ID is required.";
+    } else if (isAdding && !returningPatient) {
+      // Only new registrations are format-checked; edit mode and returning
+      // patients keep their pre-existing IDs (possibly an older year).
+      const id = form.patientId.trim();
+      if (!isPatientIdShapeValid(id)) {
+        newErrors.patientId = PATIENT_ID_FORMAT_ERROR;
+      } else if (!isCurrentYearPatientIdValid(id)) {
+        newErrors.patientId = PATIENT_ID_YEAR_ERROR;
+      }
     }
     if (!form.patientName.trim()) {
       newErrors.patientName = "Patient name is required.";
@@ -454,9 +480,10 @@ export function PatientRecordUpdateForm({
                 <Input
                   id="lookupId"
                   placeholder="e.g. 0001/26"
+                  inputMode="numeric"
                   value={lookupId}
                   onChange={(e) => {
-                    setLookupId(e.target.value);
+                    setLookupId(filterPatientIdInput(e.target.value));
                     setLookupError(null);
                   }}
                   onKeyDown={(e) => e.key === "Enter" && handleLookup()}

@@ -11,6 +11,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { FormField } from "@/components/shared/formField";
 import { Gender } from "@/lib/global";
 import { FormState, FormErrors } from "./Types";
+import { filterAgeInput } from "./schema";
 
 interface PatientInfoSectionProps {
   form: FormState;
@@ -54,12 +55,13 @@ export function PatientInfoSection({
         label="Patient ID"
         htmlFor="patientId"
         required
-        hint="(e.g. 0001/26)"
+        hint="(format 0001/26 — digits only)"
         error={errors.patientId ?? idCheckError ?? undefined}
       >
         <Input
           id="patientId"
           placeholder="e.g. 0001/26"
+          inputMode="numeric"
           value={form.patientId}
           onChange={(e) => onPatientIdChange(e.target.value)}
           onBlur={onPatientIdBlur}
@@ -101,12 +103,12 @@ export function PatientInfoSection({
         <FormField label="Age" htmlFor="age" required error={errors.age}>
           <Input
             id="age"
-            type="number"
-            min="0"
-            max="120"
+            type="text"
+            inputMode="numeric"
+            maxLength={2}
             placeholder="e.g. 30"
             value={form.age}
-            onChange={(e) => updateField("age", e.target.value)}
+            onChange={(e) => updateField("age", filterAgeInput(e.target.value))}
             aria-invalid={!!errors.age}
             disabled={locked}
           />

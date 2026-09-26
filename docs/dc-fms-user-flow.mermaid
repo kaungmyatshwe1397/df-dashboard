@@ -49,6 +49,17 @@ flowchart TD
     History --> Expand[Expand Row\nShow Installments] --> Table
 
     %% ==============================
+    %% BOTH ROLES: REGISTERED PATIENTS
+    %% ==============================
+    Role -->|Assistant| RegPatients[Registered Patients List]
+    Role -->|Admin| RegPatients
+
+    RegPatients --> SearchPt[Search by Patient ID / Name]
+    RegPatients --> PtRow[Select Patient Row]
+    PtRow --> PtDetail[Detail Page —\nPatient Card Dialog]
+    PtDetail --> PtBack[Back to List] --> RegPatients
+
+    %% ==============================
     %% ADMIN ONLY: EXTRA MODULES
     %% ==============================
     Role -->|Admin| AdminModules[Admin Modules]

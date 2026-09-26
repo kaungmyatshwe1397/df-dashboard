@@ -1,7 +1,7 @@
 // ============================================
 // usePatients — Patient Registry Hook
 // ============================================
-// Registry lookups and demographic updates.
+// Registry listings, lookups, and demographic updates.
 // Extracted from DataContext to follow Single Responsibility Principle.
 
 import { useCallback, useRef } from "react";
@@ -71,5 +71,18 @@ export function usePatients() {
     []
   );
 
-  return { findPatientById, updatePatient };
+  // Full registry listing for the Registered Patients page, newest first.
+  const listPatients = useCallback(async (): Promise<PatientType[]> => {
+    const { data, error } = await supabaseRef.current
+      .from("patients")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(error.message || "Failed to load patients.");
+    }
+    return (data ?? []).map(toPatientType);
+  }, []);
+
+  return { listPatients, findPatientById, updatePatient };
 }

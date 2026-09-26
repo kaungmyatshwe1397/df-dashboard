@@ -490,6 +490,35 @@
 
 ---
 
+## Task 11 — Registered Patients: List & Detail Dialog (Completed 9/26/2026 9:05PM)
+
+**Title:** Build the registry listing page (both roles) with search/pagination and a detail route that opens the patient card dialog
+
+**Expected Outcome:** A "Registered Patients" sidebar entry for Admin and Assistant leads to a table of every registry patient (#, Patient ID, Registered `d.M.yy`, Name, Address). Clicking a row routes to a detail page where the patient's registry demographics render inside a dialog card; closing it returns to the list.
+
+**Things To Do:**
+- ✅ Add `listPatients()` to `context/hooks/usePatients.ts` (newest-first `created_at` order, `toPatientType` mapping)
+- ✅ Make `TableEmpty.onAdd` optional and add `TableError.message` in `RecordTableHelpers.tsx` (reuse without the Add button)
+- ✅ Create `components/patients/registeredPatientsTable/`:
+  - ✅ `helpers.ts` — `filterPatients` (ID/name, case-insensitive) + `formatRegisteredDate` (`d.M.yy`)
+  - ✅ `index.tsx` — 5 UI states (skeleton / error+retry / empty / ideal / search-no-match), search box, 10-row pagination, clickable rows (keyboard Enter supported)
+  - ✅ `patientDetailDialog.tsx` — read-only demographics card with loading / found / not-found / error+retry states, Back-to-list action
+- ✅ Create routes: `/admin/register-patients`, `/assistant/register-patients` (+ `/detail?id=NNNN/YY` for each; `useSearchParams` wrapped in `Suspense`)
+- ✅ Add "Registered Patients" nav item to both sidebar item lists (`UsersRound` icon)
+- ✅ 5 UI states documented in `docs/dc-fms-ui-states-checklist.md` §8; screen added to `docs/dc-fms-user-flow.mermaid`
+- ✅ Tests: `helpers.test.ts` (search + date), `RegisteredPatientsTable.test.tsx` (5 states, search, row click, pagination), `PatientDetailDialog.test.tsx` (found / not-found / missing-id / error+retry / close)
+
+**Backend Plan Remarks:**
+- Already on Supabase: `listPatients()` queries `patients` ordered by `created_at` — no mock swap needed
+- RLS `patients_select` already grants ADMIN + ASSISTANT — no policy change required
+- Detail page uses the existing `findPatientById()`; no new RPC or table involved
+
+**Connection:** Depends on Task 4 (Layouts/Sidebar) and the patients registry from Task 6. Read-only screen — no dependency on Tasks 7–10.
+
+**Next Step →** Done
+
+---
+
 ## Task Dependency Graph
 
 ```
@@ -504,7 +533,8 @@ Task 1 (Scaffolding)
                  │                   └→ Task 7 (Dashboard) ← reads data from 5,6,6.1
                  ├→ Task 8 (Lab Reconciliation + Case Type Selector) ─→ Task 7
                  ├→ Task 9 (Overhead) ─→ Task 7
-                 └→ Task 10 (Closeout) ← depends on 5-9
+                 ├→ Task 10 (Closeout) ← depends on 5-9
+                 └→ Task 11 (Registered Patients) ← depends on 4 + registry
 ```
 
 ---
@@ -527,6 +557,7 @@ Task 1 (Scaffolding)
 | 8.2 | ERD & Schema Documentation Update | — | — | ✅ |
 | 9 | Overhead & Expenses | `/admin/overhead` | Admin | ✅ |
 | 10 | Month-End Closeout | `/admin/closeout` | Admin | ✅ |
+| 11 | Registered Patients: List & Detail Dialog | `/admin/register-patients`, `/assistant/register-patients` | Both | ✅ |
 
 ---
 

@@ -17,6 +17,7 @@ import {
   Settings,
   TableProperties,
   Users,
+  UsersRound,
 } from "lucide-react";
 import {
   Sidebar,
@@ -51,11 +52,13 @@ interface NavItem {
 
 const assistantNavItems: NavItem[] = [
   { title: "Records", href: "/assistant", icon: TableProperties },
+  { title: "Registered Patients", href: "/assistant/register-patients", icon: UsersRound },
 ];
 
 const adminNavItems: NavItem[] = [
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { title: "Records", href: "/admin/records", icon: TableProperties },
+  { title: "Registered Patients", href: "/admin/register-patients", icon: UsersRound },
   {
     title: "Lab Reconciliation",
     href: "/admin/reconciliation",

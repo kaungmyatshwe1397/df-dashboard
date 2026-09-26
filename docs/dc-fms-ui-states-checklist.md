@@ -96,6 +96,18 @@ Use this to design each screen and to QA it before release.
 
 ---
 
+## 8. Registered Patients (Admin + Assistant)
+
+| State | Checklist |
+|---|---|
+| Ideal | - Table lists every registry patient: #, Patient ID, Registered (`d.M.yy`), Name, Address<br>- Rows sorted newest registration first; clicking a row routes to `register-patients/detail?id=<ID>` and opens the patient detail dialog<br>- Search box filters by Patient ID or name as you type; patient count updates live |
+| Empty | - Registry has no patients → "No registered patients yet." (no Add button — patients are created through the records form)<br>- Search matches nothing → "No patients match “query”." and count shows 0 |
+| Loading | - Table skeleton (5 columns) while the registry loads<br>- Detail dialog shows skeleton lines while the patient row is fetched; Back button shows a spinner |
+| Error | - Registry fetch fails → destructive error banner with Retry (refetches)<br>- Detail fetch fails → error banner inside the dialog with Retry<br>- Messages are human-readable, never raw server errors |
+| Edge case | - Missing address or `created_at` → em dash placeholder<br>- Long patient names/addresses truncate with ellipsis, full value on hover (`title`)<br>- Unknown or deleted `?id=` → dialog shows "Patient `<ID>` was not found."<br>- Missing `?id=` → dialog shows "No Patient ID was provided." (no network call)<br>- 100+ patients → pagination (10 per page); search and counts apply across all pages |
+
+---
+
 ## Cross-cutting checklist (applies to all screens)
 
 - [ ] Role permissions respected in every state (Assistant never sees financial totals or lab fees, per PRD Section 2)

@@ -53,7 +53,6 @@ export function RecordFormFields({
           id="totalCost"
           type="number"
           min="0"
-          step="1"
           placeholder="e.g. 50000"
           value={form.totalCost}
           onChange={(e) => updateField("totalCost", e.target.value)}

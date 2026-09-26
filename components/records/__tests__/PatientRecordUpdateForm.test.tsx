@@ -14,7 +14,11 @@ import { describe, test, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { DataProvider } from "@/context/DataContext";
 import { PatientRecordUpdateForm } from "../patient-record-update-form";
+import { PATIENT_ID_FORMAT_ERROR } from "../patient-record-update-form/schema";
 import { RecordCategory, GPPatientRecordType } from "@/lib/global";
+
+// IDs typed into the add form must carry the current year to pass validation.
+const currentYear = String(new Date().getFullYear()).slice(-2);
 
 // Capture addRecord calls (and optionally simulate a duplicate-ID RPC
 // failure) without replacing the real DataContext provider.
@@ -522,7 +526,7 @@ describe("PatientRecordUpdateForm — Patient Registry", () => {
     const dialog = getLastDialogContent();
 
     fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
-      target: { value: "8888/26" },
+      target: { value: `8888/${currentYear}` },
     });
     fireEvent.change(within(dialog).getByPlaceholderText("e.g. John Doe"), {
       target: { value: "New Patient" },
@@ -547,7 +551,7 @@ describe("PatientRecordUpdateForm — Patient Registry", () => {
 describe("PatientRecordUpdateForm — Save", () => {
   async function fillNewPatient(dialog: HTMLElement) {
     fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
-      target: { value: "8888/26" },
+      target: { value: `8888/${currentYear}` },
     });
     fireEvent.blur(within(dialog).getByPlaceholderText("e.g. 0001/26"));
     // Save stays disabled until the registry lookup settles
@@ -593,13 +597,13 @@ describe("PatientRecordUpdateForm — Save", () => {
       Record<string, unknown>,
       Record<string, unknown>,
     ];
-    expect(identity.patient_id).toBe("8888/26");
+    expect(identity.patient_id).toBe(`8888/${currentYear}`);
     expect(identity.patient_name).toBe("New Patient");
     expect(identity.age).toBe(30);
     expect(identity.gender).toBe("MALE");
     expect(recordData.diagnosis).toBe("Checkup");
     expect(recordData.total_cost).toBe(10000);
-    expect(recordData.patient_id).toBe("8888/26");
+    expect(recordData.patient_id).toBe(`8888/${currentYear}`);
   });
 
   test("Save (returning patient) sends locked registry demographics + new visit", async () => {
@@ -757,5 +761,163 @@ describe("PatientRecordUpdateForm — CurrentMedicationList & MedicalHistory", (
     expect(
       within(dialog).getByRole("checkbox", { name: "Diabetes" })
     ).toHaveAttribute("aria-checked", "false");
+  });
+});
+
+// ------------------------------------------
+// Task — Patient ID format NNNN/YY
+// ------------------------------------------
+describe("PatientRecordUpdateForm — Patient ID Format", () => {
+  function renderAddMode() {
+    return renderWithProvider(
+      <PatientRecordUpdateForm
+        open={true}
+        onOpenChange={() => {}}
+        defaultCategory={RecordCategory.GP}
+        isAdding={true}
+        editRecord={null}
+      />
+    );
+  }
+
+  function renderLookupMode() {
+    return renderWithProvider(
+      <PatientRecordUpdateForm
+        open={true}
+        onOpenChange={() => {}}
+        defaultCategory={RecordCategory.GP}
+        isAdding={false}
+        editRecord={null}
+      />
+    );
+  }
+
+  test("Letters and symbols are blocked while typing", () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+
+    fireEvent.change(idInput, { target: { value: "abc00a01!26" } });
+    expect(idInput.value).toBe("0001/26");
+  });
+
+  test("Slash is auto-inserted after the fourth digit", () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+
+    fireEvent.change(idInput, { target: { value: "000126" } });
+    expect(idInput.value).toBe("0001/26");
+  });
+
+  test("Input stops at four digits plus two-digit year", () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+
+    fireEvent.change(idInput, { target: { value: "0001267890" } });
+    expect(idInput.value).toBe("0001/26");
+  });
+
+  test("Save rejects 0000 sequence with a format error", async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <DataProvider>
+        <PatientRecordUpdateForm
+          open={true}
+          onOpenChange={onOpenChange}
+          defaultCategory={RecordCategory.GP}
+          isAdding={true}
+          editRecord={null}
+        />
+      </DataProvider>
+    );
+    const dialog = getLastDialogContent();
+
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
+      target: { value: "0000/26" },
+    });
+    fireEvent.click(within(dialog).getByText("Add Record"));
+
+    expect(await within(dialog).findByText(PATIENT_ID_FORMAT_ERROR)).toBeInTheDocument();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(saveState.addRecordCalls).toHaveLength(0);
+  });
+
+  test("Save rejects a non-current year with a year error", async () => {
+    const onOpenChange = vi.fn();
+    const wrongYear = String(Number(currentYear) - 1).padStart(2, "0");
+    render(
+      <DataProvider>
+        <PatientRecordUpdateForm
+          open={true}
+          onOpenChange={onOpenChange}
+          defaultCategory={RecordCategory.GP}
+          isAdding={true}
+          editRecord={null}
+        />
+      </DataProvider>
+    );
+    const dialog = getLastDialogContent();
+
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
+      target: { value: `0001/${wrongYear}` },
+    });
+    fireEvent.click(within(dialog).getByText("Add Record"));
+
+    expect(
+      await within(dialog).findByText(/year must match the current year/i)
+    ).toBeInTheDocument();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(saveState.addRecordCalls).toHaveLength(0);
+  });
+
+  test("Lookup blocks an incomplete ID before searching", () => {
+    renderLookupMode();
+    const dialog = getLastDialogContent();
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26");
+
+    fireEvent.change(idInput, { target: { value: "0001" } });
+    fireEvent.keyDown(idInput, { key: "Enter" });
+
+    expect(within(dialog).getByText(PATIENT_ID_FORMAT_ERROR)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/no gp patient found/i)).not.toBeInTheDocument();
+  });
+
+  test("Lookup input strips letters and auto-inserts the slash", () => {
+    renderLookupMode();
+    const dialog = getLastDialogContent();
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+
+    fireEvent.change(idInput, { target: { value: "00a42/25" } });
+    expect(idInput.value).toBe("0042/25");
+  });
+});
+
+// ------------------------------------------
+// Task — Age input: two digits, unsigned integer
+// ------------------------------------------
+describe("PatientRecordUpdateForm — Age Format", () => {
+  test("Age allows only two digits — no decimals or negatives", () => {
+    renderWithProvider(
+      <PatientRecordUpdateForm
+        open={true}
+        onOpenChange={() => {}}
+        defaultCategory={RecordCategory.GP}
+        isAdding={true}
+        editRecord={null}
+      />
+    );
+    const dialog = getLastDialogContent();
+    const ageInput = within(dialog).getByPlaceholderText("e.g. 30") as HTMLInputElement;
+
+    fireEvent.change(ageInput, { target: { value: "12.5" } });
+    expect(ageInput.value).toBe("12");
+
+    fireEvent.change(ageInput, { target: { value: "-7" } });
+    expect(ageInput.value).toBe("7");
+
+    fireEvent.change(ageInput, { target: { value: "1234" } });
+    expect(ageInput.value).toBe("12");
   });
 });
