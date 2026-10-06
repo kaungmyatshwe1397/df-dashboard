@@ -70,7 +70,7 @@ export function CaseFormFields({
       <FormField
         label="Tooth Numbers"
         htmlFor="teeth"
-        required
+        hint="(optional)"
         error={errors.teeth}
       >
         <ToothNumberGrid

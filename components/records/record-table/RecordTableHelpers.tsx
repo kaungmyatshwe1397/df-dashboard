@@ -78,10 +78,12 @@ export function TableSkeleton({ columns }: { columns: number }) {
 export function TableEmpty({
   message,
   onAdd,
+  addLabel = "Add Record",
 }: {
   message: string;
   /** Omit on screens where records cannot be created directly. */
   onAdd?: () => void;
+  addLabel?: string;
 }) {
   return (
     <div className="rounded-[14px] border border-dashed border-border p-12 text-center">
@@ -94,7 +96,7 @@ export function TableEmpty({
           className="bg-accent text-accent-foreground hover:bg-accent/90"
         >
           <Plus className="mr-1.5 h-4 w-4" />
-          Add Record
+          {addLabel}
         </Button>
       )}
     </div>

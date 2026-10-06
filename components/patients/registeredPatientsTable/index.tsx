@@ -15,9 +15,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Plus, Search } from "lucide-react";
 import { PatientType } from "@/lib/global";
 import { usePatients } from "@/context/hooks/usePatients";
+import { useCanEdit } from "@/context/AuthContext";
 import {
   ROWS_PER_PAGE,
   TableEmpty,
@@ -26,6 +28,7 @@ import {
   TableSkeleton,
 } from "@/components/records/record-table/RecordTableHelpers";
 import { filterPatients, formatRegisteredDate } from "./helpers";
+import { AddPatientDialog } from "./AddPatientDialog";
 
 export interface RegisteredPatientsTablePropsType {
   onRowSelect: (patient: PatientType) => void;
@@ -37,11 +40,13 @@ export function RegisteredPatientsTable({
   onRowSelect,
 }: RegisteredPatientsTablePropsType) {
   const { listPatients } = usePatients();
+  const canEdit = useCanEdit();
   const [patients, setPatients] = useState<PatientType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [addOpen, setAddOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,7 +85,20 @@ export function RegisteredPatientsTable({
   }
 
   if (patients.length === 0) {
-    return <TableEmpty message="No registered patients yet." />;
+    return (
+      <>
+        <TableEmpty
+          message="No registered patients yet."
+          onAdd={canEdit ? () => setAddOpen(true) : undefined}
+          addLabel="Add Patient"
+        />
+        <AddPatientDialog
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          onCreated={load}
+        />
+      </>
+    );
   }
 
   return (
@@ -89,15 +107,23 @@ export function RegisteredPatientsTable({
         <p className="text-sm text-muted-foreground">
           {filtered.length} patient{filtered.length !== 1 ? "s" : ""}
         </p>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => handleQueryChange(e.target.value)}
-            placeholder="Search by ID or name"
-            aria-label="Search registered patients"
-            className="pl-8"
-          />
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          {canEdit && (
+            <Button size="sm" onClick={() => setAddOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add Patient
+            </Button>
+          )}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => handleQueryChange(e.target.value)}
+              placeholder="Search by ID or name"
+              aria-label="Search registered patients"
+              className="pl-8"
+            />
+          </div>
         </div>
       </div>
 
@@ -160,6 +186,12 @@ export function RegisteredPatientsTable({
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+      />
+
+      <AddPatientDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onCreated={load}
       />
     </div>
   );

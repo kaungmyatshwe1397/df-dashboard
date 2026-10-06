@@ -6,7 +6,7 @@
 
 import { useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { PatientType, PatientUpdatesType } from "@/lib/global";
+import { PatientType, PatientUpdatesType, PatientPayloadType } from "@/lib/global";
 import { toPatientType } from "@/lib/data-helpers";
 
 export function usePatients() {
@@ -84,5 +84,32 @@ export function usePatients() {
     return (data ?? []).map(toPatientType);
   }, []);
 
-  return { listPatients, findPatientById, updatePatient };
+  // Registers a new patient in the registry (no visit record yet).
+  const createPatient = useCallback(
+    async (patient: PatientPayloadType): Promise<void> => {
+      const { error } = await supabaseRef.current.from("patients").insert({
+        patient_id: patient.patient_id,
+        patient_name: patient.patient_name,
+        age: patient.age,
+        gender: patient.gender,
+        address: patient.address ?? null,
+        drug_allergy: patient.drug_allergy ?? null,
+        past_dental_history: patient.past_dental_history ?? null,
+        current_medications: patient.current_medications,
+        past_medical_history: patient.past_medical_history,
+      });
+
+      if (error) {
+        if (error.code === "23505") {
+          throw new Error(
+            "This Patient ID is already registered. Please use a different ID."
+          );
+        }
+        throw new Error(error.message || "Failed to register patient.");
+      }
+    },
+    []
+  );
+
+  return { listPatients, findPatientById, updatePatient, createPatient };
 }
