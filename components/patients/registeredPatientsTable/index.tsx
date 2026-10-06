@@ -108,7 +108,7 @@ export function RegisteredPatientsTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">#</TableHead>
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Patient ID</TableHead>
                 <TableHead>Registered</TableHead>
                 <TableHead>Patient Name</TableHead>

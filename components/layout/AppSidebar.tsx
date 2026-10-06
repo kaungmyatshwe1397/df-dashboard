@@ -81,8 +81,17 @@ export function AppSidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const isAdmin = pathname.startsWith("/admin");
-  const navItems = isAdmin ? adminNavItems : assistantNavItems;
-  const portalLabel = isAdmin ? "Admin Portal" : "Assistant Portal";
+  const isSupervisor = profile?.role === "SUPERVISOR";
+  const navItems = isAdmin
+    ? isSupervisor
+      ? adminNavItems.filter((item) => item.href !== "/admin/users")
+      : adminNavItems
+    : assistantNavItems;
+  const portalLabel = isSupervisor
+    ? "Supervisor Portal"
+    : isAdmin
+      ? "Admin Portal"
+      : "Assistant Portal";
 
   const userInitial = profile?.username?.[0]?.toUpperCase() ?? "U";
   const displayName = profile?.username ?? "User";

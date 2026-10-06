@@ -1,6 +1,7 @@
 // Middleware — role-based route protection.
 // Unauthenticated users → /login.
-// ADMIN → /admin/*, ASSISTANT → /assistant/*.
+// ADMIN → /admin/*, SUPERVISOR → /admin/* (read-only via UI + RLS), ASSISTANT → /assistant/*.
+// Supervisor is blocked from /admin/users (user management stays admin-only).
 // Mismatched role → redirect to correct dashboard.
 
 import { createServerClient } from "@supabase/ssr";
@@ -60,16 +61,24 @@ export async function middleware(request: NextRequest) {
 
   if (role && pathname === "/login") {
     return NextResponse.redirect(
-      new URL(role === "ADMIN" ? "/admin" : "/assistant", request.url)
+      new URL(role === "ASSISTANT" ? "/assistant" : "/admin", request.url)
     );
   }
 
-  if (role === "ADMIN" && isAssistantRoute) {
+  if ((role === "ADMIN" || role === "SUPERVISOR") && isAssistantRoute) {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   if (role === "ASSISTANT" && isAdminRoute) {
     return NextResponse.redirect(new URL("/assistant", request.url));
+  }
+
+  if (role === "SUPERVISOR" && pathname.startsWith("/admin/users")) {
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
+
+  if (role === "SUPERVISOR" && pathname.startsWith("/admin/reconciliation/manage")) {
+    return NextResponse.redirect(new URL("/admin/reconciliation", request.url));
   }
 
   return response;

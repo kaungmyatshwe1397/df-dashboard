@@ -65,7 +65,11 @@ All skipped due to **base-ui Dialog JSDOM limitations** — need Playwright E2E:
 |----------|------|------|-----|
 | High | Middleware route protection (`middleware.ts`) | Unit | Auth/RBAC logic untested |
 | High | `isProtectedRoute`, `isAdminRoute` | Unit | Pure functions, easy to test |
-| Medium | `updateUserAction`, `deleteUserAction` (`app/admin/actions.ts`) | Unit | Server actions need mock |
+| Medium | `createUserAction`, `updateUserRoleAction`, `deleteUserAction` (`app/admin/actions.ts`) | Unit | Server actions need mock |
+| Medium | Users page table (`app/admin/users/page.tsx`) — rows render username/email/role, loading skeleton, empty state, error retry | Component | User management UI untested |
+| Medium | `CreateUserDialog` / `UserEditDialog` validation + submit flows | Component | Admin user CRUD forms |
+| Medium | Supervisor read-only gating (`useCanEdit` consumers: GpTable, CaseTable, OverheadForm, CarryForwardPanel, LabFeeInput) — hides add/edit buttons when profile.role is SUPERVISOR | Component | New role behavior |
+| High | Middleware SUPERVISOR rules (`/admin` allowed read-only, `/admin/users` and `/admin/reconciliation/manage` blocked, `/assistant` blocked) | Unit | RBAC logic untested |
 | Medium | AuthContext (`login`, `logout`, session) | Component | Auth flow untested |
 | Medium | OverheadForm validation | Component | Financial form logic |
 | Medium | Reconciliation table | Component | Lab fee calculations |

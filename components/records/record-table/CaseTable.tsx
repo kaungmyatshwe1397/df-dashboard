@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
 import { useData } from "@/context/DataContext";
+import { useCanEdit } from "@/context/AuthContext";
 import { RecordCategory, CasePatientRecordType } from "@/lib/global";
 import {
   ROWS_PER_PAGE,
@@ -34,6 +35,7 @@ export function CaseTable({
   onEdit: (record: CasePatientRecordType | null, category: RecordCategory) => void;
 }) {
   const { getRecordBalance, getRecordTotalPaid } = useData();
+  const canEdit = useCanEdit();
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [payRecord, setPayRecord] = useState<CasePatientRecordType | null>(null);
@@ -50,7 +52,7 @@ export function CaseTable({
     return (
       <TableEmpty
         message="No case records yet this cycle."
-        onAdd={onAdd}
+        onAdd={canEdit ? onAdd : undefined}
       />
     );
   }
@@ -61,25 +63,27 @@ export function CaseTable({
         <p className="text-sm text-muted-foreground">
           {records.length} record{records.length !== 1 ? "s" : ""}
         </p>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => onEdit(null, RecordCategory.CASE)}
-            size="sm"
-            variant="outline"
-            className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
-          >
-            <Pencil className="mr-1.5 h-4 w-4" />
-            Update / Edit
-          </Button>
-          <Button
-            onClick={onAdd}
-            size="sm"
-            className="bg-accent text-accent-foreground hover:bg-accent/90"
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Add New Case
-          </Button>
-        </div>
+        {canEdit && (
+          <div className="flex gap-2">
+            <Button
+              onClick={() => onEdit(null, RecordCategory.CASE)}
+              size="sm"
+              variant="outline"
+              className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
+            >
+              <Pencil className="mr-1.5 h-4 w-4" />
+              Update / Edit
+            </Button>
+            <Button
+              onClick={onAdd}
+              size="sm"
+              className="bg-accent text-accent-foreground hover:bg-accent/90"
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add New Case
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="rounded-[14px] border border-border">
@@ -115,7 +119,7 @@ export function CaseTable({
                   isSettled={isSettled}
                   isExpanded={isExpanded}
                   onToggleExpand={toggleExpand}
-                  onPay={setPayRecord}
+                  onPay={canEdit ? setPayRecord : undefined}
                 />
               );
             })}

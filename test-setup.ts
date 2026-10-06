@@ -1,6 +1,12 @@
 import "@testing-library/jest-dom/vitest";
 import { vi, beforeEach } from "vitest";
 
+// Fixtures below are seeded for Sep 2026; the app derives the active cycle
+// from the real clock, so pin the clock to the fixture month to keep tests
+// date-independent. shouldAdvanceTime keeps RTL waitFor/setTimeout working.
+vi.useFakeTimers({ shouldAdvanceTime: true });
+vi.setSystemTime(new Date("2026-09-15T12:00:00"));
+
 // ──────────────────────────────────────────────
 // Browser API polyfills (jsdom gaps)
 // Required by hooks/use-mobile (matchMedia) and Base UI overlays.

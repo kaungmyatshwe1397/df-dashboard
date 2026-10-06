@@ -9,6 +9,7 @@
 
 import { useState, useCallback, useMemo, Fragment } from "react";
 import { useData } from "@/context/DataContext";
+import { useCanEdit } from "@/context/AuthContext";
 import { RecordCategory, CasePatientRecordType, LabPaymentStatus } from "@/lib/global";
 import {
   Table,
@@ -54,6 +55,7 @@ const ALL_LABS_VALUE = "__all__";
 
 export function LabReconciliationTable() {
   const { records, loading, error, refreshData, updateRecord } = useData();
+  const canEdit = useCanEdit();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [selectedLab, setSelectedLab] = useState<string>(ALL_LABS_VALUE);
 
@@ -237,6 +239,7 @@ export function LabReconciliationTable() {
                           record={record}
                           onSave={handleFeeSave}
                           saving={isSaving}
+                          readOnly={!canEdit}
                         />
                       </TableCell>
                     </TableRow>

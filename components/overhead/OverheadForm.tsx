@@ -11,6 +11,7 @@ import { Alert } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { useData } from "@/context/DataContext";
+import { useCanEdit } from "@/context/AuthContext";
 import { FormField } from "@/components/shared/formField";
 import {
   OverheadFields,
@@ -24,6 +25,7 @@ import {
 
 export function OverheadForm() {
   const { financials, updateFinancials, refreshData } = useData();
+  const canEdit = useCanEdit();
 
   const [fields, setFields] = useState<OverheadFields>(() =>
     financials ? financialsToFields(financials) : {
@@ -177,7 +179,7 @@ export function OverheadForm() {
               step="1"
               value={fields[key]}
               onChange={(e) => handleChange(key, e.target.value)}
-              disabled={saving}
+              disabled={saving || !canEdit}
               className="bg-input border-border focus:ring-2 focus:ring-accent transition-shadow"
             />
           </FormField>
@@ -192,16 +194,18 @@ export function OverheadForm() {
           <Label className="text-sm font-normal text-muted-foreground">
             Custom Overhead Items
           </Label>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddCustom}
-            disabled={saving}
-            className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Add Item
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddCustom}
+              disabled={saving}
+              className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Add Item
+            </Button>
+          )}
         </div>
 
         {customItems.length === 0 && (
@@ -222,7 +226,7 @@ export function OverheadForm() {
                 placeholder="e.g. Internet, Insurance"
                 value={item.name}
                 onChange={(e) => handleCustomChange(index, "name", e.target.value)}
-                disabled={saving}
+                disabled={saving || !canEdit}
                 className="bg-input border-border focus:ring-2 focus:ring-accent transition-shadow"
               />
             </FormField>
@@ -239,19 +243,21 @@ export function OverheadForm() {
                 step="1"
                 value={item.amount}
                 onChange={(e) => handleCustomChange(index, "amount", e.target.value)}
-                disabled={saving}
+                disabled={saving || !canEdit}
                 className="bg-input border-border focus:ring-2 focus:ring-accent transition-shadow"
               />
             </FormField>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => handleRemoveCustom(index)}
-              disabled={saving}
-              title="Remove item"
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => handleRemoveCustom(index)}
+                disabled={saving}
+                title="Remove item"
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            )}
           </div>
         ))}
       </div>
@@ -271,12 +277,13 @@ export function OverheadForm() {
         </Alert>
       )}
 
-      <div className="flex justify-end">
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-accent text-accent-foreground hover:bg-accent/90"
-        >
+      {canEdit && (
+        <div className="flex justify-end">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-accent text-accent-foreground hover:bg-accent/90"
+          >
           {saving ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : saved ? (
@@ -284,9 +291,10 @@ export function OverheadForm() {
           ) : (
             <Save className="mr-2 h-4 w-4" />
           )}
-          Save Expenses
-        </Button>
-      </div>
+            Save Expenses
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

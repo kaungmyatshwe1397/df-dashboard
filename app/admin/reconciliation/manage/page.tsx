@@ -1,13 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { LabTable, CaseTypeTable } from "@/components/reconciliation/manage";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/context/AuthContext";
 import { ArrowLeft } from "lucide-react";
 
 export default function ManageLabsCaseTypesPage() {
+  const { profile, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && profile?.role === "SUPERVISOR") {
+      router.replace("/admin/reconciliation");
+    }
+  }, [loading, profile, router]);
+
   return (
       <PortalLayout>
       <div className="flex flex-col gap-6">

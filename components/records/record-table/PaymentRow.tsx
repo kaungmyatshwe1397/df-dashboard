@@ -21,7 +21,7 @@ export interface PaymentRowProps {
   isSettled: boolean;
   isExpanded: boolean;
   onToggleExpand: (id: string) => void;
-  onPay: (record: CasePatientRecordType) => void;
+  onPay?: (record: CasePatientRecordType) => void;
 }
 
 function formatCurrency(amount: number): string {
@@ -109,7 +109,7 @@ export function PaymentRow({
           )}
         </TableCell>
         <TableCell>
-          {!isSettled && (
+          {!isSettled && onPay && (
             <Button
               variant="ghost"
               size="icon-sm"

@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
 import { RecordCategory, GPPatientRecordType } from "@/lib/global";
+import { useCanEdit } from "@/context/AuthContext";
 import {
   ROWS_PER_PAGE,
   formatCurrency,
@@ -32,6 +33,7 @@ export function GpTable({
   onEdit: (record: GPPatientRecordType | null, category: RecordCategory) => void;
 }) {
   const [currentPage, setCurrentPage] = useState(1);
+  const canEdit = useCanEdit();
   const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
   const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
   const paginatedRecords = records.slice(startIndex, startIndex + ROWS_PER_PAGE);
@@ -40,7 +42,7 @@ export function GpTable({
     return (
       <TableEmpty
         message="No GP records yet this cycle."
-        onAdd={onAdd}
+        onAdd={canEdit ? onAdd : undefined}
       />
     );
   }
@@ -51,25 +53,27 @@ export function GpTable({
         <p className="text-sm text-muted-foreground">
           {records.length} record{records.length !== 1 ? "s" : ""}
         </p>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => onEdit(null, RecordCategory.GP)}
-            size="sm"
-            variant="outline"
-            className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
-          >
-            <Pencil className="mr-1.5 h-4 w-4" />
-            Update / Edit
-          </Button>
-          <Button
-            onClick={onAdd}
-            size="sm"
-            className="bg-accent text-accent-foreground hover:bg-accent/90"
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Add GP Record
-          </Button>
-        </div>
+        {canEdit && (
+          <div className="flex gap-2">
+            <Button
+              onClick={() => onEdit(null, RecordCategory.GP)}
+              size="sm"
+              variant="outline"
+              className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
+            >
+              <Pencil className="mr-1.5 h-4 w-4" />
+              Update / Edit
+            </Button>
+            <Button
+              onClick={onAdd}
+              size="sm"
+              className="bg-accent text-accent-foreground hover:bg-accent/90"
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add GP Record
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="rounded-[14px] border border-border">
