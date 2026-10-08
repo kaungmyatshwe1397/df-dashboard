@@ -35,6 +35,7 @@ React component and hook rendering with Testing Library.
 | `components/records/__tests__/PatientRecordUpdateForm.test.tsx` | 27 | Dialog close, edit/add mode, delete button, form validation, patient registry (returning/locking), save flows, medication chips, medical history |
 | `components/records/record-table/RecordTableHelpers-components.test.tsx` | 6 | `TableEmpty`, `TableError`, `TableSkeleton`, `TablePagination` |
 | `components/dashboard/useDashboardKPIs.test.tsx` | 8 | KPI calculations (revenue, commission, overhead, profit) |
+| Dashboard month selector | TODO | Selecting an available month updates dashboard KPIs and the revenue chart; all displayed dashboard currency uses MMK |
 | `context/__tests__/DataContext.test.tsx` | 14 | Payment logic, CRUD operations, record lookup |
 | `context/__tests__/DataContext-mutations.test.tsx` | 13 | Record/patient mutation flows through DataContext |
 | `context/__tests__/patients.test.tsx` | 7 | Patient registry lookup and persistence |
@@ -71,6 +72,7 @@ All skipped due to **base-ui Dialog JSDOM limitations** — need Playwright E2E:
 | High | `isProtectedRoute`, `isAdminRoute` | Unit | Pure functions, easy to test |
 | Medium | `createUserAction`, `updateUserRoleAction`, `deleteUserAction` (`app/admin/actions.ts`) | Unit | Server actions need mock |
 | Medium | Users page table (`app/admin/users/page.tsx`) — rows render username/email/role, loading skeleton, empty state, error retry | Component | User management UI untested |
+| Medium | User edit dialog — role selection, unchanged-role save state, self-demotion guard, and delete confirmation | Component | User account actions should remain clear and safe |
 | Medium | `CreateUserDialog` / `UserEditDialog` validation + submit flows | Component | Admin user CRUD forms |
 | Medium | Supervisor read-only gating (`useCanEdit` consumers: GpTable, CaseTable, OverheadForm, CarryForwardPanel, LabFeeInput) — hides add/edit buttons when profile.role is SUPERVISOR | Component | New role behavior |
 | High | Middleware SUPERVISOR rules (`/admin` allowed read-only, `/admin/users` and `/admin/reconciliation/manage` blocked, `/assistant` blocked) | Unit | RBAC logic untested |

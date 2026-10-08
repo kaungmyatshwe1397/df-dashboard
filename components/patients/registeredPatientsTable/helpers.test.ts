@@ -38,9 +38,9 @@ describe("filterPatients", () => {
     expect(result[0].patient_name).toBe("mya mya");
   });
 
-  test("matches by name, case-insensitive", () => {
-    expect(filterPatients(patients, "aung")).toHaveLength(1);
-    expect(filterPatients(patients, "MYA MYA")).toHaveLength(1);
+  test("does not match by patient name", () => {
+    expect(filterPatients(patients, "aung")).toHaveLength(0);
+    expect(filterPatients(patients, "MYA MYA")).toHaveLength(0);
   });
 
   test("no match returns an empty list", () => {

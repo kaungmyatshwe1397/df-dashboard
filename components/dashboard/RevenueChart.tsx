@@ -57,9 +57,9 @@ function getMonthIndex(monthLabel: string): number {
 }
 
 function formatCurrencyShort(amount: number): string {
-  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `$${(amount / 1_000).toFixed(0)}k`;
-  return `$${amount}`;
+  if (amount >= 1_000_000) return `MMK ${(amount / 1_000_000).toFixed(1)}M`;
+  if (amount >= 1_000) return `MMK ${(amount / 1_000).toFixed(0)}k`;
+  return `MMK ${amount}`;
 }
 
 function CustomTooltip({
@@ -98,7 +98,7 @@ function CustomTooltip({
             :
           </span>
           <span className="font-medium tabular-nums">
-            ${entry.value.toLocaleString("en-US")}
+            MMK {entry.value.toLocaleString("en-US")}
           </span>
         </div>
       ))}

@@ -63,15 +63,15 @@ export default function AdminUsersPage() {
   return (
     <PortalLayout>
       <div className="flex flex-col gap-6">
-        <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">User Management</h1>
             <p className="text-muted-foreground">
               View, create, and manage user accounts and roles.
             </p>
           </div>
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button size="sm" className="self-start" onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
             Create User
           </Button>
         </div>
@@ -104,7 +104,7 @@ export default function AdminUsersPage() {
                   <TableHead>Username</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead className="w-20 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -129,7 +129,7 @@ export default function AdminUsersPage() {
                   <TableHead>Username</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead className="w-20 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -142,14 +142,15 @@ export default function AdminUsersPage() {
                     <TableCell>
                       <Badge variant="secondary">{user.role}</Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                       <Button
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon-xs"
                         onClick={() => setEditTarget(user)}
                         title="Edit user"
+                        aria-label={`Edit ${user.username}`}
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                     </TableCell>
                   </TableRow>

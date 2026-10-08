@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, UsersRound } from "lucide-react";
 import { PatientType } from "@/lib/global";
 import { usePatients } from "@/context/hooks/usePatients";
 import { useCanEdit } from "@/context/AuthContext";
@@ -29,6 +29,7 @@ import {
 } from "@/components/records/record-table/RecordTableHelpers";
 import { filterPatients, formatRegisteredDate } from "./helpers";
 import { AddPatientDialog } from "./AddPatientDialog";
+import { Badge } from "@/components/ui/badge";
 
 export interface RegisteredPatientsTablePropsType {
   onRowSelect: (patient: PatientType) => void;
@@ -103,24 +104,27 @@ export function RegisteredPatientsTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {filtered.length} patient{filtered.length !== 1 ? "s" : ""}
-        </p>
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Badge variant="secondary" className="w-fit gap-2 px-3 py-1.5 text-sm font-medium">
+          <UsersRound className="h-4 w-4" aria-hidden="true" />
+          <span aria-live="polite">
+            {filtered.length} registered
+          </span>
+        </Badge>
+        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
           {canEdit && (
             <Button size="sm" onClick={() => setAddOpen(true)}>
               <Plus className="mr-1.5 h-4 w-4" />
               Add Patient
             </Button>
           )}
-          <div className="relative w-full sm:w-64">
+          <div className="relative w-full sm:w-48">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
-              placeholder="Search by ID or name"
-              aria-label="Search registered patients"
+              placeholder="Search patient ID"
+              aria-label="Search registered patients by ID"
               className="pl-8"
             />
           </div>

@@ -3,18 +3,14 @@
 
 import { PatientType } from "@/lib/global";
 
-// Case-insensitive match on patient ID or name; empty query returns everything.
+// Case-insensitive match on patient ID only; empty query returns everything.
 export function filterPatients(
   patients: PatientType[],
   query: string
 ): PatientType[] {
   const q = query.trim().toLowerCase();
   if (!q) return patients;
-  return patients.filter(
-    (p) =>
-      p.patient_id.toLowerCase().includes(q) ||
-      p.patient_name.toLowerCase().includes(q)
-  );
+  return patients.filter((p) => p.patient_id.toLowerCase().includes(q));
 }
 
 // Registration date as d.M.yy (e.g. "26.9.26") per the list design.

@@ -108,7 +108,7 @@ describe("RegisteredPatientsTable — UI States", () => {
 });
 
 describe("RegisteredPatientsTable — Search", () => {
-  test("filters rows by name and shows no-match state", async () => {
+  test("filters rows by patient ID only and shows a no-match state", async () => {
     mock.listPatients.mockResolvedValue([
       makePatient(1),
       makePatient(2),
@@ -116,18 +116,18 @@ describe("RegisteredPatientsTable — Search", () => {
     ]);
     renderTable();
 
-    const search = await screen.findByLabelText("Search registered patients");
+    const search = await screen.findByLabelText("Search registered patients by ID");
     expect(screen.getByText("Patient 1")).toBeInTheDocument();
 
-    fireEvent.change(search, { target: { value: "hla" } });
+    fireEvent.change(search, { target: { value: "0003" } });
     expect(screen.queryByText("Patient 1")).not.toBeInTheDocument();
     expect(screen.getByText("Hla Hla")).toBeInTheDocument();
 
-    fireEvent.change(search, { target: { value: "zzz" } });
+    fireEvent.change(search, { target: { value: "hla" } });
     expect(
       screen.getByText(/No patients match/i)
     ).toBeInTheDocument();
-    expect(screen.getByText("0 patients")).toBeInTheDocument();
+    expect(screen.getByText("0 registered")).toBeInTheDocument();
   });
 });
 

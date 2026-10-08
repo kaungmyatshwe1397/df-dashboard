@@ -52,7 +52,7 @@ Use this to design each screen and to QA it before release.
 
 | State | Checklist |
 |---|---|
-| Ideal | - KPI cards show Total GP Revenue, Total Case Revenue, Lab Deductions, Doctor Commission (40%), Overhead, Net Profit/Loss<br>- Net Profit/Loss visually distinct when positive vs negative (e.g. color) |
+| Ideal | - Month selector changes the dashboard cycle and KPI data<br>- KPI cards show Total GP Revenue, Total Case Revenue, Lab Deductions, Doctor Commission (40%), Overhead, Net Profit/Loss in MMK<br>- Net Profit/Loss uses a compact single-column card and is visually distinct when positive vs negative (e.g. color) |
 | Empty | - First month / no data yet → all KPIs show 0, not blank or "undefined" |
 | Loading | - Skeleton placeholders for each KPI card while totals are calculated |
 | Error | - Calculation/fetch failure → error state per card or full-dashboard banner, with retry |
@@ -100,7 +100,7 @@ Use this to design each screen and to QA it before release.
 
 | State | Checklist |
 |---|---|
-| Ideal | - Table lists every registry patient: #, Patient ID, Registered (`d.M.yy`), Name, Address<br>- Rows sorted newest registration first; clicking a row routes to `register-patients/detail?id=<ID>` and opens the patient detail dialog<br>- Search box filters by Patient ID or name as you type; patient count updates live<br>- "Add Patient" button (hidden for SUPERVISOR) opens the registration dialog: fields for Patient ID*, Name*, Age*, Gender*, Address, Drug Allergy, Past Dental History, Current Medications, Past Medical History; duplicate Patient ID blocked on blur and on save (23505 banner) |
+| Ideal | - Table lists every registry patient: #, Patient ID, Registered (`d.M.yy`), Name, Address<br>- Rows sorted newest registration first; clicking a row routes to `register-patients/detail?id=<ID>` and opens the patient detail dialog<br>- Compact search box filters by Patient ID only as you type; a styled registered-count badge updates live<br>- "Add Patient" button (hidden for SUPERVISOR) opens the registration dialog: fields for Patient ID*, Name*, Age*, Gender*, Address, Drug Allergy, Past Dental History, Current Medications, Past Medical History; duplicate Patient ID blocked on blur and on save (23505 banner) |
 | Empty | - Registry has no patients → "No registered patients yet." with an "Add Patient" button that opens the patient registration dialog (hidden for SUPERVISOR)<br>- Search matches nothing → "No patients match “query”." and count shows 0 |
 | Loading | - Table skeleton (5 columns) while the registry loads<br>- Detail dialog shows skeleton lines while the patient row is fetched; Back button shows a spinner |
 | Error | - Registry fetch fails → destructive error banner with Retry (refetches)<br>- Detail fetch fails → error banner inside the dialog with Retry<br>- Messages are human-readable, never raw server errors |

@@ -143,13 +143,18 @@ export function CreateUserDialog({
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label>Role</Label>
+          <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 p-4">
+            <div className="space-y-1">
+              <Label htmlFor="new-role">Account role</Label>
+              <p className="text-sm text-muted-foreground">
+                Choose the access role assigned to this account.
+              </p>
+            </div>
             <Select
               value={role}
               onValueChange={(v) => setRole(v as UserRole)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="new-role" className="w-full bg-background">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -161,7 +166,7 @@ export function CreateUserDialog({
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" size="sm" disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create User
             </Button>
