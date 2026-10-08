@@ -76,6 +76,6 @@ All skipped due to **base-ui Dialog JSDOM limitations** — need Playwright E2E:
 | High | Middleware SUPERVISOR rules (`/admin` allowed read-only, `/admin/users` and `/admin/reconciliation/manage` blocked, `/assistant` blocked) | Unit | RBAC logic untested |
 | Medium | AuthContext (`login`, `logout`, session) | Component | Auth flow untested |
 | Medium | OverheadForm validation | Component | Financial form logic |
-| Medium | Reconciliation table | Component | Lab fee calculations |
+| Medium | Reconciliation cards | Component | Lab grouping/filter, responsive rows, inline fee save states and totals |
 | Low | `lib/supabase/__mocks__/` | Setup | Shared mock for Supabase client |
 | Low | Playwright E2E for skipped Dialog tests | E2E | Full browser testing |

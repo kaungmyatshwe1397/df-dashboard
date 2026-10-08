@@ -173,10 +173,9 @@ export function OverheadForm() {
           >
             <Input
               id={key}
-              type="number"
+              type="text"
+              inputMode="numeric"
               placeholder="0"
-              min={0}
-              step="1"
               value={fields[key]}
               onChange={(e) => handleChange(key, e.target.value)}
               disabled={saving || !canEdit}
@@ -237,10 +236,9 @@ export function OverheadForm() {
             >
               <Input
                 id={`custom-amount-${index}`}
-                type="number"
+                type="text"
+                inputMode="numeric"
                 placeholder="0"
-                min={0}
-                step="1"
                 value={item.amount}
                 onChange={(e) => handleCustomChange(index, "amount", e.target.value)}
                 disabled={saving || !canEdit}

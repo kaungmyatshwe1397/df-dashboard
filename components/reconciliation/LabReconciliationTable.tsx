@@ -1,28 +1,22 @@
-// ============================================
-// Lab Reconciliation Table
-// Admin portal — lab fee input per Case record
-// Records are grouped by assigned lab with a filter selector.
-// Lab name is read-only — assigned during case patient creation.
-// ============================================
+// Lab Reconciliation — grouped case fees with responsive inline editing.
 
 "use client";
 
-import { useState, useCallback, useMemo, Fragment } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useData } from "@/context/DataContext";
 import { useCanEdit } from "@/context/AuthContext";
 import { RecordCategory, CasePatientRecordType, LabPaymentStatus } from "@/lib/global";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -47,16 +41,13 @@ function formatCurrency(amount: number): string {
   return amount.toLocaleString("en-US");
 }
 
-// ------------------------------------------
-// Main Table — grouped by lab with filter
-// ------------------------------------------
-
-const ALL_LABS_VALUE = "__all__";
+const ALL_LABS_VALUE = "Labs";
 
 export function LabReconciliationTable() {
   const { records, loading, error, refreshData, updateRecord } = useData();
   const canEdit = useCanEdit();
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [selectedLab, setSelectedLab] = useState<string>(ALL_LABS_VALUE);
 
   const caseRecords = useMemo(
@@ -64,7 +55,6 @@ export function LabReconciliationTable() {
     [records]
   );
 
-  // Group case records by lab name.
   const labGroups = useMemo<LabGroup[]>(() => {
     const map = new Map<string, CasePatientRecordType[]>();
 
@@ -87,62 +77,74 @@ export function LabReconciliationTable() {
       }));
   }, [caseRecords]);
 
-  // Filter to the selected lab, or show all when "All Labs" is selected.
   const visibleGroups = useMemo(
     () =>
       selectedLab === ALL_LABS_VALUE
         ? labGroups
-        : labGroups.filter((g) => g.labName === selectedLab),
+        : labGroups.filter((group) => group.labName === selectedLab),
     [labGroups, selectedLab]
+  );
+
+  const visibleRecordCount = visibleGroups.reduce(
+    (sum, group) => sum + group.records.length,
+    0
   );
 
   const handleFeeSave = useCallback(
     (recordId: string, fee: number) => {
       setSavingId(recordId);
-      const newStatus =
-        fee > 0 ? LabPaymentStatus.PAID : LabPaymentStatus.UNPAID;
-      updateRecord(recordId, {
+      setSaveError(null);
+      const newStatus = fee > 0 ? LabPaymentStatus.PAID : LabPaymentStatus.UNPAID;
+
+      void updateRecord(recordId, {
         lab_fee: fee,
         lab_payment_status: newStatus,
-      });
-      setTimeout(() => setSavingId(null), 300);
+      })
+        .catch((saveFailure: unknown) => {
+          setSaveError(
+            saveFailure instanceof Error
+              ? saveFailure.message
+              : "Could not save the lab fee. Try again."
+          );
+        })
+        .finally(() => {
+          setSavingId((currentId) => (currentId === recordId ? null : currentId));
+        });
     },
     [updateRecord]
   );
 
   if (loading) {
     return (
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Patient Name</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Diagnosis</TableHead>
-              <TableHead className="text-right">Lab Fee</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <TableRow key={i}>
-                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-8 w-28 ml-auto" /></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="space-y-4" aria-label="Loading lab reconciliation">
+        <Skeleton className="h-20 w-full rounded-xl" />
+        {Array.from({ length: 2 }).map((_, groupIndex) => (
+          <Card key={groupIndex}>
+            <CardHeader className="border-b">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </CardHeader>
+            <CardContent className="space-y-4 py-4">
+              {Array.from({ length: 2 }).map((__, rowIndex) => (
+                <div key={rowIndex} className="grid gap-4 sm:grid-cols-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }
 
   if (error) {
     return (
-      <Alert variant="destructive" className="flex items-center justify-between">
+      <Alert variant="destructive" className="flex items-center justify-between gap-4">
         <span>{error}</span>
         <Button variant="outline" size="sm" onClick={refreshData}>
-          <RefreshCw className="mr-2 h-3 w-3" />
+          <RefreshCw className="mr-2 h-4 w-4" />
           Retry
         </Button>
       </Alert>
@@ -151,105 +153,134 @@ export function LabReconciliationTable() {
 
   if (caseRecords.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-md border border-dashed py-12">
-        <AlertTriangle className="mb-3 h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">No cases to reconcile</p>
-      </div>
+      <Card className="border-dashed shadow-none">
+        <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+          <div className="rounded-full bg-muted p-4">
+            <AlertTriangle className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <div className="space-y-1">
+            <p className="font-medium">No cases to reconcile</p>
+            <p className="text-sm text-muted-foreground">
+              Case records will appear here when they are added.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Lab filter */}
-      <div className="flex items-center gap-3">
-        <Select value={selectedLab} onValueChange={(v) => setSelectedLab(v ?? ALL_LABS_VALUE)}>
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Filter by lab" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_LABS_VALUE}>
-              All Labs ({caseRecords.length})
-            </SelectItem>
-            {labGroups.map((group) => (
-              <SelectItem key={group.labName} value={group.labName}>
-                {group.labName} ({group.records.length})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {selectedLab !== ALL_LABS_VALUE && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedLab(ALL_LABS_VALUE)}
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-medium">Case records</p>
+            <Badge variant="secondary">{visibleRecordCount}</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {visibleRecordCount} {visibleRecordCount === 1 ? "case" : "cases"}
+            {selectedLab === ALL_LABS_VALUE && ` across ${labGroups.length} labs`}
+            {" · "}Fees save when you leave the field or press Enter.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Select
+            value={selectedLab}
+            onValueChange={(value) => setSelectedLab(value ?? ALL_LABS_VALUE)}
           >
-            <X className="mr-1 h-3 w-3" />
-            Clear
-          </Button>
-        )}
+            <SelectTrigger className="w-full sm:w-56" aria-label="Filter cases by lab">
+              <SelectValue placeholder="Filter by lab" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_LABS_VALUE}>
+                All labs ({caseRecords.length})
+              </SelectItem>
+              {labGroups.map((group) => (
+                <SelectItem key={group.labName} value={group.labName}>
+                  {group.labName} ({group.records.length})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedLab !== ALL_LABS_VALUE && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedLab(ALL_LABS_VALUE)}
+            >
+              <X className="mr-2 h-4 w-4" />
+              Clear filter
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Grouped table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Patient Name</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Diagnosis</TableHead>
-              <TableHead className="text-right">Lab Fee</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visibleGroups.map((group) => (
-              <Fragment key={group.labName}>
-                {/* Lab group header */}
-                <TableRow className="bg-muted/50">
-                  <TableCell colSpan={3}>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{group.labName}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {group.records.length} {group.records.length === 1 ? "patient" : "patients"}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className="text-sm font-medium">
-                      {formatCurrency(group.totalFees)}
-                    </span>
-                  </TableCell>
-                </TableRow>
+      {saveError && (
+        <Alert variant="destructive" role="alert">
+          <span>{saveError}</span>
+        </Alert>
+      )}
 
-                {/* Patient rows for this lab */}
-                {group.records.map((record) => {
-                  const isSaving = savingId === record.id;
-                  return (
-                    <TableRow key={record.id}>
-                      <TableCell className="font-medium max-w-[160px] truncate">
-                        {record.patient_name}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {formatDate(record.entry_date)}
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {record.diagnosis}
-                      </TableCell>
-                      <TableCell className="text-right">
+      {visibleGroups.length === 0 ? (
+        <Card className="border-dashed shadow-none">
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+            <p className="font-medium">No cases for this lab</p>
+            <Button variant="outline" size="sm" onClick={() => setSelectedLab(ALL_LABS_VALUE)}>
+              Clear filter
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {visibleGroups.map((group) => (
+            <Card key={group.labName}>
+              <CardHeader className="flex flex-row items-start justify-between gap-4 border-b">
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="truncate">{group.labName}</CardTitle>
+                  <CardDescription>
+                    {group.records.length} {group.records.length === 1 ? "case" : "cases"}
+                  </CardDescription>
+                </div>
+                <div className="shrink-0 rounded-lg bg-muted px-3 py-2 text-right">
+                  <p className="text-xs text-muted-foreground">Total lab fees</p>
+                  <p className="font-semibold tabular-nums">{formatCurrency(group.totalFees)}</p>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {group.records.map((record) => (
+                    <div
+                      key={record.id}
+                      className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] sm:items-center"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{record.patient_name}</p>
+                        <p className="text-sm text-muted-foreground">{record.patient_id}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="break-words text-sm">{record.diagnosis}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {formatDate(record.entry_date)}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 sm:justify-end">
+                        <span className="text-sm text-muted-foreground sm:hidden">Lab fee</span>
                         <LabFeeInput
                           record={record}
                           onSave={handleFeeSave}
-                          saving={isSaving}
+                          saving={savingId === record.id}
                           readOnly={!canEdit}
                         />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </Fragment>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

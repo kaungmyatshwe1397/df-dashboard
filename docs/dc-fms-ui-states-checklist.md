@@ -64,11 +64,11 @@ Use this to design each screen and to QA it before release.
 
 | State | Checklist |
 |---|---|
-| Ideal | - Table of active Case treatments with input field for lab fee per case<br>- Total lab fees auto-updates as fees are entered (per PRD 4.2) |
+| Ideal | - Cases appear in responsive cards grouped by lab, with patient, treatment, date, and inline lab fee field<br>- Lab filter and per-lab fee totals are visible<br>- Total lab fees auto-update as fees are saved (per PRD 4.2) |
 | Empty | - No active Case-type treatments this cycle → message ("No cases to reconcile") |
 | Loading | - Row-level spinner or disabled input while a lab fee save is in progress |
 | Error | - Invalid lab fee input (negative number, non-numeric) → inline validation<br>- Save failure → error indicator on that row, value not silently lost |
-| Edge case | - Lab fee = 0 (no lab cost for this case)<br>- Lab fee greater than case's Total Cost → warn, since this affects commission math<br>- Case already has a fee assigned, being edited again |
+| Edge case | - Lab fee = 0 (no lab cost for this case)<br>- Long patient names and diagnoses wrap or truncate without breaking the card<br>- Narrow screens keep the fee field reachable without a cramped table<br>- Lab fee greater than case's Total Cost → warn, since this affects commission math<br>- Case already has a fee assigned, being edited again |
 
 ---
 

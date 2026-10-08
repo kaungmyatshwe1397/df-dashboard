@@ -51,8 +51,8 @@ export function RecordFormFields({
       >
         <Input
           id="totalCost"
-          type="number"
-          min="0"
+          type="text"
+          inputMode="decimal"
           placeholder="e.g. 50000"
           value={form.totalCost}
           onChange={(e) => updateField("totalCost", e.target.value)}

@@ -1,4 +1,4 @@
-// LabFeeInput — inline editable number field for lab fee per case record.
+// LabFeeInput — inline editable lab fee field for a case record.
 // Extracted from LabReconciliationTable to keep each component focused.
 
 "use client";
@@ -42,9 +42,8 @@ export function LabFeeInput({ record, onSave, saving, readOnly }: LabFeeInputPro
   return (
     <div className="flex flex-col gap-1">
       <Input
-        type="number"
-        min={0}
-        step="1"
+        type="text"
+        inputMode="numeric"
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
@@ -57,6 +56,7 @@ export function LabFeeInput({ record, onSave, saving, readOnly }: LabFeeInputPro
         disabled={saving || readOnly}
         className="h-8 w-28 text-right"
         placeholder="0"
+        aria-label={`Lab fee for ${record.patient_name}`}
       />
       {error && (
         <span className="text-xs text-destructive">{error}</span>

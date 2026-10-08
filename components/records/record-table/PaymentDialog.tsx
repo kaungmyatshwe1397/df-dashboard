@@ -154,9 +154,8 @@ export function PaymentDialog({
           >
             <Input
               id="paidAmount"
-              type="number"
-              min="0"
-              step="1"
+              type="text"
+              inputMode="numeric"
               placeholder={`e.g. ${Math.min(remaining, 100000)}`}
               value={paidAmount}
               onChange={(e) => {
