@@ -23,17 +23,14 @@ flowchart TD
     Table --> RecordActions
 
     Add --> IdInput[Enter Patient ID]
-    IdInput --> IdCheck{Already\nregistered?}
-
-    IdCheck -->|No — new patient| NewForm[Full Form\nDemographics, Medical History,\nTreatment, Cost]
-    NewForm --> Save1[Save — atomic RPC\npatient + record] --> Table
-
-    IdCheck -->|Yes — returning patient| LockedAlert["Alert: ID already registered to\nexisting patient name.\nIf different person — use a new ID"]
-    LockedAlert --> Prefill[Demographics prefilled + LOCKED]
-    Prefill --> TxForm[Edit treatment and cost only]
-    TxForm --> Save2[Save — new visit record] --> Table
-
-    IdCheck -->|ID changed after link| IdInput
+    IdInput --> IdCheck{Registered patient?}
+    IdCheck -->|Yes| Prefill[Patient identity shown from registry]
+    Prefill --> TxForm[Enter GP or Case details]
+    TxForm --> Save2[Save visit record] --> Table
+    IdCheck -->|No| RegisterPrompt[Prompt: register patient first]
+    RegisterPrompt --> RegPatients
+    RegPatients --> RegisterNew[Register patient]
+    RegisterNew --> Add
 
     Edit --> Lookup[Search by Patient ID]
     Lookup --> Prefill2[Form Prefilled\nDemographics + Treatment] --> Save3[Save] --> Table

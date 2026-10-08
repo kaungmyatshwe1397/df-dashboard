@@ -1,8 +1,6 @@
 // Patient Record Update Form
-// Lookup (edit-by-ID) → pre-filled edit · Add (new or returning patient).
-// Add mode checks the patients registry on Patient-ID blur: an existing ID
-// locks all demographics (returning visit — treatment/cost only); a new ID
-// leaves the full patient form editable. Save goes through one atomic RPC.
+// Record entry requires a patient already present in the registry.
+// Add mode verifies the Patient ID before showing GP or Case fields.
 
 "use client";
 
@@ -457,24 +455,18 @@ export function PatientRecordUpdateForm({
       };
 
       if (isAdding) {
-        const identity = returningPatient
-          ? {
-              patient_id: returningPatient.patient_id,
-              ...buildDemographicsFor(returningPatient),
-            }
-          : {
-              patient_id: form.patientId.trim(),
-              ...buildDemographics(),
-            };
+        if (!returningPatient) {
+          throw new Error("Register the patient before adding a record.");
+        }
 
         const recordData = {
-          patient_id: identity.patient_id,
-          patient_name: identity.patient_name,
-          address: identity.address,
+          patient_id: returningPatient.patient_id,
+          patient_name: returningPatient.patient_name,
+          address: returningPatient.address,
           ...treatment,
         };
 
-        await addRecord(recordData, identity, !returningPatient);
+        await addRecord(recordData, returningPatient.patient_id);
       } else if (foundRecord) {
         // Without a loaded registry row the form holds record-only prefill;
         // writing it back would overwrite real demographics (or miss the row).
@@ -751,6 +743,11 @@ export function PatientRecordUpdateForm({
                   Back
                 </Button>
               )}
+              {isAdding && returningPatient && (
+                <Button variant="outline" onClick={handleReset} disabled={saving}>
+                  Change Patient
+                </Button>
+              )}
               <Button onClick={handleSave} disabled={saving || checkingPatient}>
                 {saving ? (
                   <>
@@ -767,17 +764,4 @@ export function PatientRecordUpdateForm({
       </DialogContent>
     </Dialog>
   );
-}
-
-function buildDemographicsFor(patient: PatientType) {
-  return {
-    patient_name: patient.patient_name,
-    age: patient.age,
-    gender: patient.gender,
-    address: patient.address,
-    drug_allergy: patient.drug_allergy,
-    past_dental_history: patient.past_dental_history,
-    current_medications: patient.current_medications,
-    past_medical_history: patient.past_medical_history,
-  };
 }

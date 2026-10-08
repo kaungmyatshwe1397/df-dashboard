@@ -528,7 +528,7 @@ describe("PatientRecordUpdateForm — Patient Registry", () => {
 // Task — Save flows (new / returning / duplicate)
 // ------------------------------------------
 describe("PatientRecordUpdateForm — Save", () => {
-  test("Save (GP add) sends registry demographics + new visit", async () => {
+  test("Save (GP add) sends the registered patient ID + new visit", async () => {
     const onOpenChange = vi.fn();
     render(
       <DataProvider>
@@ -559,15 +559,11 @@ describe("PatientRecordUpdateForm — Save", () => {
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(saveState.addRecordCalls).toHaveLength(1);
-    const [recordData, identity] = saveState.addRecordCalls[0] as [
+    const [recordData, patientId] = saveState.addRecordCalls[0] as [
       Record<string, unknown>,
-      Record<string, unknown>,
+      string,
     ];
-    // Demographics come from the registry row — untouched by the form
-    expect(identity.patient_id).toBe("0001/26");
-    expect(identity.patient_name).toBe("John Doe");
-    expect(identity.age).toBe(34);
-    expect(identity.gender).toBe("MALE");
+    expect(patientId).toBe("0001/26");
     expect(recordData.diagnosis).toBe("Follow-up visit");
     expect(recordData.total_cost).toBe(20000);
   });

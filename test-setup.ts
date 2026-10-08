@@ -119,6 +119,26 @@ const SEED_PATIENTS = [
     past_dental_history: null, current_medications: [],
     past_medical_history: ["Hypertension"], created_at: "2026-09-04T00:00:00Z",
   },
+  {
+    id: "pat-004", patient_id: "0099/26", patient_name: "Test Patient", age: 25,
+    gender: "FEMALE", address: null, drug_allergy: null, past_dental_history: null,
+    current_medications: [], past_medical_history: [], created_at: "2026-09-05T00:00:00Z",
+  },
+  {
+    id: "pat-005", patient_id: "0098/26", patient_name: "Case Patient", age: 25,
+    gender: "FEMALE", address: null, drug_allergy: null, past_dental_history: null,
+    current_medications: [], past_medical_history: [], created_at: "2026-09-05T00:00:00Z",
+  },
+  {
+    id: "pat-006", patient_id: "ERR-001", patient_name: "Month Test", age: 25,
+    gender: "FEMALE", address: null, drug_allergy: null, past_dental_history: null,
+    current_medications: [], past_medical_history: [], created_at: "2026-09-05T00:00:00Z",
+  },
+  {
+    id: "pat-007", patient_id: "NEW-001", patient_name: "New Patient", age: 25,
+    gender: "FEMALE", address: null, drug_allergy: null, past_dental_history: null,
+    current_medications: [], past_medical_history: [], created_at: "2026-09-05T00:00:00Z",
+  },
 ];
 
 const SEED_MEDICAL_HISTORY_OPTIONS = [
@@ -294,16 +314,13 @@ function makeThenable(resolver: () => { data: unknown; error: null }) {
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(() => ({
     from: vi.fn((table: string) => mockQuery(table, db[table] || [])),
-    // Mirrors the atomic register_patient_with_record RPC: validates the
-    // new/returning flag, inserts the patient when new, then the visit
-    // record (registry name/address), in one result.
+    // Mirrors the record-only RPC: require an existing patient before adding a visit.
     rpc: vi.fn((fn: string, args: Record<string, unknown>) => {
       if (fn !== "register_patient_with_record") {
         return Promise.resolve({ data: null, error: { message: `Unknown function ${fn}` } });
       }
       const patient = args.p_patient as Record<string, unknown>;
       const record = args.p_record as Record<string, unknown>;
-      const isNewPatient = args.p_is_new_patient === true;
       if (!patient || !patient.patient_id) {
         return Promise.resolve({ data: null, error: { code: "23502", message: "Patient ID is required." } });
       }
@@ -311,39 +328,18 @@ vi.mock("@/lib/supabase/client", () => ({
       const existing = (db.patients as Record<string, unknown>[]).find(
         (p) => p.patient_id === pid
       );
-      if (isNewPatient && existing) {
+      if (!existing) {
         return Promise.resolve({
           data: null,
           error: {
-            code: "23505",
-            message:
-              "The patient ID is already registered for another person. Check your patient ID again.",
+            code: "23503",
+            message: "Patient ID is not registered. Register the patient before adding a record.",
           },
         });
       }
-      if (!isNewPatient && !existing) {
-        return Promise.resolve({
-          data: null,
-          error: { code: "23503", message: "Patient ID is not registered." },
-        });
-      }
-      let patientUuid: string;
-      let registryName: unknown;
-      let registryAddress: unknown;
-      if (existing) {
-        patientUuid = existing.id as string;
-        registryName = existing.patient_name;
-        registryAddress = existing.address;
-      } else {
-        patientUuid = `mock-pat-${Date.now()}-${Math.random()}`;
-        (db.patients as Record<string, unknown>[]).push({
-          id: patientUuid,
-          created_at: new Date().toISOString(),
-          ...patient,
-        });
-        registryName = patient.patient_name;
-        registryAddress = patient.address;
-      }
+      const patientUuid = existing.id as string;
+      const registryName = existing.patient_name;
+      const registryAddress = existing.address;
       const row: Record<string, unknown> = {
         id: `mock-rec-${Date.now()}-${Math.random()}`,
         is_carried_forward: false,

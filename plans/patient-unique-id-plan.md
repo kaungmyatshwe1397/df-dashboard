@@ -7,8 +7,8 @@
 | Problem | Duplicate patient IDs are allowed (DB only enforces uniqueness per month/cycle; form performs no duplicate check). |
 | Goal 1 | Every patient has one globally unique ID forever — no duplicate registration ever. |
 | Goal 2 | Rich patient registry: age, gender, drug allergy, past medical history (dynamic enum), past dental history, current medication list. |
-| Goal 3 | Returning patient: enter ID → demographics auto-fill and lock → assistant edits only treatment + cost → new visit record. |
-| Confirmed decisions | Global lifetime uniqueness · `patients` master table · both phases in one effort · DB reset OK (dev) · no seed data · assistant deletes records only, never patients · idempotent save (no ghost rows) · keep `DataContext.tsx` thin (module-per-responsibility) · shadcn-only UI · update both `.mmd` docs. |
+| Goal 3 | Patient must be registered first. Record entry verifies the registry ID, then allows GP or Case details; unknown IDs link to patient registration. |
+| Confirmed decisions | Global lifetime uniqueness · `patients` master table · patient registration and record creation are separate flows · DB reset OK (dev) · no seed data · assistant deletes records only, never patients · idempotent save (no ghost rows) · keep `DataContext.tsx` thin (module-per-responsibility) · shadcn-only UI · update both `.mmd` docs. |
 | Out of scope | Admin panel CRUD UI for past-medical-history options (table + fetch prepared now; UI later). Record table columns stay unchanged. |
 
 ### Root cause today
@@ -47,11 +47,10 @@
 - `patients` DELETE stays ADMIN-only — assistant can never delete from the patient registry.
 
 #### Task A5 — Atomic save RPC (idempotency, no ghosts)
-- Same migration: Postgres function `register_patient_with_record(p_patient jsonb, p_record jsonb)`:
-  - Single transaction: if patient does not exist → insert patient, then insert record; if patient exists → validate and insert record only.
-  - Any failure → full rollback (no orphan patient, no half-written record).
-  - Duplicate `patient_id` → raise a clear error the client maps to the warning message.
-- This replaces any client-side “create patient, then hope the record works” two-step.
+- Follow-up migration: Postgres function `register_patient_with_record(p_patient jsonb, p_record jsonb)`:
+  - Single transaction: require an existing patient registry row, then insert the visit record only.
+  - Unknown patient ID raises a registration-required error; any failure leaves no partial visit.
+- Patient registration stays in the Registered Patients flow; record creation cannot create or modify a patient.
 
 #### Task A6 — Remove seed data
 - Empty `supabase/seed.sql` (leave a comment stub only). Fresh DB starts with labs, cycles, records all empty; only the PMH default options exist (from A1).
@@ -69,7 +68,7 @@
 - Keep existing `PatientRecord` types unchanged.
 
 #### Task B2 — `lib/services/patientRecordService.ts` (new, single responsibility)
-- `registerPatientWithRecord(...)` — wraps the RPC; maps unique-violation / friendly errors to: *"The patient ID is already registered for another person. Check your patient ID again."*
+- `registerPatientWithRecord(...)` — wraps the record-only RPC; unknown IDs require prior registration.
 - `findLatestRecordByPatientId(...)` — record lookup returning the most recent visit (needed now that one patient can have several records).
 - All Supabase save/lookup calls for this feature live here — **not** in DataContext.
 
@@ -123,10 +122,10 @@ components/records/patient-record-update-form/
 
 #### Task C4 — Add-mode Patient ID lookup behavior
 - On blur / Enter: `findPatientById`.
-  - **Not found** → blank full form: identity fields (ID, name, age*, gender*, address, allergy, PMH, dental, meds) + treatment/cost all editable → save creates patient + record atomically (RPC).
-  - **Found (returning)** → `Alert`: *"Patient ID 0001/26 is already registered to MGMG. If this is a different person, check your Patient ID again."* All demographics prefilled and **locked** (`disabled`); only treatment + cost (+ case fields) editable → save inserts a **new visit record only** (`entry_date` = today).
-  - **ID edited after link** → unlock + reset identity fields; re-check on blur.
-  - **Save-time race (unique violation)** → destructive `Alert` with exact warning text; form data preserved.
+  - **Not found** → prompt to register the patient first and link to Registered Patients; do not render record fields or allow save.
+  - **Found** → show the patient name from the registry; only treatment/cost and case fields are editable → save inserts a **new visit record only** (`entry_date` = today).
+  - **Unknown ID** → prompt to register first; changing the ID and searching again can find a registered patient.
+  - **Save-time registry race** → clear registration-required `Alert`; form values are preserved.
 
 #### Task C5 — Edit-mode behavior
 - Patient ID locked (identity immutable).
@@ -152,9 +151,9 @@ components/records/patient-record-update-form/
 
 #### Task D2 — `docs/dc-fms-user-flow.mermaid`
 - Add → *Enter Patient ID* → decision *Already registered?*
-  - No → full patient + treatment form → Save (atomic patient + record).
-  - Yes → locked-demographics prefill → treatment/cost only → Save (new visit record).
-- Add duplicate-ID warning path.
+  - No → prompt to register patient first; return to Add Record after registration.
+  - Yes → show registry identity → treatment/cost only → Save (new visit record).
+- Add patient-registration-required path for unknown IDs.
 - Add *Delete Record* (Admin + Assistant, confirm) — never deletes patient.
 - Admin subgraph: add *Manage Medical History Options* (marked “later”).
 
@@ -168,12 +167,12 @@ components/records/patient-record-update-form/
 ### Phase E — Tests & Verification
 
 #### Task E1 — Component tests (`components/records/__tests__/PatientRecordUpdateForm.test.tsx`)
-- [x] New ID → demographic fields visible; age/gender required errors
-- [x] Existing ID → exact alert text; identity fields disabled; treatment editable
-- [x] Change ID after link → identity unlocks/resets
-- [x] Save (new) → service called with patient + record payload
-- [x] Save (returning) → locked registry demographics + new visit payload
-- [x] Unique-violation → exact warning string in Alert, dialog stays open
+- [x] Unknown ID → registration-required prompt; record form stays unavailable
+- [x] Registered ID → registry name shown; identity locked; treatment editable
+- [x] Unknown ID → register-first prompt; change ID and search again
+- [x] Save → service called with registered patient ID + record payload
+- [x] Save → registered patient ID + new visit payload
+- [x] Missing registry row at save → registration-required error in Alert; dialog stays open
 - [x] Edit mode → Patient ID disabled; demographics editable
 - [x] `currentMedicationList` add/remove chip; empty allowed
 - [x] `medicalHistory` multi-select toggles; empty allowed
@@ -193,10 +192,10 @@ components/records/patient-record-update-form/
 1. [x] `npm run lint` · `npm run typecheck` · `npm run test` — all green (1 pre-existing `exhaustive-deps` warning in DataContext `addPayment`, unrelated to this plan).
 2. [x] `supabase db reset` (no seed) — done by user.
 3. Manual script — **pending user QA:**
-   - Register MGMG `0001/26` with full demographics → row in `patients` + `patient_records`.
-   - Try KGKg with `0001/26` → blocked, exact warning, no new patient row.
-   - MGMG returns next week → same ID → demographics prefilled/locked → new treatment/cost only → second record appears.
-   - Take network offline mid-save → fail → verify **no** orphan patient and no record (RPC rollback).
+   - Register MGMG `0001/26` in Registered Patients → row in `patients` only.
+   - Add MGMG's GP or Case visit using `0001/26` → row in `patient_records` linked to the existing patient.
+   - Try adding a visit for an unknown ID → registration prompt; database rejects direct RPC attempts.
+   - Take network offline mid-save → fail → verify no partial visit record (RPC transaction rollback).
    - Assistant deletes a record → record gone, patient remains in registry.
 
 ---
@@ -215,8 +214,8 @@ components/records/patient-record-update-form/
 ## Definition of Done
 
 - Same `patient_id` can never belong to two people (DB-enforced, global, forever).
-- Duplicate attempt shows: *"The patient ID is already registered for another person. Check your patient ID again."*
-- Returning patient: ID lookup prefills and locks all demographics; assistant edits only treatment + cost; new visit record saved.
+- Duplicate registration shows: *"This Patient ID is already registered. Please use a different ID."*
+- Record entry: registered ID lookup shows the registry identity; only treatment and cost fields are editable; new visit record saved.
 - Failed save leaves zero partial rows (RPC transaction).
 - Assistant can delete records only; patient registry deletions are admin-only.
 - No seed data; both MMD files updated; lint/typecheck/tests pass.

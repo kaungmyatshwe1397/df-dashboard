@@ -85,15 +85,7 @@ describe("DataContext — Patient Registry", () => {
             diagnosis: "Follow-up visit",
             total_cost: 20000,
           },
-          {
-            patient_id: "0001/26",
-            patient_name: "John Doe",
-            age: 34,
-            gender: Gender.MALE,
-            current_medications: [],
-            past_medical_history: [],
-          },
-          false
+          "0001/26"
         );
       });
 

@@ -9,25 +9,12 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 import { DataProvider, useData } from "../DataContext";
 import {
-  Gender,
-  PatientPayloadType,
   PaymentStatus,
   RecordCategory,
 } from "@/lib/global";
 
 function wrapper({ children }: { children: ReactNode }) {
   return <DataProvider>{children}</DataProvider>;
-}
-
-function makePatient(patient_id: string, patient_name: string): PatientPayloadType {
-  return {
-    patient_id,
-    patient_name,
-    age: 25,
-    gender: Gender.FEMALE,
-    current_medications: [],
-    past_medical_history: [],
-  };
 }
 
 describe("DataContext — Mutation Error Handling", () => {
@@ -48,8 +35,7 @@ describe("DataContext — Mutation Error Handling", () => {
             diagnosis: "Test",
             total_cost: 10000,
           },
-          makePatient("ERR-001", "Month Test"),
-          true
+          "ERR-001"
         );
       });
 
@@ -75,8 +61,7 @@ describe("DataContext — Mutation Error Handling", () => {
             diagnosis: "Checkup",
             total_cost: 30000,
           },
-          makePatient("NEW-001", "New Patient"),
-          true
+          "NEW-001"
         );
       });
 

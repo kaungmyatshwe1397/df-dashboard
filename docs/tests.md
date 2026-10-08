@@ -21,7 +21,7 @@ Pure function tests — no React/DOM.
 | `components/records/patient-record-update-form/Types.test.ts` | 4 | `getInitialForm()` for GP/Case records, optional-field fallbacks, registry patient prefill |
 | `components/overhead/Types.test.ts` | 6 | `financialsToFields`, `customOverheadsToForm` |
 | `components/records/record-table/RecordTableHelpers.test.ts` | 6 | `formatCurrency`, `formatDate` |
-| `lib/services/__tests__/patientRecordService.test.ts` | 4 | `registerPatientWithRecord` RPC success, duplicate-ID (23505) mapping, error passthrough |
+| `lib/services/__tests__/patientRecordService.test.ts` | 4 | `registerPatientWithRecord` two-argument RPC success, unregistered-ID (23503) mapping, error passthrough |
 
 ## Component Tests (12 files, 121 tests)
 
@@ -63,6 +63,9 @@ All skipped due to **base-ui Dialog JSDOM limitations** — need Playwright E2E:
 
 | Priority | What | Type | Why |
 |----------|------|------|-----|
+| High | GP and Case record add flow requires an existing patient; unknown IDs show the register-first action and cannot submit | Component | Confirms the changed workflow for both record categories |
+| High | `register_patient_with_record` sends only the two deployed named arguments and rejects an unknown patient ID | Unit/Integration | Prevents RPC schema-cache mismatches and blocks unregistered records at the database boundary |
+| High | Patient registration followed by record creation succeeds; failed registry lookup preserves the entered ID and allows retry | Component/E2E | Covers the full register-then-record user journey |
 | High | Middleware route protection (`middleware.ts`) | Unit | Auth/RBAC logic untested |
 | High | `isProtectedRoute`, `isAdminRoute` | Unit | Pure functions, easy to test |
 | Medium | `createUserAction`, `updateUserRoleAction`, `deleteUserAction` (`app/admin/actions.ts`) | Unit | Server actions need mock |
