@@ -466,7 +466,11 @@ export function PatientRecordUpdateForm({
           ...treatment,
         };
 
-        await addRecord(recordData, returningPatient.patient_id);
+        await addRecord(
+          recordData,
+          returningPatient.patient_id,
+          isCase ? paidAmount : undefined
+        );
       } else if (foundRecord) {
         // Without a loaded registry row the form holds record-only prefill;
         // writing it back would overwrite real demographics (or miss the row).

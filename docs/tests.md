@@ -66,6 +66,7 @@ All skipped due to **base-ui Dialog JSDOM limitations** — need Playwright E2E:
 | High | GP and Case record add flow requires an existing patient; unknown IDs show the register-first action and cannot submit | Component | Confirms the changed workflow for both record categories |
 | High | `register_patient_with_record` sends only the two deployed named arguments and rejects an unknown patient ID | Unit/Integration | Prevents RPC schema-cache mismatches and blocks unregistered records at the database boundary |
 | High | Patient registration followed by record creation succeeds; failed registry lookup preserves the entered ID and allows retry | Component/E2E | Covers the full register-then-record user journey |
+| High | Case form passes its initial paid amount into payment creation; paid total and remaining balance reflect the amount immediately | Component/Integration | Prevents a saved Case record from showing zero paid when an initial amount was entered |
 | High | Middleware route protection (`middleware.ts`) | Unit | Auth/RBAC logic untested |
 | High | `isProtectedRoute`, `isAdminRoute` | Unit | Pure functions, easy to test |
 | Medium | `createUserAction`, `updateUserRoleAction`, `deleteUserAction` (`app/admin/actions.ts`) | Unit | Server actions need mock |
