@@ -78,6 +78,7 @@ All skipped due to **base-ui Dialog JSDOM limitations** — need Playwright E2E:
 | High | Middleware SUPERVISOR rules (`/admin` allowed read-only, `/admin/users` and `/admin/reconciliation/manage` blocked, `/assistant` blocked) | Unit | RBAC logic untested |
 | Medium | AuthContext (`login`, `logout`, session) | Component | Auth flow untested |
 | Medium | OverheadForm validation | Component | Financial form logic |
+| Medium | Overhead live monthly total | Unit | Fixed and custom expense values sum correctly; blank and invalid draft inputs do not inflate the preview |
 | Medium | Reconciliation cards | Component | Lab grouping/filter, responsive rows, inline fee save states and totals |
 | Medium | Theme provider and account menu | Component | Dark default, saved Light/Dark choice, keyboard accessible selection, and storage unavailable fallback |
 | Low | `lib/supabase/__mocks__/` | Setup | Shared mock for Supabase client |

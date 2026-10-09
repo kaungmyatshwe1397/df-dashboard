@@ -1,129 +1,94 @@
-// Overhead expense input form — admin enters monthly operating costs.
-// Base overheads are fixed; custom overheads can be added and deleted per cycle.
+// OverheadForm validates expense entries and saves them to the selected month.
 
 "use client";
 
 import { useState } from "react";
-import { Loader2, Save, Plus, Trash2, Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Alert } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
-import { useData } from "@/context/DataContext";
 import { useCanEdit } from "@/context/AuthContext";
-import { FormField } from "@/components/shared/formField";
+import { useData } from "@/context/DataContext";
 import {
-  OverheadFields,
-  OverheadErrors,
-  FIELD_META,
-  financialsToFields,
-  CustomOverheadFormItem,
+  calculateOverheadTotal,
   CustomOverheadFormErrors,
+  CustomOverheadFormItem,
+  financialsToFields,
+  OverheadErrors,
+  OverheadFields,
   customOverheadsToForm,
+  toOverheadFinancialsUpdate,
+  validateOverheadEntries,
 } from "./Types";
+import { AdditionalExpensesCard } from "./additionalExpensesCard";
+import { MonthlySummaryCard } from "./monthlySummaryCard";
+import { RegularExpensesCard } from "./regularExpensesCard";
 
 export function OverheadForm() {
-  const { financials, updateFinancials, refreshData } = useData();
+  const { financials, selectedMonth, updateFinancials, refreshData } = useData();
   const canEdit = useCanEdit();
-
   const [fields, setFields] = useState<OverheadFields>(() =>
-    financials ? financialsToFields(financials) : {
-      general_expenses: "",
-      assistant_fee: "",
-      bonus: "",
-      building_rent: "",
-      utility_costs: "",
-    }
+    financials
+      ? financialsToFields(financials)
+      : {
+          general_expenses: "",
+          assistant_fee: "",
+          bonus: "",
+          building_rent: "",
+          utility_costs: "",
+        },
   );
   const [customItems, setCustomItems] = useState<CustomOverheadFormItem[]>(() =>
-    financials ? customOverheadsToForm(financials.custom_overheads) : []
+    financials ? customOverheadsToForm(financials.custom_overheads) : [],
   );
   const [errors, setErrors] = useState<OverheadErrors>({});
   const [customErrors, setCustomErrors] = useState<CustomOverheadFormErrors>({});
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const monthlyTotal = calculateOverheadTotal(fields, customItems);
 
-  function handleChange(key: keyof OverheadFields, value: string) {
-    setFields((prev) => ({ ...prev, [key]: value }));
-    setErrors((prev) => ({ ...prev, [key]: undefined }));
+  function clearSaveFeedback() {
     setSubmitError(null);
     setSaved(false);
   }
 
-  function handleCustomChange(index: number, field: "name" | "amount", value: string) {
-    setCustomItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+  function handleChange(key: keyof OverheadFields, value: string) {
+    setFields((previous) => ({ ...previous, [key]: value }));
+    setErrors((previous) => ({ ...previous, [key]: undefined }));
+    clearSaveFeedback();
+  }
+
+  function handleCustomChange(
+    index: number,
+    field: "name" | "amount",
+    value: string,
+  ) {
+    setCustomItems((previous) =>
+      previous.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item,
+      ),
     );
-    setCustomErrors((prev) => ({ ...prev, [index]: undefined }));
-    setSubmitError(null);
-    setSaved(false);
+    setCustomErrors((previous) => ({ ...previous, [index]: undefined }));
+    clearSaveFeedback();
   }
 
   function handleAddCustom() {
-    setCustomItems((prev) => [...prev, { name: "", amount: "" }]);
+    setCustomItems((previous) => [...previous, { name: "", amount: "" }]);
+    clearSaveFeedback();
   }
 
   function handleRemoveCustom(index: number) {
-    setCustomItems((prev) => prev.filter((_, i) => i !== index));
-    setCustomErrors((prev) => {
-      const next = { ...prev };
+    setCustomItems((previous) => previous.filter((_, itemIndex) => itemIndex !== index));
+    setCustomErrors((previous) => {
+      const next = { ...previous };
       delete next[index];
       return next;
     });
+    clearSaveFeedback();
   }
 
   function validate(): boolean {
-    const newErrors: OverheadErrors = {};
-    let valid = true;
-
-    for (const { key } of FIELD_META) {
-      const raw = fields[key].trim();
-      if (raw === "") continue;
-      const num = Number(raw);
-      if (isNaN(num)) {
-        newErrors[key] = "Must be a valid number";
-        valid = false;
-      } else if (num < 0) {
-        newErrors[key] = "Value cannot be negative";
-        valid = false;
-      }
-    }
-
-    const newCustomErrors: CustomOverheadFormErrors = {};
-    for (let i = 0; i < customItems.length; i++) {
-      const item = customItems[i];
-      const itemErrors: { name?: string; amount?: string } = {};
-
-      const name = item.name.trim();
-      const amount = item.amount.trim();
-
-      if (name && !amount) {
-        itemErrors.amount = "Amount is required";
-        valid = false;
-      } else if (!name && amount) {
-        itemErrors.name = "Name is required";
-        valid = false;
-      } else if (name && amount) {
-        const num = Number(amount);
-        if (isNaN(num)) {
-          itemErrors.amount = "Must be a valid number";
-          valid = false;
-        } else if (num < 0) {
-          itemErrors.amount = "Value cannot be negative";
-          valid = false;
-        }
-      }
-
-      if (itemErrors.name || itemErrors.amount) {
-        newCustomErrors[i] = itemErrors;
-      }
-    }
-
-    setErrors(newErrors);
-    setCustomErrors(newCustomErrors);
-    return valid;
+    const result = validateOverheadEntries(fields, customItems);
+    setErrors(result.errors);
+    setCustomErrors(result.customErrors);
+    return result.valid;
   }
 
   async function handleSave() {
@@ -134,165 +99,48 @@ export function OverheadForm() {
     setSaved(false);
 
     try {
-      const updates: Record<string, number> = {};
-      for (const { key } of FIELD_META) {
-        const raw = fields[key].trim();
-        updates[key] = raw === "" ? 0 : Number(raw);
-      }
-
-      const customOverheads = customItems
-        .filter((item) => item.name.trim() !== "" || item.amount.trim() !== "")
-        .map((item, i) => ({
-          id: `co-${Date.now()}-${i}`,
-          name: item.name.trim(),
-          amount: item.amount.trim() === "" ? 0 : Number(item.amount.trim()),
-        }));
-
-      await updateFinancials({ ...updates, custom_overheads: customOverheads });
+      await updateFinancials(toOverheadFinancialsUpdate(fields, customItems));
       refreshData();
       setSaved(true);
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to save overhead data. Please try again.");
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Failed to save overhead data. Please try again.",
+      );
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="rounded-[14px] border border-border bg-card p-[18px]">
-      <div className="text-xs text-muted-foreground mb-4">Monthly Operating Expenses</div>
-
-      {/* Base overhead fields */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {FIELD_META.map(({ key, label }) => (
-          <FormField
-            key={key}
-            label={label}
-            htmlFor={key}
-            error={errors[key]}
-          >
-            <Input
-              id={key}
-              type="text"
-              inputMode="numeric"
-              placeholder="0"
-              value={fields[key]}
-              onChange={(e) => handleChange(key, e.target.value)}
-              disabled={saving || !canEdit}
-              className="bg-input border-border focus:ring-2 focus:ring-accent transition-shadow"
-            />
-          </FormField>
-        ))}
+    <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
+      <div className="flex flex-col gap-6 lg:col-span-2">
+        <RegularExpensesCard
+          fields={fields}
+          errors={errors}
+          disabled={saving || !canEdit}
+          onChange={handleChange}
+        />
+        <AdditionalExpensesCard
+          items={customItems}
+          errors={customErrors}
+          canEdit={canEdit}
+          saving={saving}
+          onAdd={handleAddCustom}
+          onChange={handleCustomChange}
+          onRemove={handleRemoveCustom}
+        />
       </div>
-
-      <Separator className="my-6 border-border" />
-
-      {/* Custom overhead items */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-sm font-normal text-muted-foreground">
-            Custom Overhead Items
-          </Label>
-          {canEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAddCustom}
-              disabled={saving}
-              className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Add Item
-            </Button>
-          )}
-        </div>
-
-        {customItems.length === 0 && (
-          <p className="text-[12px] text-muted-foreground">
-            No custom overhead items added yet.
-          </p>
-        )}
-
-        {customItems.map((item, index) => (
-          <div key={index} className="grid gap-3 sm:grid-cols-[1fr_120px_40px] items-end">
-            <FormField
-              label="Name"
-              htmlFor={`custom-name-${index}`}
-              error={customErrors[index]?.name}
-            >
-              <Input
-                id={`custom-name-${index}`}
-                placeholder="e.g. Internet, Insurance"
-                value={item.name}
-                onChange={(e) => handleCustomChange(index, "name", e.target.value)}
-                disabled={saving || !canEdit}
-                className="bg-input border-border focus:ring-2 focus:ring-accent transition-shadow"
-              />
-            </FormField>
-            <FormField
-              label="Amount"
-              htmlFor={`custom-amount-${index}`}
-              error={customErrors[index]?.amount}
-            >
-              <Input
-                id={`custom-amount-${index}`}
-                type="text"
-                inputMode="numeric"
-                placeholder="0"
-                value={item.amount}
-                onChange={(e) => handleCustomChange(index, "amount", e.target.value)}
-                disabled={saving || !canEdit}
-                className="bg-input border-border focus:ring-2 focus:ring-accent transition-shadow"
-              />
-            </FormField>
-            {canEdit && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => handleRemoveCustom(index)}
-                disabled={saving}
-                title="Remove item"
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <Separator className="my-6 border-border" />
-
-      {submitError && (
-        <Alert variant="destructive" className="mb-4 border-destructive/30 bg-destructive/10 text-destructive">
-          {submitError}
-        </Alert>
-      )}
-
-      {saved && (
-        <Alert className="mb-4 border-accent/30 bg-accent/10 text-primary">
-          <Check className="h-4 w-4" />
-          Overhead expenses saved successfully.
-        </Alert>
-      )}
-
-      {canEdit && (
-        <div className="flex justify-end">
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-accent text-accent-foreground hover:bg-accent/90"
-          >
-          {saving ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : saved ? (
-            <Check className="mr-2 h-4 w-4" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-            Save Expenses
-          </Button>
-        </div>
-      )}
+      <MonthlySummaryCard
+        month={selectedMonth}
+        total={monthlyTotal}
+        canEdit={canEdit}
+        saving={saving}
+        saved={saved}
+        error={submitError}
+        onSave={handleSave}
+      />
     </div>
   );
 }
