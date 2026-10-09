@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlignCenter, Loader2, Search, Trash2 } from "lucide-react";
+import { Loader2, Search, Trash2 } from "lucide-react";
 import { useData } from "@/context/DataContext";
 import { FormField } from "@/components/shared/formField";
 import {
@@ -607,7 +607,7 @@ export function PatientRecordUpdateForm({
           <div>
             <div className="grid gap-3">
               <Label htmlFor="lookupId">
-                Patient ID 
+                Patient ID
               </Label>
               <div className="flex gap-2">
                 <Input

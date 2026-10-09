@@ -13,12 +13,10 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { DataProvider } from "@/context/DataContext";
+import { createClient } from "@/lib/supabase/client";
 import { PatientRecordUpdateForm } from "../patient-record-update-form";
 import { PATIENT_ID_FORMAT_ERROR } from "../patient-record-update-form/schema";
 import { RecordCategory, GPPatientRecordType } from "@/lib/global";
-
-// IDs typed into the add form must carry the current year to pass validation.
-const currentYear = String(new Date().getFullYear()).slice(-2);
 
 // Capture addRecord calls (and optionally simulate a duplicate-ID RPC
 // failure) without replacing the real DataContext provider.
@@ -534,7 +532,6 @@ describe("PatientRecordUpdateForm — Patient Registry", () => {
 // Task — Save flows (new / returning / duplicate)
 // ------------------------------------------
 describe("PatientRecordUpdateForm — Save", () => {
-  test("Save (GP add) sends the registered patient ID + new visit", async () => {
   test("Save (edit) clears empty optional demographics", async () => {
     const onOpenChange = vi.fn();
     renderWithProvider(
@@ -565,31 +562,20 @@ describe("PatientRecordUpdateForm — Save", () => {
     });
   });
 
-  async function fillNewPatient(dialog: HTMLElement) {
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
-      target: { value: "8888/26" },
-    });
-    fireEvent.blur(within(dialog).getByPlaceholderText("e.g. 0001/26"));
-    // Save stays disabled until the registry lookup settles
-    await waitFor(() =>
-      expect(within(dialog).queryByText(/checking patient id/i)).not.toBeInTheDocument()
-    );
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. John Doe"), {
-      target: { value: "New Patient" },
-    });
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 30"), {
-      target: { value: "30" },
-    });
-    fireEvent.click(within(dialog).getByRole("radio", { name: "Male" }));
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. Common cold, Fracture - left arm"), {
-      target: { value: "Checkup" },
-    });
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 50000"), {
-      target: { value: "10000" },
-    });
-  }
+  test("Save (newly registered patient) sends the first visit through addRecord", async () => {
+    await createClient()
+      .from("patients")
+      .insert({
+        patient_id: "8888/26",
+        patient_name: "New Patient",
+        age: 30,
+        gender: "MALE",
+        current_medications: [],
+        past_medical_history: [],
+      })
+      .select()
+      .single();
 
-  test("Save (new patient) sends patient + record payload through addRecord", async () => {
     const onOpenChange = vi.fn();
     render(
       <DataProvider>
@@ -603,20 +589,29 @@ describe("PatientRecordUpdateForm — Save", () => {
       </DataProvider>
     );
     const dialog = getLastDialogContent();
-    await fillNewPatient(dialog);
+
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
+      target: { value: "8888/26" },
+    });
+    fireEvent.keyDown(within(dialog).getByPlaceholderText("e.g. 0001/26"), { key: "Enter" });
+    await within(dialog).findByDisplayValue("New Patient");
+    fireEvent.change(within(dialog).getByPlaceholderText(/common cold/i), {
+      target: { value: "Checkup" },
+    });
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 50000"), {
+      target: { value: "10000" },
+    });
 
     fireEvent.click(within(dialog).getByText("Add Record"));
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(saveState.addRecordCalls).toHaveLength(1);
-    const [recordData, identity] = saveState.addRecordCalls[0] as [
+    const [recordData, patientId] = saveState.addRecordCalls[0] as [
       Record<string, unknown>,
-      Record<string, unknown>,
+      string,
     ];
-    expect(identity.patient_id).toBe("8888/26");
-    expect(identity.patient_name).toBe("New Patient");
-    expect(identity.age).toBe(30);
-    expect(identity.gender).toBe("MALE");
+    expect(patientId).toBe("8888/26");
+    expect(recordData.patient_name).toBe("New Patient");
     expect(recordData.diagnosis).toBe("Checkup");
     expect(recordData.total_cost).toBe(10000);
     expect(recordData.patient_id).toBe("8888/26");

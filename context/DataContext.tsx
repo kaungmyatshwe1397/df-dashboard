@@ -343,7 +343,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         ]);
       }
     },
-    [allCycles, currentMonthYear, supabase]
+    [allCycles, currentMonthYear, setSelectedMonth, supabase]
   );
 
   const updateRecord = useCallback(
