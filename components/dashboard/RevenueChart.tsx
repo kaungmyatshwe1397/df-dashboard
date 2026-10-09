@@ -268,7 +268,7 @@ export function RevenueChart() {
                 className={cn(
                   "px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors",
                   chartMode === opt.value
-                    ? "bg-accent/10 text-accent"
+                    ? "bg-accent/10 text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -296,7 +296,7 @@ export function RevenueChart() {
               className={cn(
                 "px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors",
                 chartMode === opt.value
-                  ? "bg-accent/10 text-accent"
+                  ? "bg-accent/10 text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >

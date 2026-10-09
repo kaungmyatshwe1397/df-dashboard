@@ -59,8 +59,8 @@ describe("PatientDetailDialog — Found", () => {
     const dialog = getDialogContent();
     expect(dialog).toBeInTheDocument();
     expect(screen.getAllByText("0001/26").length).toBeGreaterThan(0);
-    expect(screen.getByText("26.9.26")).toBeInTheDocument();
-    expect(screen.getByText("34")).toBeInTheDocument();
+    expect(screen.getByText("26 September 2026")).toBeInTheDocument();
+    expect(screen.getByText("34 years")).toBeInTheDocument();
     expect(screen.getByText("MALE")).toBeInTheDocument();
     expect(screen.getByText("Number one street, Myanmar")).toBeInTheDocument();
     expect(screen.getByText("Penicillin")).toBeInTheDocument();

@@ -46,7 +46,7 @@ export function KpiCard({
       <div
         className={cn(
         "break-words text-lg font-bold tracking-tight tabular-nums",
-          variant === "profit" ? "text-accent" : "text-foreground"
+          variant === "profit" ? "text-primary" : "text-foreground"
         )}
       >
         {value}
@@ -56,7 +56,7 @@ export function KpiCard({
         <div
           className={cn(
             "text-[11px] font-semibold mt-1.5",
-            changeType === "up" && "text-accent",
+            changeType === "up" && "text-primary",
             changeType === "down" && "text-destructive",
             changeType === "neutral" && "text-muted-foreground"
           )}

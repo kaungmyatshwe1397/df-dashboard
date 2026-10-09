@@ -16,12 +16,18 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { PatientType } from "@/lib/global";
 import { usePatients } from "@/context/hooks/usePatients";
-import { formatRegisteredDate } from "./helpers";
+import { formatPatientProfileDate } from "./helpers";
 
 export interface PatientDetailDialogPropsType {
   patientId: string;
@@ -30,9 +36,13 @@ export interface PatientDetailDialogPropsType {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="space-y-1">
+    <div className="min-w-0 space-y-1">
       <p className="text-caption text-muted-foreground">{label}</p>
-      <p className="text-sm text-foreground">{value || "—"}</p>
+      <p className="break-words text-sm text-foreground">
+        {value?.trim() || (
+          <span className="text-muted-foreground">Not provided</span>
+        )}
+      </p>
     </div>
   );
 }
@@ -42,7 +52,7 @@ function DetailList({ label, items }: { label: string; items: string[] }) {
     <div className="space-y-1">
       <p className="text-caption text-muted-foreground">{label}</p>
       {items.length === 0 ? (
-        <p className="text-sm text-foreground">—</p>
+        <p className="text-sm text-muted-foreground">None recorded</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
           {items.map((item) => (
@@ -96,11 +106,19 @@ export function PatientDetailDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent
+        className="patient-detail-dialog max-h-[90vh] overflow-y-auto sm:max-w-2xl"
+        showCloseButton={false}
+      >
         <DialogHeader>
-          <DialogTitle>Patient Details</DialogTitle>
-          <DialogDescription>
-            {loading ? "Loading patient…" : patientId}
+          <DialogTitle className="text-h3">
+            Registered patient profile
+          </DialogTitle>
+          <DialogDescription className="flex flex-wrap items-center gap-2">
+            <span>{loading ? "Loading patient details…" : "Patient ID"}</span>
+            {!loading && patient && (
+              <Badge variant="secondary">{patient.patient_id}</Badge>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -147,37 +165,70 @@ export function PatientDetailDialog({
         )}
 
         {!loading && !error && patient && (
-          <div className="grid grid-cols-2 gap-4 py-2">
-            <DetailRow label="Patient ID" value={patient.patient_id} />
-            <DetailRow
-              label="Registered"
-              value={formatRegisteredDate(patient.created_at)}
-            />
-            <DetailRow label="Name" value={patient.patient_name} />
-            <DetailRow label="Age" value={String(patient.age)} />
-            <div className="space-y-1">
-              <p className="text-caption text-muted-foreground">Gender</p>
-              <Badge variant="secondary">{patient.gender}</Badge>
-            </div>
-            <DetailRow label="Address" value={patient.address ?? ""} />
-            <DetailRow label="Drug Allergy" value={patient.drug_allergy ?? ""} />
-            <DetailRow
-              label="Past Dental History"
-              value={patient.past_dental_history ?? ""}
-            />
-            <DetailList
-              label="Past Medical History"
-              items={patient.past_medical_history}
-            />
-            <DetailList
-              label="Current Medications"
-              items={patient.current_medications}
-            />
+          <div className="space-y-4 py-1">
+            <Card size="sm" className="bg-muted/20">
+              <CardHeader className="border-b">
+              <CardTitle className="text-h4">Patient information</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <DetailRow label="Full name" value={patient.patient_name} />
+                </div>
+                <DetailRow
+                  label="Registered"
+                  value={formatPatientProfileDate(patient.created_at)}
+                />
+                <DetailRow label="Age" value={`${patient.age} years`} />
+                <DetailRow label="Gender" value={patient.gender} />
+                <div className="sm:col-span-2">
+                  <DetailRow label="Address" value={patient.address ?? ""} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card size="sm" className="bg-muted/20">
+              <CardHeader className="border-b">
+              <CardTitle className="text-h4">Health information</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div
+                  className={
+                    patient.drug_allergy?.trim()
+                      ? "rounded-lg border border-destructive/20 bg-destructive/5 p-3 sm:col-span-2"
+                      : "sm:col-span-2"
+                  }
+                >
+                  <DetailRow
+                    label="Drug allergies"
+                    value={patient.drug_allergy ?? ""}
+                  />
+                </div>
+                <DetailRow
+                  label="Past dental history"
+                  value={patient.past_dental_history ?? ""}
+                />
+                <DetailList
+                  label="Past medical history"
+                  items={patient.past_medical_history}
+                />
+                <div className="sm:col-span-2">
+                  <DetailList
+                    label="Current medications"
+                    items={patient.current_medications}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={loading}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClose}
+            disabled={loading}
+          >
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (

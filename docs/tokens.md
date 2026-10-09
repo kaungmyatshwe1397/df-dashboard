@@ -106,6 +106,10 @@
 | `color-action-primary-hover` | `#4338CA` |
 | `color-action-primary-active` | `#3730A3` |
 | `color-action-secondary` | `#EEF2FF` |
+| `color-light-action-primary` | `#0F172A` |
+| `color-light-action-primary-hover` | `#1E293B` |
+| `color-light-action-primary-active` | `#334155` |
+| `color-light-action-secondary` | `#F1F5F9` |
 
 #### Feedback
 

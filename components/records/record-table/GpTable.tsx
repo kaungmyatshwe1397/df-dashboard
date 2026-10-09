@@ -59,7 +59,7 @@ export function GpTable({
               onClick={() => onEdit(null, RecordCategory.GP)}
               size="sm"
               variant="outline"
-              className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
+              className="border-input text-foreground"
             >
               <Pencil className="mr-1.5 h-4 w-4" />
               Update / Edit
