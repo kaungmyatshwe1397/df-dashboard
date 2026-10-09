@@ -70,7 +70,7 @@ export function CaseFormFields({
       <FormField
         label="Tooth Numbers"
         htmlFor="teeth"
-        required
+        hint="(optional)"
         error={errors.teeth}
       >
         <ToothNumberGrid
@@ -98,9 +98,8 @@ export function CaseFormFields({
       >
         <Input
           id="totalCost"
-          type="number"
-          min="0"
-          step="1"
+          type="text"
+          inputMode="decimal"
           placeholder="e.g. 250000"
           value={form.totalCost}
           onChange={(e) => updateField("totalCost", e.target.value)}
@@ -158,9 +157,8 @@ export function CaseFormFields({
       >
         <Input
           id="paid"
-          type="number"
-          min="0"
-          step="1"
+          type="text"
+          inputMode="numeric"
           placeholder="e.g. 150000"
           value={form.paid}
           onChange={(e) => updateField("paid", e.target.value)}
@@ -175,7 +173,7 @@ export function CaseFormFields({
       >
         <Input
           id="remaining"
-          type="number"
+          type="text"
           value={remaining}
           disabled
           className="bg-muted"

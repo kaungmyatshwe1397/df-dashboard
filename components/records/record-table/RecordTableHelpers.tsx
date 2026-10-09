@@ -78,32 +78,43 @@ export function TableSkeleton({ columns }: { columns: number }) {
 export function TableEmpty({
   message,
   onAdd,
+  addLabel = "Add Record",
 }: {
   message: string;
-  onAdd: () => void;
+  /** Omit on screens where records cannot be created directly. */
+  onAdd?: () => void;
+  addLabel?: string;
 }) {
   return (
     <div className="rounded-[14px] border border-dashed border-border p-12 text-center">
       <Inbox className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
       <p className="text-muted-foreground text-sm mb-4">{message}</p>
-      <Button
-        onClick={onAdd}
-        size="sm"
-        className="bg-accent text-accent-foreground hover:bg-accent/90"
-      >
-        <Plus className="mr-1.5 h-4 w-4" />
-        Add Record
-      </Button>
+      {onAdd && (
+        <Button
+          onClick={onAdd}
+          size="sm"
+          className="bg-accent text-accent-foreground hover:bg-accent/90"
+        >
+          <Plus className="mr-1.5 h-4 w-4" />
+          {addLabel}
+        </Button>
+      )}
     </div>
   );
 }
 
-export function TableError({ onRetry }: { onRetry: () => void }) {
+export function TableError({
+  onRetry,
+  message = "Failed to load records. Please try again.",
+}: {
+  onRetry: () => void;
+  message?: string;
+}) {
   return (
-    <Alert variant="destructive" className="border-danger/30 bg-danger-bg text-danger">
+    <Alert variant="destructive" className="border-destructive/30 bg-destructive/10 text-destructive">
       <AlertDescription className="flex items-center justify-between">
-        <span>Failed to load records. Please try again.</span>
-        <Button variant="outline" size="sm" onClick={onRetry} className="border-danger/30 text-danger hover:bg-danger/10">
+        <span>{message}</span>
+        <Button variant="outline" size="sm" onClick={onRetry} className="border-destructive/30 text-destructive hover:bg-destructive/10">
           <RefreshCw className="mr-1.5 h-4 w-4" />
           Retry
         </Button>

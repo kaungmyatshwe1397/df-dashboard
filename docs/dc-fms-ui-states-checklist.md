@@ -40,11 +40,11 @@ Use this to design each screen and to QA it before release.
 
 | State | Checklist |
 |---|---|
-| Ideal | **Add mode:** Dialog opens blank. Patient ID field is looked up on blur:<br>• **New ID** → full form enabled — demographics (Name, Age*, Gender*, Address, Drug Allergy, Past Medical History checkboxes, Past Dental History, Current Medication chips), plus GP or Case treatment fields.<br>• **Existing ID (returning patient)** → blur-time notice `Patient ID <ID> is already registered to <owner name>. If this is a different person, check your Patient ID again.` (shows the patient ID and registry owner); demographics prefilled and locked (ID, Name, Age, Gender, Address); only treatment/cost fields editable; save creates a new visit record.<br>**Edit mode:** Two-step — enter Patient ID, form appears pre-filled; Patient ID is locked in edit mode.<br>GP fields: Diagnosis, Total Cost.<br>Case fields: Diagnosis, Total Cost, Lab Name, Lab Send Date, Delivery Date, Paid, Remaining (auto).<br>Save button enabled once required fields are valid. |
-| Empty | - Fresh "Add" form opens fully blank (demographics and treatment)<br>- Address, Drug Allergy, Past Dental History, Current Medications clearly optional<br>- Past Medical History starts with none checked<br>- Edit mode: empty Patient ID field with search button |
+| Ideal | **Add mode:** Dialog opens on Patient ID lookup. A registered ID shows the registry patient name and only the GP or Case record fields; save creates a visit linked to that patient. An unregistered ID shows a clear register-first message and link to Registered Patients; record fields and save action remain unavailable.<br>**Edit mode:** Two-step — enter Patient ID, form appears pre-filled; Patient ID is locked in edit mode.<br>GP fields: Diagnosis, Total Cost.<br>Case fields: Diagnosis, Total Cost, Lab Name, Lab Send Date, Delivery Date, Paid, Remaining (auto).<br>Save button enabled once required fields are valid. |
+| Empty | - Add mode opens at a blank Patient ID lookup; no patient or record fields appear until a registry match is found<br>- Edit mode: empty Patient ID field with search button |
 | Loading | - Save button shows spinner and disables during submit<br>- Dialog cannot be closed mid-save<br>- Patient ID blur lookup disables the ID field briefly while the registry is queried |
-| Error | - Required field missing (Name, Age, Gender, Patient ID, Diagnosis, Total Cost) → inline error under that field<br>- Age out of range (0–120 or non-numeric) → inline error<br>- Paid > Total Cost → validation error<br>- Patient ID already used by a different person → warning shown after blur, user must change the ID<br>- Duplicate-ID race at save time (RPC 23505) → error banner with the registered-person message, form data preserved<br>- Network/save failure → error banner inside modal, form data preserved (not lost) |
-| Edge case | - Patient has records in both GP and Case tabs → same Patient ID is valid in either tab (registry is global, not per-tab)<br>- Changing Patient ID after a returning-patient link → link is cleared, alert removed, demographics unlocked and reset<br>- Paid = 0 (deposit not yet made)<br>- Total Cost with decimals (e.g. 1500.50)<br>- Editing demographics on a returning patient's record updates the registry and propagates name/address to that patient's records<br>- Very long diagnosis text wraps properly, does not overflow modal<br>- Delete Record (admin + assistant) removes only the visit record — patient stays in the registry |
+| Error | - Required field missing (Patient ID, Diagnosis, Total Cost) → inline error under that field<br>- Paid > Total Cost → validation error<br>- Failed patient lookup → retry guidance; no record form is shown<br>- Patient becomes unregistered before save → database rejects the visit and the form explains that registration is required<br>- Network/save failure → error banner inside modal, form values are preserved |
+| Edge case | - Patient has records in both GP and Case tabs → same registered Patient ID is valid in either tab (registry is global, not per-tab)<br>- Change Patient returns to ID lookup without losing record category<br>- Paid = 0 (deposit not yet made)<br>- Total Cost with decimals (e.g. 1500.50)<br>- Editing demographics on an existing record updates the registry and propagates name/address to that patient's records<br>- Very long diagnosis text wraps properly, does not overflow modal<br>- Delete Record (admin + assistant) removes only the visit record — patient stays in the registry |
 
 ---
 
@@ -52,7 +52,7 @@ Use this to design each screen and to QA it before release.
 
 | State | Checklist |
 |---|---|
-| Ideal | - KPI cards show Total GP Revenue, Total Case Revenue, Lab Deductions, Doctor Commission (40%), Overhead, Net Profit/Loss<br>- Net Profit/Loss visually distinct when positive vs negative (e.g. color) |
+| Ideal | - Month selector changes the dashboard cycle and KPI data<br>- KPI cards show Total GP Revenue, Total Case Revenue, Lab Deductions, Doctor Commission (40%), Overhead, Net Profit/Loss in MMK<br>- Net Profit/Loss uses a compact single-column card and is visually distinct when positive vs negative (e.g. color) |
 | Empty | - First month / no data yet → all KPIs show 0, not blank or "undefined" |
 | Loading | - Skeleton placeholders for each KPI card while totals are calculated |
 | Error | - Calculation/fetch failure → error state per card or full-dashboard banner, with retry |
@@ -64,11 +64,11 @@ Use this to design each screen and to QA it before release.
 
 | State | Checklist |
 |---|---|
-| Ideal | - Table of active Case treatments with input field for lab fee per case<br>- Total lab fees auto-updates as fees are entered (per PRD 4.2) |
+| Ideal | - Cases appear in responsive cards grouped by lab, with patient, treatment, date, and inline lab fee field<br>- Lab filter and per-lab fee totals are visible<br>- Total lab fees auto-update as fees are saved (per PRD 4.2) |
 | Empty | - No active Case-type treatments this cycle → message ("No cases to reconcile") |
 | Loading | - Row-level spinner or disabled input while a lab fee save is in progress |
 | Error | - Invalid lab fee input (negative number, non-numeric) → inline validation<br>- Save failure → error indicator on that row, value not silently lost |
-| Edge case | - Lab fee = 0 (no lab cost for this case)<br>- Lab fee greater than case's Total Cost → warn, since this affects commission math<br>- Case already has a fee assigned, being edited again |
+| Edge case | - Lab fee = 0 (no lab cost for this case)<br>- Long patient names and diagnoses wrap or truncate without breaking the card<br>- Narrow screens keep the fee field reachable without a cramped table<br>- Lab fee greater than case's Total Cost → warn, since this affects commission math<br>- Case already has a fee assigned, being edited again |
 
 ---
 
@@ -93,6 +93,18 @@ Use this to design each screen and to QA it before release.
 | Loading | - Button shows spinner and disables during the move — action must not be interruptible mid-way |
 | Error | - Carry-forward fails partway → clear failure message; no records left half-moved (retry guidance) |
 | Edge case | - Cases with Balance > 0 are the only ones moved — fully paid cases stay in the current month<br>- Double-click the button → second click blocked while loading<br>- Next month's bucket auto-created on first carry-forward |
+
+---
+
+## 8. Registered Patients (Admin + Assistant)
+
+| State | Checklist |
+|---|---|
+| Ideal | - Table lists every registry patient: #, Patient ID, Registered (`d.M.yy`), Name, Address<br>- Rows sorted newest registration first; clicking a row routes to `register-patients/detail?id=<ID>` and opens the patient detail dialog<br>- Compact search box filters by Patient ID only as you type; a styled registered-count badge updates live<br>- "Add Patient" button (hidden for SUPERVISOR) opens the registration dialog: fields for Patient ID*, Name*, Age*, Gender*, Address, Drug Allergy, Past Dental History, Current Medications, Past Medical History; duplicate Patient ID blocked on blur and on save (23505 banner) |
+| Empty | - Registry has no patients → "No registered patients yet." with an "Add Patient" button that opens the patient registration dialog (hidden for SUPERVISOR)<br>- Search matches nothing → "No patients match “query”." and count shows 0 |
+| Loading | - Table skeleton (5 columns) while the registry loads<br>- Detail dialog shows skeleton lines while the patient row is fetched; Back button shows a spinner |
+| Error | - Registry fetch fails → destructive error banner with Retry (refetches)<br>- Detail fetch fails → error banner inside the dialog with Retry<br>- Messages are human-readable, never raw server errors |
+| Edge case | - Missing address or `created_at` → em dash placeholder<br>- Long patient names/addresses truncate with ellipsis, full value on hover (`title`)<br>- Unknown or deleted `?id=` → dialog shows "Patient `<ID>` was not found."<br>- Missing `?id=` → dialog shows "No Patient ID was provided." (no network call)<br>- 100+ patients → pagination (10 per page); search and counts apply across all pages |
 
 ---
 

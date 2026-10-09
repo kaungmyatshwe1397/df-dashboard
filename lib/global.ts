@@ -10,6 +10,7 @@
 export enum UserRole {
   ADMIN = "ADMIN",
   ASSISTANT = "ASSISTANT",
+  SUPERVISOR = "SUPERVISOR",
 }
 
 export enum RecordCategory {

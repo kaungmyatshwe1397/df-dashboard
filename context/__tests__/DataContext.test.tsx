@@ -9,25 +9,12 @@ import { ReactNode } from "react";
 import { DataProvider, useData } from "../DataContext";
 import {
   CasePatientRecordType,
-  Gender,
-  PatientPayloadType,
   PaymentStatus,
   RecordCategory,
 } from "@/lib/global";
 
 function wrapper({ children }: { children: ReactNode }) {
   return <DataProvider>{children}</DataProvider>;
-}
-
-function makePatient(patient_id: string, patient_name: string): PatientPayloadType {
-  return {
-    patient_id,
-    patient_name,
-    age: 30,
-    gender: Gender.MALE,
-    current_medications: [],
-    past_medical_history: [],
-  };
 }
 
 describe("DataContext — Payment Logic", () => {
@@ -198,8 +185,7 @@ describe("DataContext — CRUD Operations", () => {
             diagnosis: "Test diagnosis",
             total_cost: 75000,
           },
-          makePatient("0099/26", "Test Patient"),
-          true
+          "0099/26"
         );
       });
 
@@ -234,8 +220,7 @@ describe("DataContext — CRUD Operations", () => {
             case_type: "Crown",
             teeth: "11",
           } as Omit<CasePatientRecordType, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
-          makePatient("0098/26", "Case Patient"),
-          true,
+          "0098/26",
           100000
         );
       });

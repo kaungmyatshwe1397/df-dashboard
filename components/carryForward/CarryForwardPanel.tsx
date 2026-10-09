@@ -8,10 +8,12 @@ import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { useData } from "@/context/DataContext";
+import { useCanEdit } from "@/context/AuthContext";
 import { RecordCategory } from "@/lib/global";
 
 export function CarryForwardPanel() {
   const { records, carryForward } = useData();
+  const canEdit = useCanEdit();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
@@ -48,24 +50,26 @@ export function CarryForwardPanel() {
           Move unsettled cases to next month.{" "}
           {totalCount > 0 && `${unsettledCount} of ${totalCount} cases have remaining balance.`}
         </p>
-        <Button
-          onClick={handleCarryForward}
-          disabled={loading || unsettledCount === 0}
-          variant="outline"
-          size="sm"
-          className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
-        >
-          {loading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <ArrowRight className="mr-2 h-4 w-4" />
-          )}
-          Carry Forward ({unsettledCount})
-        </Button>
+        {canEdit && (
+          <Button
+            onClick={handleCarryForward}
+            disabled={loading || unsettledCount === 0}
+            variant="outline"
+            size="sm"
+            className="border-border text-foreground hover:bg-accent/10 hover:text-accent"
+          >
+            {loading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowRight className="mr-2 h-4 w-4" />
+            )}
+            Carry Forward ({unsettledCount})
+          </Button>
+        )}
       </div>
 
       {result && (
-        <Alert className="border-accent/30 bg-accent-dark text-accent">
+        <Alert className="border-accent/30 bg-accent/10 text-accent">
           <CheckCircle2 className="h-4 w-4" />
           {result}
         </Alert>

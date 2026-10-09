@@ -2,9 +2,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardSkeleton() {
   return (
-    <div className="grid grid-cols-4 gap-3.5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {/* Gross Income — hero, 2 cols */}
-      <div className="col-span-2 rounded-[14px] border border-border bg-card p-5">
+      <div className="sm:col-span-2 rounded-[14px] border border-border bg-card p-5">
         <Skeleton className="h-3 w-24 mb-3" />
         <Skeleton className="h-9 w-40 mb-4" />
         <div className="flex gap-8 pt-4 border-t border-border">
@@ -32,7 +32,7 @@ export function DashboardSkeleton() {
       </div>
 
       {/* Overhead — 2 cols */}
-      <div className="col-span-2 rounded-[14px] border border-border bg-card p-[18px]">
+      <div className="sm:col-span-2 rounded-[14px] border border-border bg-card p-[18px]">
         <Skeleton className="h-3 w-28 mb-4" />
         <Skeleton className="h-6 w-24 mb-4" />
         {Array.from({ length: 5 }).map((_, i) => (
@@ -43,14 +43,14 @@ export function DashboardSkeleton() {
         ))}
       </div>
 
-      {/* Net Profit — 2 cols */}
-      <div className="col-span-2 rounded-[14px] border border-border bg-card p-[18px]">
+      {/* Net Profit — compact single-column summary */}
+      <div className="rounded-[14px] border border-border bg-card p-[18px]">
         <Skeleton className="h-3 w-28 mb-4" />
         <Skeleton className="h-6 w-24" />
       </div>
 
       {/* Chart — 4 cols */}
-      <div className="col-span-4 rounded-[14px] border border-border bg-card p-[18px]">
+      <div className="sm:col-span-2 xl:col-span-4 rounded-[14px] border border-border bg-card p-[18px]">
         <Skeleton className="h-3 w-28 mb-4" />
         <Skeleton className="h-[240px] w-full" />
       </div>

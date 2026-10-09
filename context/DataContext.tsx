@@ -11,7 +11,6 @@ import {
   Lab,
   CaseType,
   MedicalHistoryOptionType,
-  PatientPayloadType,
   PatientType,
   PatientUpdatesType,
   RecordCategory,
@@ -50,8 +49,7 @@ interface DataContextType {
   refreshData: () => void;
   addRecord: (
     record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
-    patient: PatientPayloadType,
-    isNewPatient: boolean,
+    patientId: string,
     initialPayment?: number
   ) => Promise<void>;
   updateRecord: (recordId: string, updates: Partial<PatientRecord>) => Promise<void>;
@@ -273,8 +271,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const addRecord = useCallback(
     async (
       recordData: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
-      patient: PatientPayloadType,
-      isNewPatient: boolean,
+      patientId: string,
       initialPayment?: number
     ) => {
       // New records always land in the current calendar month's bucket.
@@ -306,8 +303,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         ? { ...recordData, ...baseFields, is_carried_forward: false }
         : { ...recordData, ...baseFields };
 
-      // One atomic RPC — patient + record commit together or not at all.
-      const newRecord = await registerPatientWithRecord(supabase, patient, insertData, isNewPatient);
+      // The RPC rechecks the registry before inserting the visit.
+      const newRecord = await registerPatientWithRecord(supabase, patientId, insertData);
 
       setAllRecords((prev) => [...prev, newRecord]);
       setSelectedMonth(monthLabel);
@@ -346,7 +343,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         ]);
       }
     },
-    [allCycles, currentMonthYear, supabase]
+    [allCycles, currentMonthYear, setSelectedMonth, supabase]
   );
 
   const updateRecord = useCallback(

@@ -4,7 +4,7 @@
 
 | File | Purpose |
 |------|---------|
-| `plans/frontend-plan.md` | Frontend build plan — 10 tasks with mock state, pure UI development. |
+| `plans/frontend-plan.md` | Frontend build plan — 11 tasks, Supabase-backed. |
 | `plans/backend-plan.md` | Backend integration plan — Supabase setup, schema, auth, RLS, client config, DataContext migration. |
 | `plans/backend-draft-plan.md` | Backend draft plan — original draft, superseded by backend-plan.md. |
 | `plans/user-management-plan.md` | User management plan — admin user CRUD, assistant signup, password change. |
@@ -13,10 +13,10 @@
 | `docs/dc-fms-erd.mmd` | Database schema — types for all Supabase tables and relationships. |
 | `docs/dc-fms-ui-states-checklist.md` | UI states — every screen must handle ideal, empty, loading, error, edge case. |
 | `docs/prd.md` | Product requirements — business logic, roles, permissions, formulas. |
-| `docs/comment_methods.md` | Commenting standards — when to comment, when not to, formatting rules. |
-| `docs/testing-guide.md` | Testing guide — when to test, what type to use, how to write tests. |
+| `docs/rules/comment_method-rules.md` | Commenting standards — when to comment, when not to, formatting rules. |
+| `docs/rules/testing-guide-rules.md` | Testing guide — when to test, what type to use, how to write tests. |
 | `docs/task-completion-rule.md` | Task completion checklist — how to update the plan after finishing a task. |
-| `docs/clea-code.md` | code writing rules file - how to write clean code inside this project. |
+| `docs/rules/clean-code-rule.md` | code writing rules file - how to write clean code inside this project. |
 
 ## Rules
 
@@ -29,12 +29,12 @@
 7. **Mobile_responsive** required.
 8. **Never hardcode hex, pixel, or font-size values.** Always use CSS variable tokens.
 9. **Use shadcn components** for all UI: Button, Input, Label, Card, Dialog, Table, Badge, Alert, Select, Textarea, Skeleton, Sidebar, Separator, Pagination, Progress, RadioGroup, etc. Never build custom components when shadcn provides them.
-10. **Follow `docs/comment_methods.md`** for all code comments. Explain *why*, not *what*. No redundant syntax restatements, no dead/commented-out code.
-11. **Write descriptive comment** when create a new .ts or .tsx as heading of that file .Use `docs\comment_method.md` as reference.
+10. **Follow `docs/rules/comment_method-rules.md`** for all code comments. Explain *why*, not *what*. No redundant syntax restatements, no dead/commented-out code.
+11. **Write descriptive comment** when create a new .ts or .tsx as heading of that file .Use `docs/rules/comment_method-rules.md` as reference.
 12. **Write to do list of required unit or component tests** , so we can remember and later write it.
-13. **Write intefcae name** by folliwning instuction from **Type Naming Convection** from `docs/my-rules.md`.
-14. **Follow `docs/project-folder-rules.md`** for Component Architecture & File Organization.
-15. **Read and Follow `docs/clea-code.md`**  for how to write clean and managable coding and coding standard.
+13. **Write intefcae name** by folliwning instuction from **Type Naming Convection** from `docs/rules/my-rules.md`.
+14. **Follow `docs/rules/project-folder-rules.md`** for Component Architecture & File Organization.
+15. **Read and Follow `docs/rules/clean-code-rule.md`**  for how to write clean and managable coding and coding standard.
 
 
 ## Library & External Documentation Rule

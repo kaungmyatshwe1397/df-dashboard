@@ -42,7 +42,7 @@ export default function LoginPage() {
     }
 
     const profile = await getUserProfile();
-    router.push(profile?.role === "ADMIN" ? "/admin" : "/assistant");
+    router.push(profile?.role === "ASSISTANT" ? "/assistant" : "/admin");
   }
 
   return (
@@ -153,16 +153,6 @@ export default function LoginPage() {
         >
           {isLoading ? <Spinner className="size-4" /> : "Log In"}
         </Button>
-
-        <p
-          className="text-center text-sm"
-          style={{ color: "rgba(255,255,255,0.55)" }}
-        >
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="auth-link font-medium">
-            Register
-          </Link>
-        </p>
       </form>
     </GlassAuthCard>
   );

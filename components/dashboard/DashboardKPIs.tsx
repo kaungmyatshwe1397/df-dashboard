@@ -11,7 +11,7 @@ import { useDashboardKPIs } from "./useDashboardKPIs";
 import { TrendingUp, FlaskConical, Stethoscope, Building2, ArrowDownRight } from "lucide-react";
 
 function formatCurrency(amount: number): string {
-  return "$" + amount.toLocaleString("en-US", {
+  return "MMK " + amount.toLocaleString("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
@@ -47,11 +47,11 @@ export function DashboardKPIs() {
         initial: "hidden",
         animate: "show",
       })}
-      className="grid grid-cols-4 gap-3.5"
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
     >
       {/* Gross Income — hero, spans 2 cols */}
-      <motion.div variants={fadeUp} className="col-span-2">
-        <div className="rounded-[14px] border border-border p-5 h-full bg-gradient-to-br from-accent-dark to-card flex flex-col justify-between">
+      <motion.div variants={fadeUp} className="sm:col-span-2">
+        <div className="rounded-[14px] border border-border p-5 h-full bg-gradient-to-br from-accent/10 to-card flex flex-col justify-between">
           <div className="flex justify-between items-start">
             <div>
               <div className="text-xs text-muted-foreground mb-2">Gross income</div>
@@ -100,7 +100,7 @@ export function DashboardKPIs() {
       </motion.div>
 
       {/* Operating Overhead — spans 2 cols for breakdown list */}
-      <motion.div variants={fadeUp} className="col-span-2">
+      <motion.div variants={fadeUp} className="sm:col-span-2">
         <div className="rounded-[14px] border border-border bg-card p-[18px] h-full">
           <div className="flex justify-between items-start mb-1.5">
             <span className="text-xs text-muted-foreground">Operating overhead</span>
@@ -140,8 +140,8 @@ export function DashboardKPIs() {
         </div>
       </motion.div>
 
-      {/* Net Profit / Loss — spans 2 cols */}
-      <motion.div variants={fadeUp} className="col-span-2">
+      {/* Net Profit / Loss — compact single-column summary */}
+      <motion.div variants={fadeUp}>
         <KpiCard
           title="Net profit / loss"
           value={<AnimatedNumber value={kpis.netProfitLoss} formatFn={formatCurrency} />}
@@ -149,11 +149,12 @@ export function DashboardKPIs() {
           change={profitLabel}
           changeType={profitType}
           variant="profit"
+          className="min-w-0"
         />
       </motion.div>
 
       {/* Revenue Chart — full width */}
-      <motion.div variants={fadeUp} className="col-span-4">
+      <motion.div variants={fadeUp} className="sm:col-span-2 xl:col-span-4">
         <RevenueChart />
       </motion.div>
     </Section>

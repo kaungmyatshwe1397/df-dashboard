@@ -1,12 +1,12 @@
 // Patient Record Update Form
-// Lookup (edit-by-ID) → pre-filled edit · Add (new or returning patient).
-// Add mode checks the patients registry on Patient-ID blur: an existing ID
-// locks all demographics (returning visit — treatment/cost only); a new ID
-// leaves the full patient form editable. Save goes through one atomic RPC.
+// Record entry requires a patient already present in the registry.
+// Add mode verifies the Patient ID before showing GP or Case fields.
 
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -18,9 +18,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Search, Trash2 } from "lucide-react";
 import { useData } from "@/context/DataContext";
+import { FormField } from "@/components/shared/formField";
 import {
   RecordCategory,
   PatientRecord,
@@ -40,6 +43,13 @@ import {
   getEmptyForm,
   getInitialForm,
 } from "./Types";
+import {
+  filterPatientIdInput,
+  isPatientIdShapeValid,
+  isCurrentYearPatientIdValid,
+  PATIENT_ID_FORMAT_ERROR,
+  PATIENT_ID_YEAR_ERROR,
+} from "./schema";
 
 export function PatientRecordUpdateForm({
   open,
@@ -60,6 +70,16 @@ export function PatientRecordUpdateForm({
   const isCase = defaultCategory === RecordCategory.CASE;
 
   const isLookupMode = !isAdding && !editRecord;
+  // Both GP and Case add flows verify a registered patient first, then show
+  // only the record fields — the registry row supplies all demographics.
+  const needsVerifiedPatient = isAdding;
+  const [gpLookupId, setGpLookupId] = useState("");
+  const [gpLookupError, setGpLookupError] = useState<string | null>(null);
+  const [gpNotFound, setGpNotFound] = useState(false);
+  const pathname = usePathname();
+  const registerPatientsPath = pathname?.startsWith("/assistant")
+    ? "/assistant/register-patients"
+    : "/admin/register-patients";
 
   const [lookupId, setLookupId] = useState("");
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -95,6 +115,9 @@ export function PatientRecordUpdateForm({
     setIdCheckError(null);
     setCheckingPatient(false);
     setRegistryRowLoaded(false);
+    setGpLookupId("");
+    setGpLookupError(null);
+    setGpNotFound(false);
 
     if (isAdding) {
       setFoundRecord(null);
@@ -134,16 +157,22 @@ export function PatientRecordUpdateForm({
   const remaining = totalCost - paid;
 
   async function handleLookup() {
-    if (!lookupId.trim()) {
+    const trimmedId = lookupId.trim();
+    if (!trimmedId) {
       setLookupError("Enter a Patient ID to search.");
+      return;
+    }
+    // Any two-digit year is valid here so older records stay findable.
+    if (!isPatientIdShapeValid(trimmedId)) {
+      setLookupError(PATIENT_ID_FORMAT_ERROR);
       return;
     }
     setCheckingPatient(true);
     try {
-      const record = findRecordByPatientId(lookupId, defaultCategory);
+      const record = findRecordByPatientId(trimmedId, defaultCategory);
       if (!record) {
         setLookupError(
-          `No ${isCase ? "case" : "GP"} patient found with ID "${lookupId.trim()}".`
+          `No ${isCase ? "case" : "GP"} patient found with ID "${trimmedId}".`
         );
         return;
       }
@@ -168,6 +197,68 @@ export function PatientRecordUpdateForm({
     setLookupNotice(null);
     setIdCheckError(null);
     setRegistryRowLoaded(false);
+    setGpLookupId("");
+    setGpLookupError(null);
+    setGpNotFound(false);
+  }
+
+  // Fresh add dialog on every open — the ID check comes first each time.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!open || !isAdding) return;
+    setReturningPatient(null);
+    setGpLookupId("");
+    setGpLookupError(null);
+    setGpNotFound(false);
+    setForm(getEmptyForm());
+    setErrors({});
+    setSubmitError(null);
+  }, [open, isAdding]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Add flows: verify the ID against the registry before showing the form.
+  async function handleGpLookup() {
+    const trimmedId = gpLookupId.trim();
+    if (!trimmedId) {
+      setGpLookupError("Enter a Patient ID to search.");
+      return;
+    }
+    if (!isPatientIdShapeValid(trimmedId)) {
+      setGpLookupError(PATIENT_ID_FORMAT_ERROR);
+      return;
+    }
+
+    setCheckingPatient(true);
+    setGpLookupError(null);
+    try {
+      const patient = await findPatientById(trimmedId);
+      if (!patient) {
+        setGpNotFound(true);
+        setReturningPatient(null);
+        return;
+      }
+      setGpNotFound(false);
+      setReturningPatient(patient);
+      setForm({
+        ...getEmptyForm(),
+        patientId: patient.patient_id,
+        patientName: patient.patient_name,
+        age: String(patient.age),
+        gender: patient.gender,
+        address: patient.address ?? "",
+        drugAllergy: patient.drug_allergy ?? "",
+        pastDentalHistory: patient.past_dental_history ?? "",
+        pastMedicalHistory: [...patient.past_medical_history],
+        currentMedications: [...patient.current_medications],
+      });
+      setErrors({});
+    } catch {
+      setGpLookupError(
+        "Could not verify Patient ID. Check your connection and try again."
+      );
+    } finally {
+      setCheckingPatient(false);
+    }
   }
 
   function updateField(field: string, value: string) {
@@ -188,9 +279,11 @@ export function PatientRecordUpdateForm({
 
   // Editing the ID after linking unlinks the returning patient and clears
   // identity fields so a different person can be entered from scratch.
+  // Value is filtered to digits + auto-inserted "/" so only NNNN/YY can form.
   function handlePatientIdChange(value: string) {
-    updateField("patientId", value);
-    if (returningPatient && value.trim() !== returningPatient.patient_id) {
+    const nextId = filterPatientIdInput(value);
+    updateField("patientId", nextId);
+    if (returningPatient && nextId.trim() !== returningPatient.patient_id) {
       setReturningPatient(null);
       setLookupNotice(null);
       setIdCheckError(null);
@@ -218,6 +311,8 @@ export function PatientRecordUpdateForm({
     if (!isAdding || !form || saving) return;
     const id = form.patientId.trim();
     if (!id) return;
+    // Malformed IDs never reach the registry — format errors are shown on save.
+    if (!isPatientIdShapeValid(id)) return;
     if (returningPatient && returningPatient.patient_id === id) return;
 
     setCheckingPatient(true);
@@ -269,6 +364,15 @@ export function PatientRecordUpdateForm({
 
     if (!form.patientId.trim()) {
       newErrors.patientId = "Patient ID is required.";
+    } else if (isAdding && !returningPatient) {
+      // Only new registrations are format-checked; edit mode and returning
+      // patients keep their pre-existing IDs (possibly an older year).
+      const id = form.patientId.trim();
+      if (!isPatientIdShapeValid(id)) {
+        newErrors.patientId = PATIENT_ID_FORMAT_ERROR;
+      } else if (!isCurrentYearPatientIdValid(id)) {
+        newErrors.patientId = PATIENT_ID_YEAR_ERROR;
+      }
     }
     if (!form.patientName.trim()) {
       newErrors.patientName = "Patient name is required.";
@@ -281,9 +385,6 @@ export function PatientRecordUpdateForm({
     if (isCase) {
       if (!form.caseType.trim()) {
         newErrors.caseType = "Case type is required.";
-      }
-      if (!form.teeth.trim()) {
-        newErrors.teeth = "Select at least one tooth.";
       }
       if (!form.labName.trim()) {
         newErrors.labName = "Lab name is required.";
@@ -354,24 +455,22 @@ export function PatientRecordUpdateForm({
       };
 
       if (isAdding) {
-        const identity = returningPatient
-          ? {
-              patient_id: returningPatient.patient_id,
-              ...buildDemographicsFor(returningPatient),
-            }
-          : {
-              patient_id: form.patientId.trim(),
-              ...buildDemographics(),
-            };
+        if (!returningPatient) {
+          throw new Error("Register the patient before adding a record.");
+        }
 
         const recordData = {
-          patient_id: identity.patient_id,
-          patient_name: identity.patient_name,
-          address: identity.address,
+          patient_id: returningPatient.patient_id,
+          patient_name: returningPatient.patient_name,
+          address: returningPatient.address,
           ...treatment,
         };
 
-        await addRecord(recordData, identity, !returningPatient);
+        await addRecord(
+          recordData,
+          returningPatient.patient_id,
+          isCase ? paidAmount : undefined
+        );
       } else if (foundRecord) {
         // Without a loaded registry row the form holds record-only prefill;
         // writing it back would overwrite real demographics (or miss the row).
@@ -432,12 +531,14 @@ export function PatientRecordUpdateForm({
                   ? "Add Case Record"
                   : "Add GP Record"}
           </DialogTitle>
-          <DialogDescription>
-            {isLookupMode && !foundRecord
-              ? "Enter the Patient ID to find and edit a record."
-              : foundRecord
-                ? "Update the patient record details below."
-                : "Fill in the details to add a new patient record."}
+          <DialogDescription >
+            {isAdding && !returningPatient
+              ? "Enter a registered Patient ID to add a record."
+              : isLookupMode && !foundRecord
+                ? "Enter the Patient ID to find and edit a record."
+                : foundRecord
+                  ? "Update the patient record details below."
+                  : "Fill in the details to add a new patient record."}
           </DialogDescription>
         </DialogHeader>
 
@@ -447,20 +548,75 @@ export function PatientRecordUpdateForm({
           </Alert>
         )}
 
-        {/* Lookup step — only when opened from Update/Edit button */}
-        {isLookupMode && !foundRecord ? (
-          <div className="grid gap-4 py-2">
-            <div className="grid gap-2">
+        {/* Add mode — verify a registered patient before the record form */}
+        {needsVerifiedPatient && !returningPatient ? (
+          <div>
+            <div className="grid gap-3">
+              <Label htmlFor="gpLookupId">Patient ID</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="gpLookupId"
+                  placeholder="e.g. 0001/26"
+                  inputMode="numeric"
+                  value={gpLookupId}
+                  onChange={(e) => {
+                    setGpLookupId(filterPatientIdInput(e.target.value));
+                    setGpLookupError(null);
+                    setGpNotFound(false);
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handleGpLookup()}
+                  disabled={saving || checkingPatient}
+                />
+                <Button
+                  onClick={handleGpLookup}
+                  size="icon"
+                  variant="outline"
+                  disabled={checkingPatient}
+                >
+                  {checkingPatient ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              {gpLookupError && (
+                <p className="text-caption text-destructive">{gpLookupError}</p>
+              )}
+              {gpNotFound && (
+                <>
+                  <Alert>
+                    <AlertDescription>
+                      No registered patient found for ID
+                      {` “${gpLookupId.trim()}”.`} Please register this patient
+                      first, then add the record.
+                    </AlertDescription>
+                  </Alert>
+                  <Link
+                    href={registerPatientsPath}
+                    onClick={() => onOpenChange(false)}
+                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                  >
+                    Go to Register Patients
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        ) : isLookupMode && !foundRecord ? (
+          <div>
+            <div className="grid gap-3">
               <Label htmlFor="lookupId">
-                Patient ID <span className="text-destructive">*</span>
+                Patient ID
               </Label>
               <div className="flex gap-2">
                 <Input
                   id="lookupId"
                   placeholder="e.g. 0001/26"
+                  inputMode="numeric"
                   value={lookupId}
                   onChange={(e) => {
-                    setLookupId(e.target.value);
+                    setLookupId(filterPatientIdInput(e.target.value));
                     setLookupError(null);
                   }}
                   onKeyDown={(e) => e.key === "Enter" && handleLookup()}
@@ -487,53 +643,95 @@ export function PatientRecordUpdateForm({
         ) : form ? (
           /* Form step — pre-filled with found record or blank for add */
           <>
-            <div className="grid gap-4 py-2 max-h-[60vh] overflow-y-auto themed-scrollbar pr-1">
-              <PatientInfoSection
-                form={form}
-                errors={errors}
-                saving={saving}
-                idLocked={idLocked}
-                demographicsLocked={demographicsLocked}
-                checkingPatient={checkingPatient}
-                lookupNotice={lookupNotice}
-                idCheckError={idCheckError}
-                onPatientIdBlur={handlePatientIdBlur}
-                onPatientIdChange={handlePatientIdChange}
-                updateField={updateField}
-              />
+            <ScrollArea className="max-h-[60vh] px-3.5">
+              <div className="grid gap-4 py-2">
+              {isAdding && returningPatient ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Patient ID" htmlFor="add-patientId" required>
+                      <Input
+                        id="add-patientId"
+                        value={form.patientId}
+                        disabled
+                      />
+                    </FormField>
+                    <FormField label="Patient Name" htmlFor="add-patientName" required>
+                      <Input
+                        id="add-patientName"
+                        value={form.patientName}
+                        disabled
+                      />
+                    </FormField>
+                  </div>
 
-              <MedicalHistory
-                options={medicalHistoryOptions}
-                selected={form.pastMedicalHistory}
-                onChange={(next) => setArrayField("pastMedicalHistory", next)}
-                disabled={saving || demographicsLocked}
-              />
-
-              <CurrentMedicationList
-                value={form.currentMedications}
-                onChange={(next) => setArrayField("currentMedications", next)}
-                disabled={saving || demographicsLocked}
-              />
-
-              {isCase ? (
-                <CaseFormFields
-                  form={{ ...form, category: defaultCategory }}
-                  errors={errors}
-                  remaining={remaining.toString()}
-                  saving={saving}
-                  updateField={updateField}
-                />
+                  {isCase ? (
+                    <CaseFormFields
+                      form={{ ...form, category: defaultCategory }}
+                      errors={errors}
+                      remaining={remaining.toString()}
+                      saving={saving}
+                      updateField={updateField}
+                    />
+                  ) : (
+                    <RecordFormFields
+                      form={{ ...form, category: defaultCategory }}
+                      errors={errors}
+                      saving={saving}
+                      updateField={updateField}
+                    />
+                  )}
+                </>
               ) : (
-                <RecordFormFields
-                  form={{ ...form, category: defaultCategory }}
-                  errors={errors}
-                  saving={saving}
-                  updateField={updateField}
-                />
-              )}
-            </div>
+                <>
+                  <PatientInfoSection
+                    form={form}
+                    errors={errors}
+                    saving={saving}
+                    idLocked={idLocked}
+                    demographicsLocked={demographicsLocked}
+                    checkingPatient={checkingPatient}
+                    lookupNotice={lookupNotice}
+                    idCheckError={idCheckError}
+                    onPatientIdBlur={handlePatientIdBlur}
+                    onPatientIdChange={handlePatientIdChange}
+                    updateField={updateField}
+                  />
 
-            <DialogFooter>
+                  <MedicalHistory
+                    options={medicalHistoryOptions}
+                    selected={form.pastMedicalHistory}
+                    onChange={(next) => setArrayField("pastMedicalHistory", next)}
+                    disabled={saving || demographicsLocked}
+                  />
+
+                  <CurrentMedicationList
+                    value={form.currentMedications}
+                    onChange={(next) => setArrayField("currentMedications", next)}
+                    disabled={saving || demographicsLocked}
+                  />
+
+                  {isCase ? (
+                    <CaseFormFields
+                      form={{ ...form, category: defaultCategory }}
+                      errors={errors}
+                      remaining={remaining.toString()}
+                      saving={saving}
+                      updateField={updateField}
+                    />
+                  ) : (
+                    <RecordFormFields
+                      form={{ ...form, category: defaultCategory }}
+                      errors={errors}
+                      saving={saving}
+                      updateField={updateField}
+                    />
+                  )}
+                </>
+              )}
+              </div>
+            </ScrollArea>
+
+            <DialogFooter className="py-1.5 px-3.5">
               {foundRecord && (
                 <Button
                   variant="destructive"
@@ -554,6 +752,11 @@ export function PatientRecordUpdateForm({
                   Back
                 </Button>
               )}
+              {isAdding && returningPatient && (
+                <Button variant="outline" onClick={handleReset} disabled={saving}>
+                  Change Patient
+                </Button>
+              )}
               <Button onClick={handleSave} disabled={saving || checkingPatient}>
                 {saving ? (
                   <>
@@ -570,17 +773,4 @@ export function PatientRecordUpdateForm({
       </DialogContent>
     </Dialog>
   );
-}
-
-function buildDemographicsFor(patient: PatientType) {
-  return {
-    patient_name: patient.patient_name,
-    age: patient.age,
-    gender: patient.gender,
-    address: patient.address,
-    drug_allergy: patient.drug_allergy,
-    past_dental_history: patient.past_dental_history,
-    current_medications: patient.current_medications,
-    past_medical_history: patient.past_medical_history,
-  };
 }

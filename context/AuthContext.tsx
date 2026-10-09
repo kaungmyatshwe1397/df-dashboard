@@ -87,3 +87,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   return useContext(AuthContext);
 }
+
+// True when the current user may create/edit/delete records.
+// Supervisors get the same pages as admin but read-only; RLS still
+// enforces it server-side. Defaults to editable until the profile loads
+// so admin/assistant don't flash a stripped-down UI.
+export function useCanEdit() {
+  const { profile } = useAuth();
+  return profile?.role !== "SUPERVISOR";
+}

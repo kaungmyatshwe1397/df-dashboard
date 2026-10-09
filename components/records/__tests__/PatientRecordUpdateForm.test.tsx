@@ -13,7 +13,9 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { DataProvider } from "@/context/DataContext";
+import { createClient } from "@/lib/supabase/client";
 import { PatientRecordUpdateForm } from "../patient-record-update-form";
+import { PATIENT_ID_FORMAT_ERROR } from "../patient-record-update-form/schema";
 import { RecordCategory, GPPatientRecordType } from "@/lib/global";
 
 // Capture addRecord calls (and optionally simulate a duplicate-ID RPC
@@ -245,7 +247,7 @@ describe("PatientRecordUpdateForm — Add Mode Form Fields", () => {
     expect(within(dialog).getByLabelText(/lab name/i)).toBeInTheDocument();
   });
 
-  test("Add mode does NOT show lookup search input", () => {
+  test("GP add mode starts with Patient ID verification (no demographics)", () => {
     renderWithProvider(
       <PatientRecordUpdateForm
         open={true}
@@ -257,8 +259,11 @@ describe("PatientRecordUpdateForm — Add Mode Form Fields", () => {
     );
 
     const dialog = getLastDialogContent();
-    // Add mode shows the form directly, no lookup input
-    expect(within(dialog).queryByText(/enter the patient id/i)).not.toBeInTheDocument();
+    expect(within(dialog).getByPlaceholderText("e.g. 0001/26")).toBeInTheDocument();
+    expect(within(dialog).queryByPlaceholderText("e.g. 30")).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByPlaceholderText(/common cold/i)
+    ).not.toBeInTheDocument();
   });
 
   test("Edit mode with null record shows lookup input", () => {
@@ -461,89 +466,65 @@ describe("PatientRecordUpdateForm — Patient Registry", () => {
     );
   }
 
-  test("Add mode shows demographic fields (age, gender, allergy)", () => {
+  test("Add mode does NOT show demographic fields before a patient is verified", () => {
     renderAddMode();
     const dialog = getLastDialogContent();
-    expect(within(dialog).getByPlaceholderText("e.g. 30")).toBeInTheDocument();
-    expect(within(dialog).getByPlaceholderText("e.g. Penicillin")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Male")).toBeInTheDocument();
-    expect(within(dialog).getByPlaceholderText(/metformin/i)).toBeInTheDocument();
+    expect(within(dialog).queryByPlaceholderText("e.g. 30")).not.toBeInTheDocument();
+    expect(within(dialog).queryByPlaceholderText("e.g. Penicillin")).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText("Male")).not.toBeInTheDocument();
+    expect(within(dialog).queryByPlaceholderText(/metformin/i)).not.toBeInTheDocument();
   });
 
-  test("Existing Patient ID locks demographics and shows registered-owner alert", async () => {
+  test("Registered Patient ID auto-fills the read-only record form", async () => {
     renderAddMode();
     const dialog = getLastDialogContent();
 
     const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
     fireEvent.change(idInput, { target: { value: "0001/26" } });
-    fireEvent.blur(idInput);
+    fireEvent.keyDown(idInput, { key: "Enter" });
 
-    const alert = await within(dialog).findByText(/already registered to John Doe/i);
-    expect(alert).toBeInTheDocument();
-
-    const nameInput = within(dialog).getByPlaceholderText("e.g. John Doe") as HTMLInputElement;
-    const ageInput = within(dialog).getByPlaceholderText("e.g. 30") as HTMLInputElement;
+    const nameInput = (await within(dialog).findByDisplayValue("John Doe")) as HTMLInputElement;
     expect(nameInput).toBeDisabled();
-    expect(ageInput).toBeDisabled();
-    expect(nameInput.value).toBe("John Doe");
-    expect(ageInput.value).toBe("34");
-    expect(idInput).toBeDisabled();
+
+    // Patient ID and name are auto-filled and locked; only diagnosis/cost shown
+    const idField = within(dialog).getByDisplayValue("0001/26") as HTMLInputElement;
+    expect(idField).toBeDisabled();
+    expect(within(dialog).getByPlaceholderText(/common cold/i)).toBeInTheDocument();
+    expect(within(dialog).queryByPlaceholderText("e.g. 30")).not.toBeInTheDocument();
+    expect(within(dialog).queryByPlaceholderText(/metformin/i)).not.toBeInTheDocument();
   });
 
-  test("Changing Patient ID after linking unlocks identity fields", async () => {
-    renderAddMode();
-    const dialog = getLastDialogContent();
-
-    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
-    fireEvent.change(idInput, { target: { value: "0001/26" } });
-    fireEvent.blur(idInput);
-    await within(dialog).findByText(/already registered to John Doe/i);
-
-    fireEvent.change(idInput, { target: { value: "0099/26" } });
-
-    expect(within(dialog).queryByText(/already registered/i)).not.toBeInTheDocument();
-    const nameInput = within(dialog).getByPlaceholderText("e.g. John Doe") as HTMLInputElement;
-    expect(nameInput).toBeEnabled();
-    expect(nameInput.value).toBe("");
-    expect(idInput).toBeEnabled();
-  });
-
-  test("Unknown Patient ID stays editable (new patient flow)", async () => {
+  test("Unknown Patient ID shows the register-patient instruction and link", async () => {
     renderAddMode();
     const dialog = getLastDialogContent();
 
     const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
     fireEvent.change(idInput, { target: { value: "7777/26" } });
-    fireEvent.blur(idInput);
+    fireEvent.keyDown(idInput, { key: "Enter" });
 
-    // Give the registry lookup a tick to run — no alert must appear
-    await new Promise((r) => setTimeout(r, 20));
-    expect(within(dialog).queryByText(/already registered/i)).not.toBeInTheDocument();
-    const nameInput = within(dialog).getByPlaceholderText("e.g. John Doe") as HTMLInputElement;
-    expect(nameInput).toBeEnabled();
+    const alert = await within(dialog).findByText(/no registered patient found/i);
+    expect(alert).toBeInTheDocument();
+
+    const link = within(dialog).getByRole("link", { name: /go to register patients/i });
+    expect(link).toHaveAttribute("href", "/admin/register-patients");
+    // Record form fields never render for an unregistered ID
+    expect(within(dialog).queryByPlaceholderText(/common cold/i)).not.toBeInTheDocument();
   });
 
-  test("Save validates required age (gender defaults to Male)", async () => {
+  test("Changing Patient ID and re-searching unlocks a new lookup", async () => {
     renderAddMode();
     const dialog = getLastDialogContent();
 
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
-      target: { value: "8888/26" },
-    });
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. John Doe"), {
-      target: { value: "New Patient" },
-    });
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. Common cold, Fracture - left arm"), {
-      target: { value: "Checkup" },
-    });
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 50000"), {
-      target: { value: "10000" },
-    });
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+    fireEvent.change(idInput, { target: { value: "7777/26" } });
+    fireEvent.keyDown(idInput, { key: "Enter" });
+    await within(dialog).findByText(/no registered patient found/i);
 
-    fireEvent.click(within(dialog).getByText("Add Record"));
+    fireEvent.change(idInput, { target: { value: "0001/26" } });
+    fireEvent.keyDown(idInput, { key: "Enter" });
 
-    expect(await within(dialog).findByText(/enter a valid age/i)).toBeInTheDocument();
-    expect(within(dialog).queryByText(/gender is required/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/no registered patient found/i)).not.toBeInTheDocument();
+    expect(await within(dialog).findByDisplayValue("John Doe")).toBeInTheDocument();
   });
 });
 
@@ -581,31 +562,20 @@ describe("PatientRecordUpdateForm — Save", () => {
     });
   });
 
-  async function fillNewPatient(dialog: HTMLElement) {
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
-      target: { value: "8888/26" },
-    });
-    fireEvent.blur(within(dialog).getByPlaceholderText("e.g. 0001/26"));
-    // Save stays disabled until the registry lookup settles
-    await waitFor(() =>
-      expect(within(dialog).queryByText(/checking patient id/i)).not.toBeInTheDocument()
-    );
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. John Doe"), {
-      target: { value: "New Patient" },
-    });
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 30"), {
-      target: { value: "30" },
-    });
-    fireEvent.click(within(dialog).getByRole("radio", { name: "Male" }));
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. Common cold, Fracture - left arm"), {
-      target: { value: "Checkup" },
-    });
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 50000"), {
-      target: { value: "10000" },
-    });
-  }
+  test("Save (newly registered patient) sends the first visit through addRecord", async () => {
+    await createClient()
+      .from("patients")
+      .insert({
+        patient_id: "8888/26",
+        patient_name: "New Patient",
+        age: 30,
+        gender: "MALE",
+        current_medications: [],
+        past_medical_history: [],
+      })
+      .select()
+      .single();
 
-  test("Save (new patient) sends patient + record payload through addRecord", async () => {
     const onOpenChange = vi.fn();
     render(
       <DataProvider>
@@ -619,20 +589,29 @@ describe("PatientRecordUpdateForm — Save", () => {
       </DataProvider>
     );
     const dialog = getLastDialogContent();
-    await fillNewPatient(dialog);
+
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 0001/26"), {
+      target: { value: "8888/26" },
+    });
+    fireEvent.keyDown(within(dialog).getByPlaceholderText("e.g. 0001/26"), { key: "Enter" });
+    await within(dialog).findByDisplayValue("New Patient");
+    fireEvent.change(within(dialog).getByPlaceholderText(/common cold/i), {
+      target: { value: "Checkup" },
+    });
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 50000"), {
+      target: { value: "10000" },
+    });
 
     fireEvent.click(within(dialog).getByText("Add Record"));
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(saveState.addRecordCalls).toHaveLength(1);
-    const [recordData, identity] = saveState.addRecordCalls[0] as [
+    const [recordData, patientId] = saveState.addRecordCalls[0] as [
       Record<string, unknown>,
-      Record<string, unknown>,
+      string,
     ];
-    expect(identity.patient_id).toBe("8888/26");
-    expect(identity.patient_name).toBe("New Patient");
-    expect(identity.age).toBe(30);
-    expect(identity.gender).toBe("MALE");
+    expect(patientId).toBe("8888/26");
+    expect(recordData.patient_name).toBe("New Patient");
     expect(recordData.diagnosis).toBe("Checkup");
     expect(recordData.total_cost).toBe(10000);
     expect(recordData.patient_id).toBe("8888/26");
@@ -655,10 +634,10 @@ describe("PatientRecordUpdateForm — Save", () => {
 
     const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26");
     fireEvent.change(idInput, { target: { value: "0001/26" } });
-    fireEvent.blur(idInput);
-    await within(dialog).findByText(/already registered to John Doe/i);
+    fireEvent.keyDown(idInput, { key: "Enter" });
+    await within(dialog).findByDisplayValue("John Doe");
 
-    fireEvent.change(within(dialog).getByPlaceholderText("e.g. Common cold, Fracture - left arm"), {
+    fireEvent.change(within(dialog).getByPlaceholderText(/common cold/i), {
       target: { value: "Follow-up visit" },
     });
     fireEvent.change(within(dialog).getByPlaceholderText("e.g. 50000"), {
@@ -669,15 +648,11 @@ describe("PatientRecordUpdateForm — Save", () => {
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(saveState.addRecordCalls).toHaveLength(1);
-    const [recordData, identity] = saveState.addRecordCalls[0] as [
+    const [recordData, patientId] = saveState.addRecordCalls[0] as [
       Record<string, unknown>,
-      Record<string, unknown>,
+      string,
     ];
-    // Demographics come from the registry row — untouched by the form
-    expect(identity.patient_id).toBe("0001/26");
-    expect(identity.patient_name).toBe("John Doe");
-    expect(identity.age).toBe(34);
-    expect(identity.gender).toBe("MALE");
+    expect(patientId).toBe("0001/26");
     expect(recordData.diagnosis).toBe("Follow-up visit");
     expect(recordData.total_cost).toBe(20000);
   });
@@ -696,7 +671,17 @@ describe("PatientRecordUpdateForm — Save", () => {
       </DataProvider>
     );
     const dialog = getLastDialogContent();
-    await fillNewPatient(dialog);
+    const idInput2 = within(dialog).getByPlaceholderText("e.g. 0001/26");
+    fireEvent.change(idInput2, { target: { value: "0001/26" } });
+    fireEvent.keyDown(idInput2, { key: "Enter" });
+    await within(dialog).findByDisplayValue("John Doe");
+
+    fireEvent.change(within(dialog).getByPlaceholderText(/common cold/i), {
+      target: { value: "Checkup" },
+    });
+    fireEvent.change(within(dialog).getByPlaceholderText("e.g. 50000"), {
+      target: { value: "10000" },
+    });
 
     saveState.failDuplicate = true;
     fireEvent.click(within(dialog).getByText("Add Record"));
@@ -741,23 +726,27 @@ describe("PatientRecordUpdateForm — Save", () => {
 // ------------------------------------------
 describe("PatientRecordUpdateForm — CurrentMedicationList & MedicalHistory", () => {
   function renderAddMode() {
+    // GP edit mode still renders the patient demographics section
     return renderWithProvider(
       <PatientRecordUpdateForm
         open={true}
         onOpenChange={() => {}}
         defaultCategory={RecordCategory.GP}
-        isAdding={true}
-        editRecord={null}
+        isAdding={false}
+        editRecord={gpRecord}
       />
     );
   }
 
-  test("Medication chip can be added and removed; empty list allowed", () => {
+  test("Medication chip can be added and removed; empty list allowed", async () => {
     renderAddMode();
     const dialog = getLastDialogContent();
 
     // Empty by default — no chips rendered
     expect(within(dialog).queryByLabelText(/^remove /i)).not.toBeInTheDocument();
+
+    // Let the registry fetch settle — it re-seeds the form without meds
+    await new Promise((r) => setTimeout(r, 20));
 
     const medInput = within(dialog).getByPlaceholderText("e.g. Metformin");
     fireEvent.change(medInput, { target: { value: "Metformin" } });
@@ -793,5 +782,110 @@ describe("PatientRecordUpdateForm — CurrentMedicationList & MedicalHistory", (
     expect(
       within(dialog).getByRole("checkbox", { name: "Diabetes" })
     ).toHaveAttribute("aria-checked", "false");
+  });
+});
+
+// ------------------------------------------
+// Task — Patient ID format NNNN/YY
+// ------------------------------------------
+describe("PatientRecordUpdateForm — Patient ID Format", () => {
+  function renderAddMode() {
+    return renderWithProvider(
+      <PatientRecordUpdateForm
+        open={true}
+        onOpenChange={() => {}}
+        defaultCategory={RecordCategory.GP}
+        isAdding={true}
+        editRecord={null}
+      />
+    );
+  }
+
+  function renderLookupMode() {
+    return renderWithProvider(
+      <PatientRecordUpdateForm
+        open={true}
+        onOpenChange={() => {}}
+        defaultCategory={RecordCategory.GP}
+        isAdding={false}
+        editRecord={null}
+      />
+    );
+  }
+
+  test("Letters and symbols are blocked while typing", () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+
+    fireEvent.change(idInput, { target: { value: "abc00a01!26" } });
+    expect(idInput.value).toBe("0001/26");
+  });
+
+  test("Slash is auto-inserted after the fourth digit", () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+
+    fireEvent.change(idInput, { target: { value: "000126" } });
+    expect(idInput.value).toBe("0001/26");
+  });
+
+  test("Input stops at four digits plus two-digit year", () => {
+    renderAddMode();
+    const dialog = getLastDialogContent();
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+
+    fireEvent.change(idInput, { target: { value: "0001267890" } });
+    expect(idInput.value).toBe("0001/26");
+  });
+
+  test("Lookup blocks an incomplete ID before searching", () => {
+    renderLookupMode();
+    const dialog = getLastDialogContent();
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26");
+
+    fireEvent.change(idInput, { target: { value: "0001" } });
+    fireEvent.keyDown(idInput, { key: "Enter" });
+
+    expect(within(dialog).getByText(PATIENT_ID_FORMAT_ERROR)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/no gp patient found/i)).not.toBeInTheDocument();
+  });
+
+  test("Lookup input strips letters and auto-inserts the slash", () => {
+    renderLookupMode();
+    const dialog = getLastDialogContent();
+    const idInput = within(dialog).getByPlaceholderText("e.g. 0001/26") as HTMLInputElement;
+
+    fireEvent.change(idInput, { target: { value: "00a42/25" } });
+    expect(idInput.value).toBe("0042/25");
+  });
+});
+
+// ------------------------------------------
+// Task — Age input: two digits, unsigned integer
+// ------------------------------------------
+describe("PatientRecordUpdateForm — Age Format", () => {
+  test("Age allows only two digits — no decimals or negatives", () => {
+    renderWithProvider(
+      <PatientRecordUpdateForm
+        open={true}
+        onOpenChange={() => {}}
+        defaultCategory={RecordCategory.GP}
+        isAdding={false}
+        editRecord={gpRecord}
+      />
+    );
+    const dialog = getLastDialogContent();
+    const ageInput = within(dialog).getByPlaceholderText("e.g. 30") as HTMLInputElement;
+
+    fireEvent.change(ageInput, { target: { value: "12.5" } });
+    expect(ageInput.value).toBe("12");
+
+    fireEvent.change(ageInput, { target: { value: "-7" } });
+    expect(ageInput.value).toBe("7");
+
+    fireEvent.change(ageInput, { target: { value: "1234" } });
+    expect(ageInput.value).toBe("12");
   });
 });

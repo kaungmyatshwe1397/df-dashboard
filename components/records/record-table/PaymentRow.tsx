@@ -21,7 +21,7 @@ export interface PaymentRowProps {
   isSettled: boolean;
   isExpanded: boolean;
   onToggleExpand: (id: string) => void;
-  onPay: (record: CasePatientRecordType) => void;
+  onPay?: (record: CasePatientRecordType) => void;
 }
 
 function formatCurrency(amount: number): string {
@@ -99,7 +99,7 @@ export function PaymentRow({
         </TableCell>
         <TableCell>
           {isSettled ? (
-            <Badge variant="default" className="bg-success text-text-inverse text-caption">
+            <Badge variant="default" className="bg-chart-2 text-background text-caption">
               Payment Complete
             </Badge>
           ) : (
@@ -109,7 +109,7 @@ export function PaymentRow({
           )}
         </TableCell>
         <TableCell>
-          {!isSettled && (
+          {!isSettled && onPay && (
             <Button
               variant="ghost"
               size="icon-sm"

@@ -170,8 +170,9 @@ U-1 must be done first since U-2 and U-3 depend on the DataContext operations it
 | # | Task | Page/Component | Role | Priority | Status |
 |---|------|----------------|------|----------|--------|
 | U-1 | Admin User Management | `/admin/users` | Admin | Required | ✅ |
-| U-2 | Assistant Signup | `/signup` | Assistant | Required | ✅ |
+| U-2 | Assistant Signup | `/signup` | Assistant | Required | ❌ Removed 2026-10-06 — public signup removed; admin creates users from `/admin/users` |
 | U-3 | Admin Change Password | Sidebar dialog | Admin | Required | ✅ |
+| U-6 | Supervisor Role + Admin User CRUD | `/admin/users`, middleware, RLS | Admin/Supervisor | Required | ✅ 2026-10-06 — SUPERVISOR added (read-only `/admin`), signup deleted, user table/create/edit dialogs live |
 
 ---
 

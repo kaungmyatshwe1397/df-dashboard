@@ -1,32 +1,10 @@
-// Supabase auth helpers — signup, login, signout, session check.
+// Supabase auth helpers — login, signout, session check.
 // Wraps @supabase/ssr browser client for use in Client Components.
 
 import { createClient } from "./client";
-import { UserRole } from "@/lib/global";
 
 export interface AuthError {
   message: string;
-}
-
-export async function signUpNewUser(data: {
-  email: string;
-  password: string;
-  fullName: string;
-}) {
-  const supabase = createClient();
-
-  const { data: result, error } = await supabase.auth.signUp({
-    email: data.email,
-    password: data.password,
-    options: {
-      data: {
-        username: data.fullName,
-        role: UserRole.ASSISTANT,
-      },
-    },
-  });
-
-  return { data: result, error };
 }
 
 export async function signInWithCredentials(data: {

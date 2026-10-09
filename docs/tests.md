@@ -21,7 +21,7 @@ Pure function tests — no React/DOM.
 | `components/records/patient-record-update-form/Types.test.ts` | 4 | `getInitialForm()` for GP/Case records, optional-field fallbacks, registry patient prefill |
 | `components/overhead/Types.test.ts` | 6 | `financialsToFields`, `customOverheadsToForm` |
 | `components/records/record-table/RecordTableHelpers.test.ts` | 6 | `formatCurrency`, `formatDate` |
-| `lib/services/__tests__/patientRecordService.test.ts` | 4 | `registerPatientWithRecord` RPC success, duplicate-ID (23505) mapping, error passthrough |
+| `lib/services/__tests__/patientRecordService.test.ts` | 4 | `registerPatientWithRecord` two-argument RPC success, unregistered-ID (23503) mapping, error passthrough |
 
 ## Component Tests (12 files, 121 tests)
 
@@ -35,6 +35,7 @@ React component and hook rendering with Testing Library.
 | `components/records/__tests__/PatientRecordUpdateForm.test.tsx` | 27 | Dialog close, edit/add mode, delete button, form validation, patient registry (returning/locking), save flows, medication chips, medical history |
 | `components/records/record-table/RecordTableHelpers-components.test.tsx` | 6 | `TableEmpty`, `TableError`, `TableSkeleton`, `TablePagination` |
 | `components/dashboard/useDashboardKPIs.test.tsx` | 8 | KPI calculations (revenue, commission, overhead, profit) |
+| Dashboard month selector | TODO | Selecting an available month updates dashboard KPIs and the revenue chart; all displayed dashboard currency uses MMK |
 | `context/__tests__/DataContext.test.tsx` | 14 | Payment logic, CRUD operations, record lookup |
 | `context/__tests__/DataContext-mutations.test.tsx` | 13 | Record/patient mutation flows through DataContext |
 | `context/__tests__/patients.test.tsx` | 7 | Patient registry lookup and persistence |
@@ -63,11 +64,20 @@ All skipped due to **base-ui Dialog JSDOM limitations** — need Playwright E2E:
 
 | Priority | What | Type | Why |
 |----------|------|------|-----|
+| High | GP and Case record add flow requires an existing patient; unknown IDs show the register-first action and cannot submit | Component | Confirms the changed workflow for both record categories |
+| High | `register_patient_with_record` sends only the two deployed named arguments and rejects an unknown patient ID | Unit/Integration | Prevents RPC schema-cache mismatches and blocks unregistered records at the database boundary |
+| High | Patient registration followed by record creation succeeds; failed registry lookup preserves the entered ID and allows retry | Component/E2E | Covers the full register-then-record user journey |
+| High | Case form passes its initial paid amount into payment creation; paid total and remaining balance reflect the amount immediately | Component/Integration | Prevents a saved Case record from showing zero paid when an initial amount was entered |
 | High | Middleware route protection (`middleware.ts`) | Unit | Auth/RBAC logic untested |
 | High | `isProtectedRoute`, `isAdminRoute` | Unit | Pure functions, easy to test |
-| Medium | `updateUserAction`, `deleteUserAction` (`app/admin/actions.ts`) | Unit | Server actions need mock |
+| Medium | `createUserAction`, `updateUserRoleAction`, `deleteUserAction` (`app/admin/actions.ts`) | Unit | Server actions need mock |
+| Medium | Users page table (`app/admin/users/page.tsx`) — rows render username/email/role, loading skeleton, empty state, error retry | Component | User management UI untested |
+| Medium | User edit dialog — role selection, unchanged-role save state, self-demotion guard, and delete confirmation | Component | User account actions should remain clear and safe |
+| Medium | `CreateUserDialog` / `UserEditDialog` validation + submit flows | Component | Admin user CRUD forms |
+| Medium | Supervisor read-only gating (`useCanEdit` consumers: GpTable, CaseTable, OverheadForm, CarryForwardPanel, LabFeeInput) — hides add/edit buttons when profile.role is SUPERVISOR | Component | New role behavior |
+| High | Middleware SUPERVISOR rules (`/admin` allowed read-only, `/admin/users` and `/admin/reconciliation/manage` blocked, `/assistant` blocked) | Unit | RBAC logic untested |
 | Medium | AuthContext (`login`, `logout`, session) | Component | Auth flow untested |
 | Medium | OverheadForm validation | Component | Financial form logic |
-| Medium | Reconciliation table | Component | Lab fee calculations |
+| Medium | Reconciliation cards | Component | Lab grouping/filter, responsive rows, inline fee save states and totals |
 | Low | `lib/supabase/__mocks__/` | Setup | Shared mock for Supabase client |
 | Low | Playwright E2E for skipped Dialog tests | E2E | Full browser testing |
