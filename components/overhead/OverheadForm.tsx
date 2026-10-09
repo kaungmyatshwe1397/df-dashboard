@@ -269,7 +269,7 @@ export function OverheadForm() {
       )}
 
       {saved && (
-        <Alert className="mb-4 border-accent/30 bg-accent/10 text-accent">
+        <Alert className="mb-4 border-accent/30 bg-accent/10 text-primary">
           <Check className="h-4 w-4" />
           Overhead expenses saved successfully.
         </Alert>

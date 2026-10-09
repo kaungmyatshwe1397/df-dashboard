@@ -93,7 +93,7 @@ export function TableEmpty({
         <Button
           onClick={onAdd}
           size="sm"
-          className="bg-accent text-accent-foreground hover:bg-accent/90"
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="mr-1.5 h-4 w-4" />
           {addLabel}

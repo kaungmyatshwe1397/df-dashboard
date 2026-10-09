@@ -79,5 +79,6 @@ All skipped due to **base-ui Dialog JSDOM limitations** — need Playwright E2E:
 | Medium | AuthContext (`login`, `logout`, session) | Component | Auth flow untested |
 | Medium | OverheadForm validation | Component | Financial form logic |
 | Medium | Reconciliation cards | Component | Lab grouping/filter, responsive rows, inline fee save states and totals |
+| Medium | Theme provider and account menu | Component | Dark default, saved Light/Dark choice, keyboard accessible selection, and storage unavailable fallback |
 | Low | `lib/supabase/__mocks__/` | Setup | Shared mock for Supabase client |
 | Low | Playwright E2E for skipped Dialog tests | E2E | Full browser testing |

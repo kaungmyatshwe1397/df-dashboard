@@ -14,7 +14,9 @@ import {
   FlaskConical,
   LayoutDashboard,
   LogOut,
+  Moon,
   Settings,
+  Sun,
   TableProperties,
   Users,
   UsersRound,
@@ -37,12 +39,15 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AccountSettingsModal } from "@/components/settings/AccountSettingsModal";
 import { useAuth } from "@/context/AuthContext";
 import { signOut } from "@/lib/supabase/auth";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 interface NavItem {
   title: string;
@@ -78,6 +83,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { profile } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const isAdmin = pathname.startsWith("/admin");
@@ -156,7 +162,7 @@ export function AppSidebar() {
                 <button className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring" />
               }
             >
-              <span className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full bg-accent-dark text-xs font-bold text-accent">
+              <span className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                 {userInitial}
               </span>
               <span className="flex min-w-0 flex-col">
@@ -191,6 +197,29 @@ export function AppSidebar() {
                 <Settings className="size-4" />
                 Account Settings
               </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Appearance</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={theme}
+                  onValueChange={(value) => {
+                    if (value === "light" || value === "dark") setTheme(value);
+                  }}
+                >
+                  <DropdownMenuRadioItem value="light" aria-label="Light theme">
+                    <Sun className="size-4" />
+                    Light
+                    {theme === "light" && <span className="sr-only"> selected</span>}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="dark" aria-label="Dark theme">
+                    <Moon className="size-4" />
+                    Dark
+                    {theme === "dark" && <span className="sr-only"> selected</span>}
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
 
               <DropdownMenuSeparator />
 

@@ -60,7 +60,7 @@ export function DashboardKPIs() {
               </div>
             </div>
             <div className="w-[30px] h-[30px] rounded-lg bg-white/5 flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-accent" />
+              <TrendingUp className="h-4 w-4 text-primary" />
             </div>
           </div>
           <div className="flex gap-8 mt-4 pt-4 border-t border-white/10">
