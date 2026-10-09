@@ -257,13 +257,19 @@ test("assistant can log in and see records", async ({ page }) => {
 src/
   components/
     RecordTable.tsx          → component being tested
-    RecordTable.test.tsx     → tests live next to source (colocated)
   lib/
     helpers.ts               → utility functions
-    helpers.test.ts          → unit tests colocated
-  e2e/
-    assistant-flow.spec.ts   → E2E tests separate folder
+
+tests/
+  unit/
+    helpers.test.ts          → pure logic and transformations
+  component/
+    RecordTable.test.tsx     → rendered components and interactions
+  integration/
+    assistant-flow.test.tsx  → connected app and data flows
 ```
+
+Keep all tests under the root `tests/` directory. Vitest is configured to discover tests only there; tests beside source files will not be run.
 
 ### Naming Convention
 
