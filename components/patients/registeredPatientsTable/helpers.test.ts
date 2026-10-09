@@ -5,7 +5,11 @@
 // d.M.yy registration-date formatter.
 
 import { describe, test, expect } from "vitest";
-import { filterPatients, formatRegisteredDate } from "./helpers";
+import {
+  filterPatients,
+  formatPatientProfileDate,
+  formatRegisteredDate,
+} from "./helpers";
 import { PatientType, Gender } from "@/lib/global";
 
 function makePatient(id: string, name: string): PatientType {
@@ -57,5 +61,18 @@ describe("formatRegisteredDate", () => {
   test("missing or invalid input renders an em dash", () => {
     expect(formatRegisteredDate(undefined)).toBe("—");
     expect(formatRegisteredDate("not-a-date")).toBe("—");
+  });
+});
+
+describe("formatPatientProfileDate", () => {
+  test("formats the detail date with a full month name", () => {
+    expect(formatPatientProfileDate("2026-09-26T12:00:00.000Z")).toBe(
+      "26 September 2026"
+    );
+  });
+
+  test("missing or invalid input renders an em dash", () => {
+    expect(formatPatientProfileDate(undefined)).toBe("—");
+    expect(formatPatientProfileDate("not-a-date")).toBe("—");
   });
 });

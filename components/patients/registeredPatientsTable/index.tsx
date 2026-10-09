@@ -125,7 +125,7 @@ export function RegisteredPatientsTable({
               onChange={(e) => handleQueryChange(e.target.value)}
               placeholder="Search patient ID"
               aria-label="Search registered patients by ID"
-              className="pl-8"
+              className="h-7 pl-8"
             />
           </div>
         </div>

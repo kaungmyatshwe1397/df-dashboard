@@ -88,6 +88,24 @@ body {
   font-family: var(--font-family-body);
 }
 
+.patient-detail-dialog {
+  scrollbar-color: var(--foreground) transparent;
+  scrollbar-width: thin;
+}
+
+.patient-detail-dialog::-webkit-scrollbar {
+  width: var(--space-2);
+}
+
+.patient-detail-dialog::-webkit-scrollbar-thumb {
+  border-radius: var(--radius);
+  background-color: var(--foreground);
+}
+
+.patient-detail-dialog::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
 /* Built-in shadcn theme (neutral) — app forces dark mode via the `dark` class */
 :root {
   --radius: 0.625rem;

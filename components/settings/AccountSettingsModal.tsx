@@ -1,5 +1,4 @@
-// AccountSettingsModal — profile and password sections.
-// Opened from the AppSidebar footer dropdown. Uses Dialog for the main modal.
+// Account settings dialog for profile and password changes.
 
 "use client";
 
@@ -14,8 +13,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
+import type { UserProfileType } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
+import { updateOwnUsernameAction } from "@/app/settings/actions";
 
 interface AccountSettingsModalProps {
   open: boolean;
@@ -26,19 +37,27 @@ export function AccountSettingsModal({
   open,
   onOpenChange,
 }: AccountSettingsModalProps) {
+  const { profile, loading: profileLoading } = useAuth();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Account Settings</DialogTitle>
+          <DialogTitle>Account settings</DialogTitle>
           <DialogDescription>
-            Manage your profile and password.
+            Manage your profile and sign-in password.
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[65vh]">
-          <div className="flex flex-col gap-6 py-2">
-            <ProfileSection />
+          <div className="flex flex-col gap-4 py-1 pr-3">
+            {profile ? (
+              <ProfileSection profile={profile} />
+            ) : (
+              <p className="py-3 text-sm text-muted-foreground" role="status">
+                {profileLoading ? "Loading profile…" : "Profile is unavailable."}
+              </p>
+            )}
             <PasswordSection />
           </div>
         </ScrollArea>
@@ -47,89 +66,83 @@ export function AccountSettingsModal({
   );
 }
 
-// ------------------------------------------
-// Profile Section — username only
-// ------------------------------------------
-
-function ProfileSection() {
-  const { profile, refreshProfile } = useAuth();
-  const [username, setUsername] = useState(profile?.username ?? "");
+function ProfileSection({ profile }: { profile: UserProfileType }) {
+  const { refreshProfile } = useAuth();
+  const [username, setUsername] = useState(profile.username);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSave() {
     setError(null);
-    if (!username.trim()) {
-      setError("Username cannot be empty");
+    setSaved(false);
+    if (username.trim().length < 3) {
+      setError("Username must be at least 3 characters");
       return;
     }
+
     setSaving(true);
     try {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setError("Not authenticated");
+      const result = await updateOwnUsernameAction(username.trim());
+      if (result.error) {
+        setError(result.error);
         return;
       }
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ username: username.trim() })
-        .eq("id", user.id);
-      if (updateError) {
-        setError(updateError.message);
-        return;
-      }
+      setUsername(username.trim());
       await refreshProfile();
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
     } catch {
-      setError("Something went wrong");
+      setError("Could not update your username. Please try again.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <h3 className="text-sm font-semibold text-foreground mb-3">Profile</h3>
-      <div className="flex flex-col gap-3">
+    <Card size="sm" className="bg-muted/20">
+      <CardHeader className="border-b">
+        <CardTitle className="text-h4">Profile</CardTitle>
+        <CardDescription>
+          Your username is shown across the dashboard.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
         {error && (
-          <div className="rounded-lg px-3 py-2 text-xs bg-destructive/10 text-destructive border border-destructive/20">
-            {error}
-          </div>
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">Username</label>
-          <input
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="account-username">Username</Label>
+          <Input
+            id="account-username"
             type="text"
+            autoComplete="nickname"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="h-9 w-full rounded-lg border border-input bg-input/30 px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition-colors"
+            onChange={(event) => {
+              setUsername(event.target.value);
+              setSaved(false);
+            }}
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             size="sm"
             onClick={handleSave}
-            disabled={saving || username.trim() === (profile?.username ?? "")}
+            disabled={saving || username.trim() === profile.username}
           >
             {saving ? <Spinner className="size-3" /> : "Save changes"}
           </Button>
           {saved && (
-            <span className="text-xs text-chart-2">Saved</span>
+            <span className="text-sm text-chart-2" role="status">
+              Username updated
+            </span>
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
-
-// ------------------------------------------
-// Password Section — verify current, then update
-// ------------------------------------------
 
 function PasswordSection() {
   const { user } = useAuth();
@@ -142,6 +155,7 @@ function PasswordSection() {
 
   async function handleUpdate() {
     setError(null);
+    setSaved(false);
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -150,11 +164,14 @@ function PasswordSection() {
       setError("New password must be at least 6 characters");
       return;
     }
+    if (newPassword === currentPassword) {
+      setError("New password must differ from current password");
+      return;
+    }
+
     setSaving(true);
     try {
       const supabase = createClient();
-
-      // Verify current password by attempting sign-in
       const { error: verifyError } = await supabase.auth.signInWithPassword({
         email: user?.email ?? "",
         password: currentPassword,
@@ -164,7 +181,6 @@ function PasswordSection() {
         return;
       }
 
-      // Update to new password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -177,63 +193,77 @@ function PasswordSection() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setTimeout(() => setSaved(false), 2000);
     } catch {
-      setError("Something went wrong");
+      setError("Could not update your password. Please try again.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <h3 className="text-sm font-semibold text-foreground mb-3">Password</h3>
-      <div className="flex flex-col gap-3">
+    <Card size="sm" className="bg-muted/20">
+      <CardHeader className="border-b">
+        <CardTitle className="text-h4">Password</CardTitle>
+        <CardDescription>
+          Verify your current password before choosing a new one.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
         {error && (
-          <div className="rounded-lg px-3 py-2 text-xs bg-destructive/10 text-destructive border border-destructive/20">
-            {error}
-          </div>
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">Current password</label>
-          <input
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="account-current-password">Current password</Label>
+          <Input
+            id="account-current-password"
             type="password"
+            autoComplete="current-password"
             value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            className="h-9 w-full rounded-lg border border-input bg-input/30 px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition-colors"
+            onChange={(event) => setCurrentPassword(event.target.value)}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">New password</label>
-          <input
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="account-new-password">New password</Label>
+          <Input
+            id="account-new-password"
             type="password"
+            autoComplete="new-password"
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="h-9 w-full rounded-lg border border-input bg-input/30 px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition-colors"
+            onChange={(event) => setNewPassword(event.target.value)}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">Confirm new password</label>
-          <input
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="account-confirm-password">Confirm new password</Label>
+          <Input
+            id="account-confirm-password"
             type="password"
+            autoComplete="new-password"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="h-9 w-full rounded-lg border border-input bg-input/30 px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition-colors"
+            onChange={(event) => setConfirmPassword(event.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             size="sm"
             onClick={handleUpdate}
-            disabled={saving || !currentPassword || !newPassword}
+            disabled={
+              saving ||
+              !currentPassword ||
+              !newPassword ||
+              !confirmPassword
+            }
           >
             {saving ? <Spinner className="size-3" /> : "Update password"}
           </Button>
           {saved && (
-            <span className="text-xs text-chart-2">Updated</span>
+            <span className="text-sm text-chart-2" role="status">
+              Password updated
+            </span>
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -64,11 +64,11 @@ Use this to design each screen and to QA it before release.
 
 | State | Checklist |
 |---|---|
-| Ideal | - Cases appear in responsive cards grouped by lab, with patient, treatment, date, and inline lab fee field<br>- Lab filter and per-lab fee totals are visible<br>- Total lab fees auto-update as fees are saved (per PRD 4.2) |
+| Ideal | - Cases appear in responsive cards grouped by lab, with distinct Patient, Patient ID, Case, Date, and inline Lab Fee columns on wide screens<br>- Narrow screens stack the same fields with visible labels<br>- Lab filter and per-lab fee totals are visible<br>- Total lab fees auto-update as fees are saved (per PRD 4.2) |
 | Empty | - No active Case-type treatments this cycle → message ("No cases to reconcile") |
 | Loading | - Row-level spinner or disabled input while a lab fee save is in progress |
 | Error | - Invalid lab fee input (negative number, non-numeric) → inline validation<br>- Save failure → error indicator on that row, value not silently lost |
-| Edge case | - Lab fee = 0 (no lab cost for this case)<br>- Long patient names and diagnoses wrap or truncate without breaking the card<br>- Narrow screens keep the fee field reachable without a cramped table<br>- Lab fee greater than case's Total Cost → warn, since this affects commission math<br>- Case already has a fee assigned, being edited again |
+| Edge case | - Lab fee = 0 (no lab cost for this case)<br>- Long patient names and diagnoses wrap or truncate without breaking column alignment<br>- Narrow screens keep the fee field reachable without a cramped table<br>- Lab fee greater than case's Total Cost → warn, since this affects commission math<br>- Case already has a fee assigned, being edited again |
 
 ---
 
@@ -104,7 +104,9 @@ Use this to design each screen and to QA it before release.
 | Empty | - Registry has no patients → "No registered patients yet." with an "Add Patient" button that opens the patient registration dialog (hidden for SUPERVISOR)<br>- Search matches nothing → "No patients match “query”." and count shows 0 |
 | Loading | - Table skeleton (5 columns) while the registry loads<br>- Detail dialog shows skeleton lines while the patient row is fetched; Back button shows a spinner |
 | Error | - Registry fetch fails → destructive error banner with Retry (refetches)<br>- Detail fetch fails → error banner inside the dialog with Retry<br>- Messages are human-readable, never raw server errors |
-| Edge case | - Missing address or `created_at` → em dash placeholder<br>- Long patient names/addresses truncate with ellipsis, full value on hover (`title`)<br>- Unknown or deleted `?id=` → dialog shows "Patient `<ID>` was not found."<br>- Missing `?id=` → dialog shows "No Patient ID was provided." (no network call)<br>- 100+ patients → pagination (10 per page); search and counts apply across all pages |
+| Edge case | - Missing patient details show "Not provided"; empty history lists show "None recorded"<br>- Long patient names, addresses, and history values wrap without overflowing the dialog<br>- Unknown or deleted `?id=` → dialog shows "Patient `<ID>` was not found."<br>- Missing `?id=` → dialog shows "No Patient ID was provided." (no network call)<br>- 100+ patients → pagination (10 per page); search and counts apply across all pages |
+
+**Test TODO:** Add component coverage for the patient detail section grouping, separate age and gender fields, full profile date format, missing-value labels, hidden X close control, and outside-click close behavior.
 
 ---
 

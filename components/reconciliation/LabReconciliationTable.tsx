@@ -42,6 +42,8 @@ function formatCurrency(amount: number): string {
 }
 
 const ALL_LABS_VALUE = "Labs";
+const RECORD_GRID_COLUMNS =
+  "lg:grid-cols-[minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,1.15fr)_minmax(0,1.4fr)_minmax(0,auto)]";
 
 export function LabReconciliationTable() {
   const { records, loading, error, refreshData, updateRecord } = useData();
@@ -126,10 +128,13 @@ export function LabReconciliationTable() {
             </CardHeader>
             <CardContent className="space-y-4 py-4">
               {Array.from({ length: 2 }).map((__, rowIndex) => (
-                <div key={rowIndex} className="grid gap-4 sm:grid-cols-3">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
+                <div
+                  key={rowIndex}
+                  className={`grid gap-4 ${RECORD_GRID_COLUMNS}`}
+                >
+                  {Array.from({ length: 5 }).map((___, columnIndex) => (
+                    <Skeleton key={columnIndex} className="h-10 w-full" />
+                  ))}
                 </div>
               ))}
             </CardContent>
@@ -248,24 +253,51 @@ export function LabReconciliationTable() {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
+                <div
+                  className={`hidden ${RECORD_GRID_COLUMNS} gap-4 border-b bg-muted/30 px-4 py-2 text-caption font-medium text-muted-foreground lg:grid`}
+                >
+                  <span>Date</span>
+                  <span>Patient ID</span>
+                  <span>Patient</span>
+                  <span>Case</span>
+                  <span className="text-right">Lab fee</span>
+                </div>
                 <div className="divide-y">
                   {group.records.map((record) => (
                     <div
                       key={record.id}
-                      className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] sm:items-center"
+                      className={`grid gap-3 p-4 ${RECORD_GRID_COLUMNS} lg:items-center lg:gap-4`}
                     >
                       <div className="min-w-0">
-                        <p className="truncate font-medium">{record.patient_name}</p>
-                        <p className="text-sm text-muted-foreground">{record.patient_id}</p>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="break-words text-sm">{record.diagnosis}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
+                        <p className="text-caption text-muted-foreground lg:hidden">
+                          Date
+                        </p>
+                        <p className="whitespace-nowrap text-sm text-muted-foreground">
                           {formatDate(record.entry_date)}
                         </p>
                       </div>
-                      <div className="flex items-center justify-between gap-3 sm:justify-end">
-                        <span className="text-sm text-muted-foreground sm:hidden">Lab fee</span>
+                      <div className="min-w-0">
+                        <p className="text-caption text-muted-foreground lg:hidden">
+                          Patient ID
+                        </p>
+                        <p className="text-sm text-muted-foreground">{record.patient_id}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-caption text-muted-foreground lg:hidden">
+                          Patient
+                        </p>
+                        <p className="truncate font-medium">{record.patient_name}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-caption text-muted-foreground lg:hidden">
+                          Case
+                        </p>
+                        <p className="break-words text-sm">{record.diagnosis}</p>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 lg:justify-end">
+                        <span className="text-caption text-muted-foreground lg:hidden">
+                          Lab fee
+                        </span>
                         <LabFeeInput
                           record={record}
                           onSave={handleFeeSave}

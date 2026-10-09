@@ -23,3 +23,15 @@ export function formatRegisteredDate(iso?: string): string {
   const year = String(date.getFullYear()).slice(-2);
   return `${day}.${month}.${year}`;
 }
+
+export function formatPatientProfileDate(iso?: string): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
