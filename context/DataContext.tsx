@@ -101,7 +101,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [supabase] = useState(() => createClient());
   const initialLoadDone = useRef(false);
-  const fetchMonthDataRef = useRef<(month: string) => Promise<void>>(null);
+  const fetchMonthDataRef = useRef<(month: string, updateLoading?: boolean) => Promise<void>>(null);
   const monthRequestIdRef = useRef(0);
 
   // Cycles are passive month buckets — the active cycle is simply the one
@@ -184,9 +184,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
-      setLoading(false);
       initialLoadDone.current = true;
-      fetchMonthDataRef.current?.(effectiveMonthRef.current);
+      await fetchMonthDataRef.current?.(effectiveMonthRef.current, false);
+      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
@@ -195,9 +195,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Phase 2: Fetch month-specific data (runs on mount after reference data, and on month change)
   // ------------------------------------------
 
-  const fetchMonthData = useCallback(async (month: string) => {
+  const fetchMonthData = useCallback(async (month: string, updateLoading = true) => {
     if (!month) return;
     const requestId = ++monthRequestIdRef.current;
+    if (updateLoading) setLoading(true);
     setError(null);
     try {
       const [recordsRes, paymentsRes] = await Promise.all([
@@ -225,6 +226,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (requestId === monthRequestIdRef.current) {
         setError(err instanceof Error ? err.message : "Failed to load month data");
       }
+    } finally {
+      if (updateLoading && requestId === monthRequestIdRef.current) setLoading(false);
     }
   }, [supabase]);
 
@@ -232,6 +235,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchMonthDataRef.current = fetchMonthData;
   });
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        setAllRecords([]);
+        setAllPayments([]);
+        setAllCycles([]);
+        setAllFinancials([]);
+        setLabs([]);
+        setCaseTypes([]);
+        setMedicalHistoryOptions([]);
+        setLoading(true);
+        setRefreshKey((key) => key + 1);
+      }
+
+      if (event === "SIGNED_OUT") {
+        monthRequestIdRef.current += 1;
+        initialLoadDone.current = false;
+        setAllRecords([]);
+        setAllPayments([]);
+        setAllCycles([]);
+        setAllFinancials([]);
+        setLabs([]);
+        setCaseTypes([]);
+        setMedicalHistoryOptions([]);
+        setError(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase, setAllFinancials, setLabs, setCaseTypes]);
 
   // Initial load: reference data on mount, then month data after reference data loads
   useEffect(() => {
@@ -243,7 +280,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!initialLoadDone.current) return;
     fetchMonthData(effectiveMonth);
-  }, [fetchMonthData, effectiveMonth, refreshKey]);
+  }, [fetchMonthData, effectiveMonth]);
 
   const refreshData = useCallback(() => setRefreshKey((k) => k + 1), []);
 

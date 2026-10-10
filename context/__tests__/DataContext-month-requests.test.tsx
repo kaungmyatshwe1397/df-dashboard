@@ -22,6 +22,7 @@ function wrapper({ children }: { children: ReactNode }) {
 function createDelayedClient(referenceData: Promise<QueryResult>) {
   const monthQueries = new Map<string, ReturnType<typeof deferred<QueryResult>>>();
   const requestedMonths: string[] = [];
+  let authStateChange: ((event: string, session: unknown) => void) | undefined;
   const client = {
     from: (table: string) => {
       let month = "";
@@ -46,9 +47,19 @@ function createDelayedClient(referenceData: Promise<QueryResult>) {
       };
       return query;
     },
+    auth: {
+      onAuthStateChange: (callback: (event: string, session: unknown) => void) => {
+        authStateChange = callback;
+        return { data: { subscription: { unsubscribe: vi.fn() } } };
+      },
+    },
   };
   vi.mocked(createClient).mockReturnValue(client as never);
-  return { monthQueries, requestedMonths };
+  return {
+    monthQueries,
+    requestedMonths,
+    notifySignedIn: () => authStateChange?.("SIGNED_IN", { user: { id: "user-1" } }),
+  };
 }
 
 const defaultCreateClient = vi.mocked(createClient).getMockImplementation();
@@ -96,5 +107,36 @@ describe("DataContext month requests", () => {
 
     await act(async () => monthQueries.get("Sep 2026")!.resolve({ data: [record("Sep 2026")], error: null }));
     expect(result.current.records[0]?.id).toBe("Aug 2026");
+  });
+
+  test("keeps loading until the selected month's records finish loading", async () => {
+    const { requestedMonths, monthQueries } = createDelayedClient(
+      Promise.resolve({ data: [], error: null })
+    );
+    const { result } = renderHook(() => useData(), { wrapper });
+
+    await waitFor(() => expect(requestedMonths).toContain("Sep 2026"));
+
+    expect(result.current.loading).toBe(true);
+
+    await act(async () => monthQueries.get("Sep 2026")!.resolve({ data: [], error: null }));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+  });
+
+  test("reloads data after Supabase reports a successful sign-in", async () => {
+    const { requestedMonths, monthQueries, notifySignedIn } = createDelayedClient(
+      Promise.resolve({ data: [], error: null })
+    );
+    const { result } = renderHook(() => useData(), { wrapper });
+
+    await waitFor(() => expect(requestedMonths).toContain("Sep 2026"));
+    await act(async () => monthQueries.get("Sep 2026")!.resolve({ data: [], error: null }));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const initialRequestCount = requestedMonths.length;
+    act(() => notifySignedIn());
+
+    await waitFor(() => expect(requestedMonths.length).toBeGreaterThan(initialRequestCount));
   });
 });
