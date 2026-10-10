@@ -106,19 +106,21 @@ export function LabTable() {
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon-xs"
                         onClick={() => {
                           setEditTarget(lab);
                           setFormOpen(true);
                         }}
+                        aria-label={`Edit lab ${lab.lab_name}`}
                         title="Edit lab"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon-xs"
                         onClick={() => setDeleteTarget(lab)}
+                        aria-label={`Delete lab ${lab.lab_name}`}
                         title="Delete lab"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />

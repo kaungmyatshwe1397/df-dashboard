@@ -113,12 +113,13 @@ function CaseTypeForm({
       <DialogFooter>
         <Button
           variant="outline"
+          size="sm"
           onClick={onClose}
           disabled={saving}
         >
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={saving}>
+        <Button size="sm" onClick={handleSave} disabled={saving}>
           {saving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -142,7 +143,7 @@ export function CaseTypeFormDialog({
 }: CaseTypeFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" showCloseButton>
+      <DialogContent className="sm:max-w-sm" showCloseButton>
         <DialogHeader>
           <DialogTitle>
             {caseType ? "Edit Case Type" : "Add Case Type"}

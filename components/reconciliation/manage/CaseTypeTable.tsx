@@ -106,19 +106,21 @@ export function CaseTypeTable() {
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon-xs"
                         onClick={() => {
                           setEditTarget(ct);
                           setFormOpen(true);
                         }}
+                        aria-label={`Edit case type ${ct.name}`}
                         title="Edit case type"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon-xs"
                         onClick={() => setDeleteTarget(ct)}
+                        aria-label={`Delete case type ${ct.name}`}
                         title="Delete case type"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
