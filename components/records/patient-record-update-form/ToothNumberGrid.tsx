@@ -35,7 +35,7 @@ export function ToothNumberGrid({ selected, onChange, disabled }: ToothNumberGri
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {QUADRANTS.map((q) => (
         <div key={q.label} className="space-y-1.5">
           <p className="text-xs font-medium text-muted-foreground">{q.label}</p>
@@ -45,7 +45,7 @@ export function ToothNumberGrid({ selected, onChange, disabled }: ToothNumberGri
               return (
                 <label
                   key={tooth}
-                  className={`flex h-8 w-8 items-center justify-center rounded border text-xs font-medium transition-colors cursor-pointer select-none ${
+                  className={`flex min-h-(--control-touch-size) min-w-(--control-touch-size) items-center sm:h-8 sm:w-8 sm:min-h-0 sm:min-w-0 justify-center rounded border text-xs font-medium transition-colors cursor-pointer select-none ${
                     selectedSet.has(key)
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-input bg-background text-foreground hover:bg-muted"

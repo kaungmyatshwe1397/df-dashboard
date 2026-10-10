@@ -647,7 +647,7 @@ export function PatientRecordUpdateForm({
               <div className="grid gap-4 py-2">
               {isAdding && returningPatient ? (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField label="Patient ID" htmlFor="add-patientId" required>
                       <Input
                         id="add-patientId"

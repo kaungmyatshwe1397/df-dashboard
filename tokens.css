@@ -5,6 +5,9 @@
    ============================================ */
 
 :root {
+  --control-touch-size: var(--space-7);
+  --compact-actions-width: calc(var(--control-touch-size) * 2 + var(--space-3));
+  --dialog-viewport-height: calc(100dvh - var(--space-3) * 2);
   /* ------------------------------------------
      Spacing (8pt grid, 4px half-step)
      ------------------------------------------ */

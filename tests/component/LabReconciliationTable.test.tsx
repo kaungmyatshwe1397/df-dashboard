@@ -1,10 +1,11 @@
 // Component tests for the grouped lab reconciliation rows.
 
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LabReconciliationTable } from "@/components/reconciliation/LabReconciliationTable";
 
 const mock = vi.hoisted(() => ({
+  canEdit: true,
   context: {
     records: [] as unknown[],
     loading: false,
@@ -19,10 +20,11 @@ vi.mock("@/context/DataContext", () => ({
 }));
 
 vi.mock("@/context/AuthContext", () => ({
-  useCanEdit: () => true,
+  useCanEdit: () => mock.canEdit,
 }));
 
 beforeEach(() => {
+  mock.canEdit = true;
   mock.context.records = [
     {
       id: "case-1",
@@ -46,6 +48,22 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("LabReconciliationTable", () => {
+  test("identifies the patient beside a failed lab fee save", async () => {
+    mock.context.updateRecord.mockRejectedValue(new Error("Save failed. Try again."));
+    render(<LabReconciliationTable />);
+    const input = screen.getByRole("textbox", { name: "Lab fee for MgMg" });
+    fireEvent.change(input, { target: { value: "25000" } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Lab fee for MgMg: Save failed. Try again."));
+    expect(input).toHaveValue("25000");
+  });
+
+  test("read-only roles cannot change a lab fee", () => {
+    mock.canEdit = false;
+    render(<LabReconciliationTable />);
+    expect(screen.getByRole("textbox", { name: "Lab fee for MgMg" })).toBeDisabled();
+  });
+
   test("shows patient, ID, case, date, and fee as distinct labeled columns", () => {
     render(<LabReconciliationTable />);
 

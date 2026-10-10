@@ -49,7 +49,7 @@ export function LabReconciliationTable() {
   const { records, loading, error, refreshData, updateRecord } = useData();
   const canEdit = useCanEdit();
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<{ recordId: string; message: string } | null>(null);
   const [selectedLab, setSelectedLab] = useState<string>(ALL_LABS_VALUE);
 
   const caseRecords = useMemo(
@@ -103,11 +103,12 @@ export function LabReconciliationTable() {
         lab_payment_status: newStatus,
       })
         .catch((saveFailure: unknown) => {
-          setSaveError(
-            saveFailure instanceof Error
+          setSaveError({
+            recordId,
+            message: saveFailure instanceof Error
               ? saveFailure.message
-              : "Could not save the lab fee. Try again."
-          );
+              : "Could not save the lab fee. Try again.",
+          });
         })
         .finally(() => {
           setSavingId((currentId) => (currentId === recordId ? null : currentId));
@@ -146,7 +147,7 @@ export function LabReconciliationTable() {
 
   if (error) {
     return (
-      <Alert variant="destructive" className="flex items-center justify-between gap-4">
+      <Alert variant="destructive" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <span>{error}</span>
         <Button variant="outline" size="sm" onClick={refreshData}>
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -197,7 +198,7 @@ export function LabReconciliationTable() {
             <SelectTrigger className="w-full sm:w-56" aria-label="Filter cases by lab">
               <SelectValue placeholder="Filter by lab" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="[&_[data-slot=select-item-text]]:min-w-0 [&_[data-slot=select-item-text]]:shrink [&_[data-slot=select-item-text]]:whitespace-normal [&_[data-slot=select-item-text]]:[overflow-wrap:anywhere]">
               <SelectItem value={ALL_LABS_VALUE}>
                 All labs ({caseRecords.length})
               </SelectItem>
@@ -221,12 +222,6 @@ export function LabReconciliationTable() {
         </div>
       </div>
 
-      {saveError && (
-        <Alert variant="destructive" role="alert">
-          <span>{saveError}</span>
-        </Alert>
-      )}
-
       {visibleGroups.length === 0 ? (
         <Card className="border-dashed shadow-none">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
@@ -240,16 +235,16 @@ export function LabReconciliationTable() {
         <div className="space-y-4">
           {visibleGroups.map((group) => (
             <Card key={group.labName}>
-              <CardHeader className="flex flex-row items-start justify-between gap-4 border-b">
+              <CardHeader className="flex flex-col items-start gap-4 border-b sm:flex-row sm:justify-between">
                 <div className="min-w-0 space-y-1">
-                  <CardTitle className="truncate">{group.labName}</CardTitle>
+                  <CardTitle className="[overflow-wrap:anywhere]">{group.labName}</CardTitle>
                   <CardDescription>
                     {group.records.length} {group.records.length === 1 ? "case" : "cases"}
                   </CardDescription>
                 </div>
-                <div className="shrink-0 rounded-lg bg-muted px-3 py-2 text-right">
+                <div className="min-w-0 max-w-full rounded-lg bg-muted px-3 py-2 text-right">
                   <p className="text-xs text-muted-foreground">Total lab fees</p>
-                  <p className="font-semibold tabular-nums">{formatCurrency(group.totalFees)}</p>
+                  <p className="[overflow-wrap:anywhere] font-semibold tabular-nums">{formatCurrency(group.totalFees)}</p>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
@@ -280,21 +275,21 @@ export function LabReconciliationTable() {
                         <p className="text-caption text-muted-foreground lg:hidden">
                           Patient ID
                         </p>
-                        <p className="text-sm text-muted-foreground">{record.patient_id}</p>
+                        <p className="[overflow-wrap:anywhere] text-sm text-muted-foreground">{record.patient_id}</p>
                       </div>
-                      <div className="min-w-0">
+                      <div className="order-first min-w-0 lg:order-none">
                         <p className="text-caption text-muted-foreground lg:hidden">
                           Patient
                         </p>
-                        <p className="truncate font-medium">{record.patient_name}</p>
+                        <p className="[overflow-wrap:anywhere] font-medium">{record.patient_name}</p>
                       </div>
                       <div className="min-w-0">
                         <p className="text-caption text-muted-foreground lg:hidden">
                           Case
                         </p>
-                        <p className="break-words text-sm">{record.diagnosis}</p>
+                        <p className="[overflow-wrap:anywhere] text-sm">{record.diagnosis}</p>
                       </div>
-                      <div className="flex items-center justify-between gap-3 lg:justify-end">
+                      <div className="flex min-w-0 flex-col gap-2 lg:items-end lg:justify-end">
                         <span className="text-caption text-muted-foreground lg:hidden">
                           Lab fee
                         </span>
@@ -304,7 +299,15 @@ export function LabReconciliationTable() {
                           saving={savingId === record.id}
                           readOnly={!canEdit}
                         />
+                        <Badge variant="secondary" className="w-fit">
+                          {(record.lab_fee ?? 0) > 0 ? "Paid" : "Unpaid"}
+                        </Badge>
                       </div>
+                      {saveError?.recordId === record.id && (
+                        <Alert variant="destructive" role="alert" className="lg:col-span-full [overflow-wrap:anywhere]">
+                          <span>Lab fee for {record.patient_name}: {saveError.message}</span>
+                        </Alert>
+                      )}
                     </div>
                   ))}
                 </div>
