@@ -55,6 +55,9 @@ flowchart TD
     RegPatients --> PtRow[Select Patient Row]
     PtRow --> PtDetail[Detail Page —\nPatient Card Dialog]
     PtDetail --> PtBack[Back to List] --> RegPatients
+    RegPatients --> EditPt[Edit Patient]
+    EditPt --> EditPtForm[Update demographics\nPatient ID locked]
+    EditPtForm --> SavePt[Save patient details\nSync name and address to visits] --> RegPatients
 
     %% ==============================
     %% ADMIN ONLY: EXTRA MODULES

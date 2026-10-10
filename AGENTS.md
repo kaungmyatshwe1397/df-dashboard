@@ -1,45 +1,40 @@
 # AGENTS.md — DC-FMS Frontend
 
-## Context Files (Read Before Starting)
+## Project Documents (Read When Relevant)
 
 | File | Purpose |
 |------|---------|
-| `plans/frontend-plan.md` | Frontend build plan — 11 tasks, Supabase-backed. |
-| `plans/backend-plan.md` | Backend integration plan — Supabase setup, schema, auth, RLS, client config, DataContext migration. |
-| `plans/backend-draft-plan.md` | Backend draft plan — original draft, superseded by backend-plan.md. |
-| `plans/user-management-plan.md` | User management plan — admin user CRUD, assistant signup, password change. |
-| `docs/tokens.md` | Design tokens — spacing, typography, colors. Use these, never hardcode values. |
-| `docs/dc-fms-user-flow.mermaid` | Information architecture — all screens and navigation paths. |
-| `docs/dc-fms-erd.mmd` | Database schema — types for all Supabase tables and relationships. |
-| `docs/dc-fms-ui-states-checklist.md` | UI states — every screen must handle ideal, empty, loading, error, edge case. |
-| `docs/prd.md` | Product requirements — business logic, roles, permissions, formulas. |
+|      |         |
+| `docs/diagram/dc-fms-user-flow.mermaid` | Screen and navigation flow — consult when changing navigation. |
+| `docs/diagram/dc-fms-erd.mmd` | Database entities and relationships — consult when changing data shapes. |
+| `docs/lib/dc-fms-ui-states-checklist.md` | Screen states — consult when changing a screen. |
+| `docs/lib/prd.md` | Product requirements — consult when changing business rules or permissions. |
+| `docs/lib/architecture.md` | Current code organization and architecture. |
 | `docs/rules/comment_method-rules.md` | Commenting standards — when to comment, when not to, formatting rules. |
 | `docs/rules/testing-guide-rules.md` | Testing guide — when to test, what type to use, how to write tests. |
-| `docs/task-completion-rule.md` | Task completion checklist — how to update the plan after finishing a task. |
+| `docs/rules/my-rules.md` | Specific rules set by my prefernce |
+| `docs/rules/project-folder-rules.md` | Component architecture and file organization. |
 | `docs/rules/clean-code-rule.md` | code writing rules file - how to write clean code inside this project. |
+
+`plans/` is for current plans. Read a plan only when the task clearly depends on it. `legacyPlans/` contains archived plans; do not read them unless the user asks for historical context.
 
 ## Rules
 
-1. **Read `docs/tokens.md` first** before writing any component. Reference tokens by name, not raw values.
-2. **Read `docs/dc-fms-erd.mmd`** to understand data shapes. Generate TypeScript types from the ERD before building forms or tables.
-3. **Read `docs/dc-fms-user-flow.mermaid`** to know which screen you are on and where it leads.
-4. **Read `docs/dc-fms-ui-states-checklist.md`** for the current screen. Implement all 5 states (ideal, empty, loading, error, edge case) before moving on.
-5. **Read `docs/prd.md`** for business rules. Enforce role-based visibility (Assistant never sees financial totals).
-6. **Tech stack only:** Next.js (App Router), Tailwind CSS, Lucide React Icons, **shadcn/ui**. Use shadcn components for all UI elements.
-7. **Mobile_responsive** required.
-8. **Never hardcode hex, pixel, or font-size values.** Always use CSS variable tokens.
-9. **Use shadcn components** for all UI: Button, Input, Label, Card, Dialog, Table, Badge, Alert, Select, Textarea, Skeleton, Sidebar, Separator, Pagination, Progress, RadioGroup, etc. Never build custom components when shadcn provides them.
-10. **Follow `docs/rules/comment_method-rules.md`** for all code comments. Explain *why*, not *what*. No redundant syntax restatements, no dead/commented-out code.
-11. **Write descriptive comment** when create a new .ts or .tsx as heading of that file .Use `docs/rules/comment_method-rules.md` as reference.
-12. **Write to do list of required unit or component tests** , so we can remember and later write it.
-13. **Write intefcae name** by folliwning instuction from **Type Naming Convection** from `docs/rules/my-rules.md`.
-14. **Follow `docs/rules/project-folder-rules.md`** for Component Architecture & File Organization.
-15. **Read and Follow `docs/rules/clean-code-rule.md`**  for how to write clean and managable coding and coding standard.
-
+1. **Use design tokens from `docs/lib/tokens.md`** when changing UI. Do not introduce raw colors, spacing, or font sizes.
+2. **Inspect existing TypeScript types and the ERD** when changing data shapes; update types only as required by the change.
+3. **Check the relevant user flow and UI-state checklist** when changing navigation or a screen.
+4. **Follow product permissions:** assistants must never see financial totals.
+5. **Tech stack only:** Next.js (App Router), Tailwind CSS, Lucide React Icons, **shadcn/ui**. Use shadcn components for all UI elements.
+6. **Mobile_responsive** required.
+7. **Never hardcode hex, pixel, or font-size values.** Always use CSS variable tokens.
+8. **Use shadcn components** for all UI: Button, Input, Label, Card, Dialog, Table, Badge, Alert, Select, Textarea, Skeleton, Sidebar, Separator, Pagination, Progress, RadioGroup, etc. Never build custom components when shadcn provides them.
+9. **Follow `docs/rules/comment_method-rules.md`** for all code comments. Explain *why*, not *what*. No redundant syntax restatements, no dead/commented-out code.
+10. **Write descriptive comment** when creating a new `.ts` or `.tsx` file, following `docs/rules/comment_method-rules.md`.
+11. **Write a TODO list of required unit or component tests** when tests are deferred.
+12. **Follow the interface naming convention** in `docs/rules/my-rules.md`.
+13. **Follow `docs/rules/project-folder-rules.md`** for component architecture and file organization.
+14. **Follow `docs/rules/clean-code-rule.md`** for maintainable code.
 
 ## Library & External Documentation Rule
 - Whenever working with a new library, an external framework (e.g., Tailwind CSS, shadcn/ui, Next.js), or when interacting with libraries after a long duration, you **MUST** use the `Context7 MCP server`  to check their latest official documentation first.
 - Always retrieve up-to-date syntax, configuration rules, and breaking changes from Context7, and explicitly summarize those updates/changes before writing or modifying code.
-
-## Task Completion Rule
-After completing any task from `plans/frontend-plan.md`, follow the steps in [`docs/task-completion-rule.md`](docs/task-completion-rule.md) to update the plan file.

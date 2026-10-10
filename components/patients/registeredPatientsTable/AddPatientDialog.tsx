@@ -1,6 +1,5 @@
-// AddPatientDialog — registers a new patient directly in the registry,
-// without creating a visit record. Mirrors the Patient Record form's
-// dialog styling (PatientInfoSection + ScrollArea body + footer actions).
+// AddPatientDialog — registers patients or edits their registry details
+// without creating a visit record, using the shared patient information fields.
 
 "use client";
 
@@ -33,20 +32,28 @@ import {
 import { usePatients } from "@/context/hooks/usePatients";
 import { createClient } from "@/lib/supabase/client";
 import { toMedicalHistoryOptions } from "@/lib/data-helpers";
-import { Gender, MedicalHistoryOptionType, PatientPayloadType } from "@/lib/global";
+import {
+  Gender,
+  MedicalHistoryOptionType,
+  PatientPayloadType,
+  PatientType,
+  PatientUpdatesType,
+} from "@/lib/global";
 
 interface AddPatientDialogProps {
   open: boolean;
+  patient: PatientType | null;
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
 }
 
 export function AddPatientDialog({
   open,
+  patient,
   onOpenChange,
   onCreated,
 }: AddPatientDialogProps) {
-  const { findPatientById, createPatient } = usePatients();
+  const { findPatientById, createPatient, updatePatient } = usePatients();
   const [medicalHistoryOptions, setMedicalHistoryOptions] = useState<
     MedicalHistoryOptionType[]
   >([]);
@@ -61,12 +68,27 @@ export function AddPatientDialog({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open) {
-      setForm(getEmptyForm());
+      setForm(
+        patient
+          ? {
+              ...getEmptyForm(),
+              patientId: patient.patient_id,
+              patientName: patient.patient_name,
+              age: String(patient.age),
+              gender: patient.gender,
+              address: patient.address ?? "",
+              drugAllergy: patient.drug_allergy ?? "",
+              pastDentalHistory: patient.past_dental_history ?? "",
+              currentMedications: [...patient.current_medications],
+              pastMedicalHistory: [...patient.past_medical_history],
+            }
+          : getEmptyForm()
+      );
       setErrors({});
       setSubmitError(null);
       setCheckingPatient(false);
     }
-  }, [open]);
+  }, [open, patient]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // PMH options load when the dialog opens (same source the record form uses).
@@ -106,6 +128,7 @@ export function AddPatientDialog({
 
   // Same blur-time check as the record form: a taken ID blocks registration.
   async function handlePatientIdBlur() {
+    if (patient) return;
     const id = form.patientId.trim();
     if (!isCurrentYearPatientIdValid(id)) return;
 
@@ -128,7 +151,7 @@ export function AddPatientDialog({
   function validate(): boolean {
     const newErrors: FormErrors = {};
 
-    if (!isCurrentYearPatientIdValid(form.patientId.trim())) {
+    if (!patient && !isCurrentYearPatientIdValid(form.patientId.trim())) {
       newErrors.patientId = PATIENT_ID_FORMAT_ERROR;
     }
     if (!form.patientName.trim()) {
@@ -149,7 +172,7 @@ export function AddPatientDialog({
     setSaving(true);
     setSubmitError(null);
 
-    const patient: PatientPayloadType = {
+    const patientData: PatientPayloadType = {
       patient_id: form.patientId.trim(),
       patient_name: form.patientName.trim(),
       age: Number(form.age),
@@ -162,7 +185,21 @@ export function AddPatientDialog({
     };
 
     try {
-      await createPatient(patient);
+      if (patient) {
+        const updates: PatientUpdatesType = {
+          patient_name: patientData.patient_name,
+          age: patientData.age,
+          gender: patientData.gender,
+          address: patientData.address ?? null,
+          drug_allergy: patientData.drug_allergy ?? null,
+          past_dental_history: patientData.past_dental_history ?? null,
+          current_medications: patientData.current_medications,
+          past_medical_history: patientData.past_medical_history,
+        };
+        await updatePatient(patient.patient_id, updates);
+      } else {
+        await createPatient(patientData);
+      }
       onOpenChange(false);
       onCreated();
     } catch (err) {
@@ -178,10 +215,11 @@ export function AddPatientDialog({
     <Dialog open={open} onOpenChange={saving ? undefined : onOpenChange}>
       <DialogContent className="sm:max-w-lg" showCloseButton={!saving}>
         <DialogHeader>
-          <DialogTitle>Register New Patient</DialogTitle>
+          <DialogTitle>{patient ? "Edit Patient" : "Register New Patient"}</DialogTitle>
           <DialogDescription>
-            Fill in the patient details. A visit record can be added later
-            from Records.
+            {patient
+              ? "Update this patient’s registered details."
+              : "Fill in the patient details. A visit record can be added later from Records."}
           </DialogDescription>
         </DialogHeader>
 
@@ -197,7 +235,7 @@ export function AddPatientDialog({
               form={form}
               errors={errors}
               saving={saving}
-              idLocked={false}
+              idLocked={Boolean(patient)}
               demographicsLocked={false}
               checkingPatient={checkingPatient}
               lookupNotice={null}
@@ -227,14 +265,14 @@ export function AddPatientDialog({
         </ScrollArea>
 
         <DialogFooter className="py-1.5 px-3.5">
-          <Button onClick={handleSave} disabled={saving || checkingPatient}>
+          <Button size="sm" onClick={handleSave} disabled={saving || checkingPatient}>
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </>
             ) : (
-              "Register Patient"
+              patient ? "Save Changes" : "Register Patient"
             )}
           </Button>
         </DialogFooter>

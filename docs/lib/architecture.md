@@ -83,7 +83,8 @@ context/                # DataContext + AuthContext
 lib/                    # Types, utilities, Supabase clients
 supabase/               # Database migrations
 docs/                   # Documentation
-plans/                  # Development plans
+plans/                  # Current plans; read only when relevant to the task
+legacyPlans/             # Archived plans; historical context only
 ```
 
 ## CI/CD

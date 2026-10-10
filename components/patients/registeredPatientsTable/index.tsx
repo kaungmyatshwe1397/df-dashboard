@@ -1,5 +1,5 @@
-// RegisteredPatientsTable — searchable, paginated registry listing.
-// Reads the full patients registry once (newest first), filters client-side,
+// RegisteredPatientsTable — searchable, sortable, paginated registry listing.
+// Reads the full patients registry once, filters and sorts client-side,
 // and reports row clicks so the host page can route to the detail dialog.
 // Handles the 5 UI states: ideal, loading, error, empty, search-no-match.
 
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, UsersRound } from "lucide-react";
+import { ArrowDown, ArrowUp, Pencil, Plus, Search, UsersRound } from "lucide-react";
 import { PatientType } from "@/lib/global";
 import { usePatients } from "@/context/hooks/usePatients";
 import { useCanEdit } from "@/context/AuthContext";
@@ -27,7 +27,7 @@ import {
   TablePagination,
   TableSkeleton,
 } from "@/components/records/record-table/RecordTableHelpers";
-import { filterPatients, formatRegisteredDate } from "./helpers";
+import { filterPatients, formatRegisteredDate, sortPatientsById } from "./helpers";
 import { AddPatientDialog } from "./AddPatientDialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -47,7 +47,9 @@ export function RegisteredPatientsTable({
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [addOpen, setAddOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<PatientType | null>(null);
+  const [sortDirection, setSortDirection] = useState<"ascending" | "descending">("ascending");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,7 +71,7 @@ export function RegisteredPatientsTable({
   }, [load]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const filtered = filterPatients(patients, query);
+  const filtered = sortPatientsById(filterPatients(patients, query), sortDirection);
   const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
   const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
   const pageRows = filtered.slice(startIndex, startIndex + ROWS_PER_PAGE);
@@ -79,7 +81,22 @@ export function RegisteredPatientsTable({
     setCurrentPage(1);
   }
 
-  if (loading) return <TableSkeleton columns={5} />;
+  function openAddDialog() {
+    setEditingPatient(null);
+    setDialogOpen(true);
+  }
+
+  function openEditDialog(patient: PatientType) {
+    setEditingPatient(patient);
+    setDialogOpen(true);
+  }
+
+  function handleDialogOpenChange(open: boolean) {
+    setDialogOpen(open);
+    if (!open) setEditingPatient(null);
+  }
+
+  if (loading) return <TableSkeleton columns={canEdit ? 6 : 5} />;
 
   if (error) {
     return <TableError message={error} onRetry={load} />;
@@ -90,12 +107,13 @@ export function RegisteredPatientsTable({
       <>
         <TableEmpty
           message="No registered patients yet."
-          onAdd={canEdit ? () => setAddOpen(true) : undefined}
+          onAdd={canEdit ? openAddDialog : undefined}
           addLabel="Add Patient"
         />
         <AddPatientDialog
-          open={addOpen}
-          onOpenChange={setAddOpen}
+          open={dialogOpen}
+          patient={editingPatient}
+          onOpenChange={handleDialogOpenChange}
           onCreated={load}
         />
       </>
@@ -113,7 +131,7 @@ export function RegisteredPatientsTable({
         </Badge>
         <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
           {canEdit && (
-            <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Button size="sm" onClick={openAddDialog}>
               <Plus className="mr-1.5 h-4 w-4" />
               Add Patient
             </Button>
@@ -139,10 +157,31 @@ export function RegisteredPatientsTable({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">No</TableHead>
-                <TableHead>Patient ID</TableHead>
+                <TableHead aria-sort={sortDirection}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-2"
+                    onClick={() =>
+                      setSortDirection((current) =>
+                        current === "ascending" ? "descending" : "ascending"
+                      )
+                    }
+                    aria-label={`Sort patient IDs ${sortDirection === "ascending" ? "descending" : "ascending"}`}
+                  >
+                    Patient ID
+                    {sortDirection === "ascending" ? (
+                      <ArrowUp className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
+                    ) : (
+                      <ArrowDown className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
+                    )}
+                  </Button>
+                </TableHead>
                 <TableHead>Registered</TableHead>
                 <TableHead>Patient Name</TableHead>
                 <TableHead>Address</TableHead>
+                {canEdit && <TableHead className="w-20 text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -179,6 +218,24 @@ export function RegisteredPatientsTable({
                   >
                     {patient.address || "—"}
                   </TableCell>
+                  {canEdit && (
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        title="Edit patient"
+                        aria-label={`Edit ${patient.patient_name}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openEditDialog(patient);
+                        }}
+                        onKeyDown={(event) => event.stopPropagation()}
+                      >
+                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -193,8 +250,9 @@ export function RegisteredPatientsTable({
       />
 
       <AddPatientDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
+        open={dialogOpen}
+        patient={editingPatient}
+        onOpenChange={handleDialogOpenChange}
         onCreated={load}
       />
     </div>

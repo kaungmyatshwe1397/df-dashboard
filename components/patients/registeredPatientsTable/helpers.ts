@@ -13,6 +13,20 @@ export function filterPatients(
   return patients.filter((p) => p.patient_id.toLowerCase().includes(q));
 }
 
+export function sortPatientsById(
+  patients: PatientType[],
+  direction: "ascending" | "descending"
+): PatientType[] {
+  const sorted = [...patients].sort((a, b) =>
+    a.patient_id.localeCompare(b.patient_id, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    })
+  );
+
+  return direction === "ascending" ? sorted : sorted.reverse();
+}
+
 // Registration date as d.M.yy (e.g. "26.9.26") per the list design.
 export function formatRegisteredDate(iso?: string): string {
   if (!iso) return "—";
