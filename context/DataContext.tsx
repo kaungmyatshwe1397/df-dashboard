@@ -101,8 +101,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [supabase] = useState(() => createClient());
   const initialLoadDone = useRef(false);
-  const fetchMonthDataRef = useRef<(month: string, updateLoading?: boolean) => Promise<void>>(null);
+  const fetchMonthDataRef = useRef<(month: string, updateLoading?: boolean) => Promise<number | null>>(null);
   const monthRequestIdRef = useRef(0);
+  const referenceRequestIdRef = useRef(0);
 
   // Cycles are passive month buckets — the active cycle is simply the one
   // matching the month being viewed (default: current calendar month).
@@ -137,6 +138,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // ------------------------------------------
 
   const fetchReferenceData = useCallback(async () => {
+    const requestId = ++referenceRequestIdRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -153,6 +155,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (labsRes.error) throw labsRes.error;
       if (caseTypesRes.error) throw caseTypesRes.error;
       if (medHistRes.error) throw medHistRes.error;
+
+      if (requestId !== referenceRequestIdRef.current) return;
 
       setAllCycles(
         (cyclesRes.data ?? []).map((c: Record<string, unknown>) => ({
@@ -182,11 +186,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setCaseTypes((caseTypesRes.data ?? []).map((ct: Record<string, unknown>) => ({ id: ct.id as string, name: ct.name as string })));
       setMedicalHistoryOptions(toMedicalHistoryOptions(medHistRes.data ?? []));
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load data");
+      if (requestId === referenceRequestIdRef.current) {
+        setError(err instanceof Error ? err.message : "Failed to load data");
+      }
     } finally {
-      initialLoadDone.current = true;
-      await fetchMonthDataRef.current?.(effectiveMonthRef.current, false);
-      setLoading(false);
+      if (requestId === referenceRequestIdRef.current) {
+        initialLoadDone.current = true;
+        const monthRequestId = await fetchMonthDataRef.current?.(effectiveMonthRef.current, false);
+        if (
+          requestId === referenceRequestIdRef.current &&
+          monthRequestId === monthRequestIdRef.current
+        ) {
+          setLoading(false);
+        }
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
@@ -195,8 +208,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Phase 2: Fetch month-specific data (runs on mount after reference data, and on month change)
   // ------------------------------------------
 
-  const fetchMonthData = useCallback(async (month: string, updateLoading = true) => {
-    if (!month) return;
+  const fetchMonthData = useCallback(async (month: string, updateLoading = true): Promise<number | null> => {
+    if (!month) return null;
     const requestId = ++monthRequestIdRef.current;
     if (updateLoading) setLoading(true);
     setError(null);
@@ -206,7 +219,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         supabase.from("case_payments").select("*").order("payment_date", { ascending: true }),
       ]);
 
-      if (requestId !== monthRequestIdRef.current) return;
+      if (requestId !== monthRequestIdRef.current) return null;
 
       if (recordsRes.error) throw recordsRes.error;
       if (paymentsRes.error) throw paymentsRes.error;
@@ -229,6 +242,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       if (updateLoading && requestId === monthRequestIdRef.current) setLoading(false);
     }
+    return requestId;
   }, [supabase]);
 
   // Keep fetchMonthDataRef in sync (used by fetchReferenceData for initial load)
@@ -241,6 +255,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
+        referenceRequestIdRef.current += 1;
+        monthRequestIdRef.current += 1;
         setAllRecords([]);
         setAllPayments([]);
         setAllCycles([]);
@@ -253,6 +269,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       if (event === "SIGNED_OUT") {
+        referenceRequestIdRef.current += 1;
         monthRequestIdRef.current += 1;
         initialLoadDone.current = false;
         setAllRecords([]);

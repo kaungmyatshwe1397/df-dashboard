@@ -59,6 +59,7 @@ function createDelayedClient(referenceData: Promise<QueryResult>) {
     monthQueries,
     requestedMonths,
     notifySignedIn: () => authStateChange?.("SIGNED_IN", { user: { id: "user-1" } }),
+    notifySignedOut: () => authStateChange?.("SIGNED_OUT", null),
   };
 }
 
@@ -138,5 +139,40 @@ describe("DataContext month requests", () => {
     act(() => notifySignedIn());
 
     await waitFor(() => expect(requestedMonths.length).toBeGreaterThan(initialRequestCount));
+  });
+
+  test("does not apply reference data returned after sign-out", async () => {
+    const reference = deferred<QueryResult>();
+    const { requestedMonths, notifySignedOut } = createDelayedClient(reference.promise);
+    const { result } = renderHook(() => useData(), { wrapper });
+
+    act(() => notifySignedOut());
+    await act(async () => reference.resolve({
+      data: [{ id: "cycle-001", month_year: "2026-09" }],
+      error: null,
+    }));
+
+    expect(result.current.allMonths).toEqual([]);
+    expect(requestedMonths).toEqual([]);
+    expect(result.current.loading).toBe(false);
+  });
+
+  test("keeps loading while a newer month request is pending", async () => {
+    const reference = deferred<QueryResult>();
+    const { monthQueries, requestedMonths } = createDelayedClient(reference.promise);
+    const { result } = renderHook(() => useData(), { wrapper });
+
+    await act(async () => reference.resolve({ data: [], error: null }));
+    await waitFor(() => expect(requestedMonths).toContain("Sep 2026"));
+
+    act(() => result.current.setSelectedMonth("Aug 2026"));
+    await waitFor(() => expect(requestedMonths).toContain("Aug 2026"));
+
+    await act(async () => monthQueries.get("Sep 2026")!.resolve({ data: [], error: null }));
+
+    expect(result.current.loading).toBe(true);
+
+    await act(async () => monthQueries.get("Aug 2026")!.resolve({ data: [], error: null }));
+    await waitFor(() => expect(result.current.loading).toBe(false));
   });
 });
