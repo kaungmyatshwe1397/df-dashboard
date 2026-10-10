@@ -32,6 +32,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -80,6 +81,7 @@ function isActivePath(pathname: string, href: string) {
 }
 
 export function AppSidebar() {
+  const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const router = useRouter();
   const { profile } = useAuth();
@@ -142,7 +144,7 @@ export function AppSidebar() {
                       isActive={isActivePath(pathname, item.href)}
                       tooltip={item.title}
                       render={
-                        <Link href={item.href}>
+                        <Link href={item.href} onClick={() => { if (isMobile) setOpenMobile(false); }}>
                           <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
                         </Link>

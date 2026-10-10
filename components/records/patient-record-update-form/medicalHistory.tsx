@@ -34,12 +34,12 @@ export function MedicalHistory({
           No medical history options available yet.
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-md border p-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3 gap-y-2 rounded-md border p-3">
           {options.map((opt) => {
             const id = `pmh-${opt.id}`;
             const checked = selected.includes(opt.name);
             return (
-              <div key={opt.id} className="flex items-center gap-2">
+              <div key={opt.id} className="flex min-h-(--control-touch-size) items-center gap-2 sm:min-h-0">
                 <Checkbox
                   id={id}
                   checked={checked}

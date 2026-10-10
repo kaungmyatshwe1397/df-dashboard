@@ -7,34 +7,19 @@ import { useCallback, useEffect, useState } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { CreateUserDialog } from "@/components/users/CreateUserDialog";
 import { UserEditDialog } from "@/components/users/UserEditDialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { UserList } from "@/components/users/userList";
+import type { UserRowType } from "@/components/users/userList/types";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
-import { Pencil, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-interface UserRow {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-}
-
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<UserRow[]>([]);
+  const [users, setUsers] = useState<UserRowType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<UserRow | null>(null);
+  const [editTarget, setEditTarget] = useState<UserRowType | null>(null);
 
   const fetchUsers = useCallback(async () => {
     const supabase = createClient();
@@ -79,7 +64,7 @@ export default function AdminUsersPage() {
         {error && (
           <Alert
             variant="destructive"
-            className="flex items-center justify-between"
+            className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
           >
             <span>{error}</span>
             <Button
@@ -96,69 +81,7 @@ export default function AdminUsersPage() {
           </Alert>
         )}
 
-        {loading ? (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead className="w-20 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-16" /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        ) : users.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No users found.</p>
-        ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead className="w-20 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      {user.username}
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{user.role}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => setEditTarget(user)}
-                        title="Edit user"
-                        aria-label={`Edit ${user.username}`}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        <UserList users={users} loading={loading} onEdit={setEditTarget} />
       </div>
 
       <CreateUserDialog

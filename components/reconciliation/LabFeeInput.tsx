@@ -40,10 +40,10 @@ export function LabFeeInput({ record, onSave, saving, readOnly }: LabFeeInputPro
   }, [value, record.id, onSave]);
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex w-full min-w-0 flex-col gap-1 lg:w-auto">
       <Input
         type="text"
-        inputMode="numeric"
+        inputMode="decimal"
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
@@ -54,12 +54,15 @@ export function LabFeeInput({ record, onSave, saving, readOnly }: LabFeeInputPro
           if (e.key === "Enter") handleSave();
         }}
         disabled={saving || readOnly}
-        className="h-8 w-28 text-right"
+        aria-invalid={!!error}
+        aria-describedby={error ? `lab-fee-error-${record.id}` : undefined}
+        className="h-8 w-full text-right lg:w-28"
         placeholder="0"
         aria-label={`Lab fee for ${record.patient_name}`}
       />
+      {saving && <span role="status" className="text-caption text-muted-foreground">Saving fee…</span>}
       {error && (
-        <span className="text-xs text-destructive">{error}</span>
+        <span id={`lab-fee-error-${record.id}`} className="text-xs text-destructive">{error}</span>
       )}
     </div>
   );

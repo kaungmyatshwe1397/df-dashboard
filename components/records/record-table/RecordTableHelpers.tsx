@@ -21,6 +21,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Plus, RefreshCw, Inbox } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const ROWS_PER_PAGE = 10;
 
@@ -43,11 +44,18 @@ export function formatDate(dateStr: string): string {
 export function TableSkeleton({ columns }: { columns: number }) {
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-9 w-32" />
       </div>
-      <div className="rounded-[14px] border border-border">
+      <div className="space-y-3 lg:hidden" aria-label="Loading records">
+        {Array.from({ length: 3 }, (_, i) => (
+          <Card key={i} size="sm"><CardContent className="space-y-3">
+            <Skeleton className="h-4 w-2/3" /><Skeleton className="h-4 w-1/3" /><Skeleton className="h-8 w-full" />
+          </CardContent></Card>
+        ))}
+      </div>
+      <div className="hidden rounded-xl border border-border lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -86,7 +94,7 @@ export function TableEmpty({
   addLabel?: string;
 }) {
   return (
-    <div className="rounded-[14px] border border-dashed border-border p-12 text-center">
+    <div className="rounded-xl border border-dashed border-border p-4 text-center sm:p-12">
       <Inbox className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
       <p className="text-muted-foreground text-sm mb-4">{message}</p>
       {onAdd && (
@@ -112,7 +120,7 @@ export function TableError({
 }) {
   return (
     <Alert variant="destructive" className="border-destructive/30 bg-destructive/10 text-destructive">
-      <AlertDescription className="flex items-center justify-between">
+      <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span>{message}</span>
         <Button variant="outline" size="sm" onClick={onRetry} className="border-destructive/30 text-destructive hover:bg-destructive/10">
           <RefreshCw className="mr-1.5 h-4 w-4" />
@@ -134,6 +142,9 @@ export function TablePagination({
 }) {
   if (totalPages <= 1) return null;
 
+  const visiblePages = Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((page) => Math.abs(page - currentPage) <= 1);
+
   return (
     <Pagination>
       <PaginationContent>
@@ -145,11 +156,15 @@ export function TablePagination({
             className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
           />
         </PaginationItem>
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-          <PaginationItem key={page}>
+        <PaginationItem className="px-2 text-body-sm text-muted-foreground sm:hidden" aria-live="polite">
+          {currentPage} / {totalPages}
+        </PaginationItem>
+        {visiblePages.map((page) => (
+          <PaginationItem key={page} className="hidden sm:block">
             <PaginationLink
               isActive={page === currentPage}
               onClick={() => onPageChange(page)}
+              aria-label={`Go to page ${page}`}
               className="cursor-pointer"
             >
               {page}
