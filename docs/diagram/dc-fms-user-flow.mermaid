@@ -25,15 +25,18 @@ flowchart TD
     Add --> IdInput[Enter Patient ID]
     IdInput --> IdCheck{Registered patient?}
     IdCheck -->|Yes| Prefill[Patient identity shown from registry]
-    Prefill --> TxForm[Enter GP or Case details]
-    TxForm --> Save2[Save visit record] --> Table
+    Prefill --> RecordDate[Choose Record Date\nToday or an earlier date]
+    RecordDate --> TxForm[Enter GP or Case details]
+    TxForm --> Save2[Atomic RPC save\nCycle + visit + initial receipt] --> DateMonth[Select destination month] --> Table
+    Save2 -->|Error or lost response| RetrySave[Keep values and submission ID\nRetry original values]
+    RetrySave --> Save2
     IdCheck -->|No| RegisterPrompt[Prompt: register patient first]
     RegisterPrompt --> RegPatients
     RegPatients --> RegisterNew[Register patient]
     RegisterNew --> Add
 
     Edit --> Lookup[Search by Patient ID]
-    Lookup --> Prefill2[Form Prefilled\nDemographics + Treatment] --> Save3[Save] --> Table
+    Lookup --> Prefill2[Form Prefilled\nDemographics + Record Date + Treatment] --> Save3[Save\nMove cycle if Record Date changed] --> DateMonth
 
     DeleteRec --> Confirm[Confirm Delete] --> Table
     NoteDelete["Deletes record only —\npatient stays in registry"]

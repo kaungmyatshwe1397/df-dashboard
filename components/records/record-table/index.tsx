@@ -4,6 +4,7 @@
 
 "use client";
 
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Combobox,
@@ -34,6 +35,8 @@ export function RecordTable({
   onEdit: (record: PatientRecord | null, category: RecordCategory) => void;
 }) {
   const { records, loading, error, refreshData, selectedMonth, setSelectedMonth } = useData();
+  // Keep the saved record's category visible when month loading remounts the tab panels.
+  const [activeTab, setActiveTab] = useState<"gp" | "case">("gp");
 
   const gpRecords = records.filter((r) => r.category === RecordCategory.GP) as GPPatientRecordType[];
   const caseRecords = records.filter((r) => r.category === RecordCategory.CASE) as CasePatientRecordType[];
@@ -72,7 +75,9 @@ export function RecordTable({
         </Combobox>
       </div>
 
-      <Tabs defaultValue="gp">
+      <Tabs value={activeTab} onValueChange={(value) => {
+        if (value === "gp" || value === "case") setActiveTab(value);
+      }}>
         <TabsList variant="line">
           <TabsTrigger value="gp">GP Records</TabsTrigger>
           <TabsTrigger value="case">Case Records</TabsTrigger>

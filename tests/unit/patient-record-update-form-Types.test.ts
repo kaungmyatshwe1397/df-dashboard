@@ -49,6 +49,7 @@ describe("getInitialForm", () => {
     const form = getInitialForm(gpRecord, null);
 
     expect(form.patientId).toBe("0001/26");
+    expect(form.recordDate).toBe("2026-09-01");
     expect(form.patientName).toBe("John Doe");
     expect(form.address).toBe("123 Main St");
     expect(form.diagnosis).toBe("Common cold");
@@ -66,6 +67,7 @@ describe("getInitialForm", () => {
     const form = getInitialForm(caseRecord, null);
 
     expect(form.patientId).toBe("0002/26");
+    expect(form.recordDate).toBe("2026-09-02");
     expect(form.patientName).toBe("Jane Smith");
     expect(form.diagnosis).toBe("RPD at 41,42");
     expect(form.caseType).toBe("RPD");

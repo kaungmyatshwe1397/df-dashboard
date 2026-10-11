@@ -3,6 +3,7 @@ erDiagram
     PATIENTS ||--o{ PATIENT_RECORDS : "visits (many per patient)"
     MONTHLY_CYCLES ||--o{ PATIENT_RECORDS : "contains"
     PATIENT_RECORDS ||--o{ CASE_PAYMENTS : "installments (CASE only)"
+    USERS ||--o{ RECORD_SAVE_SUBMISSIONS : "owns private save submissions"
     PATIENT_RECORDS }o--|| LABS : "assigned to (CASE only)"
     MONTHLY_CYCLES ||--|| MONTHLY_FINANCIALS : "summarized by"
 
@@ -80,6 +81,14 @@ erDiagram
         integer paid_amount
         string payment_note
         enum payment_status "PAID or UNPAID, CASE only, drives carry-forward"
+    }
+
+    RECORD_SAVE_SUBMISSIONS {
+        uuid id PK "stable client submission identity"
+        uuid user_id FK "authenticated submitter; browser roles have no access"
+        jsonb request "immutable submitted values for replay comparison"
+        jsonb result "committed record, payment, and cycle response"
+        timestamp created_at
     }
 
     MONTHLY_FINANCIALS {
