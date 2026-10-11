@@ -1,6 +1,6 @@
-# Task Completion Rule
+# Legacy Plan Completion Note
 
-After completing any task from `plans/frontend-plan.md`, update the plan file as follows:
+This note applies only when intentionally editing the archived [`frontend-plan.md`](../../legacyPlans/frontend-plan.md). It does not apply to new development work or future plans.
 
 1. **Timestamp** — Update the task header to include `(Completed <date> <time>)` — e.g. `(Completed 9/2/2026 12:30PM)`.
 2. **Checkboxes** — Mark all "Things To Do" items with ✅.
