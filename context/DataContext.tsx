@@ -24,7 +24,9 @@ import {
   toCustomOverhead,
   toMedicalHistoryOptions,
 } from "@/lib/data-helpers";
-import { registerPatientWithRecord } from "@/lib/services/patientRecordService";
+import { saveRegisteredRecord } from "@/lib/services/atomicRecordSaveService";
+import { resolveRecordCycle } from "@/lib/services/recordCycleService";
+import { getLocalDate, getRecordDateError } from "@/lib/record-date";
 import { useLab } from "./hooks/useLab";
 import { useCaseType } from "./hooks/useCaseType";
 import { usePatients } from "./hooks/usePatients";
@@ -48,9 +50,10 @@ interface DataContextType {
   getRecordTotalPaid: (recordId: string) => number;
   refreshData: () => void;
   addRecord: (
-    record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
+    record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label"> & { entry_date?: string },
     patientId: string,
-    initialPayment?: number
+    initialPayment?: number,
+    submissionId?: string
   ) => Promise<void>;
   updateRecord: (recordId: string, updates: Partial<PatientRecord>) => Promise<void>;
   deleteRecord: (recordId: string) => Promise<void>;
@@ -324,87 +327,51 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addRecord = useCallback(
     async (
-      recordData: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label">,
+      recordData: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label"> & { entry_date?: string },
       patientId: string,
-      initialPayment?: number
+      initialPayment?: number,
+      submissionId: string = crypto.randomUUID()
     ) => {
-      // New records always land in the current calendar month's bucket.
-      let activeCycle = allCycles.find((c) => c.month_year === currentMonthYear) ?? null;
+      const recordDate = recordData.entry_date ?? getLocalDate();
+      const dateError = getRecordDateError(recordDate);
+      if (dateError) throw new Error(dateError);
+      const { record: newRecord, payment: newPayment, cycle } = await saveRegisteredRecord(
+        supabase, submissionId, patientId, { ...recordData, entry_date: recordDate }, initialPayment
+      );
+      // Publish only a confirmed transaction, deduplicating an already-fetched replay.
+      setAllCycles((prev) => prev.some((existing) => existing.id === cycle.id) ? prev : [...prev, cycle]);
+      setAllRecords((prev) => prev.some((record) => record.id === newRecord.id)
+        ? prev.map((record) => record.id === newRecord.id ? newRecord : record)
+        : [...prev, newRecord]);
 
-      if (!activeCycle) {
-        const { data: newCycle, error: cycleError } = await supabase
-          .from("monthly_cycles")
-          .insert({ month_year: currentMonthYear })
-          .select()
-          .single();
-
-        if (cycleError || !newCycle) {
-          throw new Error(cycleError?.message ?? "Failed to create the month bucket.");
-        }
-
-        activeCycle = { id: newCycle.id, month_year: newCycle.month_year };
-        setAllCycles((prev) => [...prev, activeCycle!]);
-      }
-
-      const monthLabel = getMonthLabel(activeCycle.month_year);
-      const baseFields = {
-        cycle_id: activeCycle.id,
-        entry_date: new Date().toISOString().split("T")[0],
-        month_label: monthLabel,
-      };
-
-      const insertData = recordData.category === RecordCategory.CASE
-        ? { ...recordData, ...baseFields, is_carried_forward: false }
-        : { ...recordData, ...baseFields };
-
-      // The RPC rechecks the registry before inserting the visit.
-      const newRecord = await registerPatientWithRecord(supabase, patientId, insertData);
-
-      setAllRecords((prev) => [...prev, newRecord]);
-      setSelectedMonth(monthLabel);
-
-      if (
-        recordData.category === RecordCategory.CASE &&
-        initialPayment !== undefined &&
-        initialPayment > 0
-      ) {
-        const { data: newPayment, error: paymentError } = await supabase
-          .from("case_payments")
-          .insert({
-            record_id: newRecord.id,
-            payment_date: new Date().toISOString().split("T")[0],
-            paid_amount: initialPayment,
-            payment_note: "Initial payment",
-            payment_status: PaymentStatus.PAID,
-          })
-          .select()
-          .single();
-
-        if (paymentError || !newPayment) {
-          throw new Error(paymentError?.message ?? "Record created but initial payment failed.");
-        }
-
-        setAllPayments((prev) => [
-          ...prev,
-          {
-            id: newPayment.id,
-            record_id: newPayment.record_id,
-            payment_date: newPayment.payment_date,
-            paid_amount: newPayment.paid_amount,
-            payment_note: newPayment.payment_note,
-            payment_status: newPayment.payment_status,
-          },
-        ]);
-      }
+      if (newPayment) setAllPayments((prev) => prev.some((payment) => payment.id === newPayment.id)
+        ? prev.map((payment) => payment.id === newPayment.id ? newPayment : payment)
+        : [...prev, newPayment]);
+      setSelectedMonth(newRecord.month_label);
     },
-    [allCycles, currentMonthYear, setSelectedMonth, supabase]
+    [setSelectedMonth, supabase]
   );
 
   const updateRecord = useCallback(
     async (recordId: string, updates: Partial<PatientRecord>) => {
+      let destinationCycle: MonthlyCycle | null = null;
+      const existingRecord = allRecords.find((record) => record.id === recordId);
+      if (updates.entry_date !== undefined) {
+        const dateError = getRecordDateError(updates.entry_date);
+        if (dateError) throw new Error(dateError);
+        // An unchanged original date must not undo a CASE's carry-forward assignment.
+        if (updates.entry_date !== existingRecord?.entry_date) {
+          destinationCycle = await resolveRecordCycle(supabase, allCycles, updates.entry_date);
+        }
+      }
+      const recordUpdates = destinationCycle ? {
+        ...updates,
+        cycle_id: destinationCycle.id,
+        month_label: getMonthLabel(destinationCycle.month_year),
+      } : updates;
       const { error: updateError } = await supabase
         .from("patient_records")
-        .update(updates)
+        .update(recordUpdates)
         .eq("id", recordId);
 
       if (updateError) {
@@ -412,10 +379,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       setAllRecords((prev) =>
-        prev.map((r) => (r.id === recordId ? { ...r, ...updates } as PatientRecord : r))
+        prev.map((r) => (r.id === recordId ? { ...r, ...recordUpdates } as PatientRecord : r))
       );
+      if (destinationCycle) {
+        const savedCycle = destinationCycle;
+        setAllCycles((prev) => prev.some((existing) => existing.id === savedCycle.id)
+          ? prev : [...prev, savedCycle]);
+        setSelectedMonth(getMonthLabel(savedCycle.month_year));
+      }
     },
-    [supabase]
+    [allCycles, allRecords, setSelectedMonth, supabase]
   );
 
   const addPayment = useCallback(

@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Search, Trash2 } from "lucide-react";
 import { useData } from "@/context/DataContext";
 import { FormField } from "@/components/shared/formField";
+import { getRecordDateError } from "@/lib/record-date";
 import {
   RecordCategory,
   PatientRecord,
@@ -36,6 +37,7 @@ import { CaseFormFields } from "./CaseFormFields";
 import { PatientInfoSection } from "./patientInfoSection";
 import { MedicalHistory } from "./medicalHistory";
 import { CurrentMedicationList } from "./currentMedicationList";
+import { RecordDateField } from "./recordDateField";
 import {
   PatientRecordUpdateFormProps,
   FormErrors,
@@ -93,6 +95,8 @@ export function PatientRecordUpdateForm({
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Retain the same submission across errors because a lost response may hide a committed save.
+  const submissionIdRef = useRef<string | undefined>(undefined);
 
   // True only when the patients registry row was fetched for the current
   // record; guards demographic writes when the fetch failed or no row exists.
@@ -110,6 +114,7 @@ export function PatientRecordUpdateForm({
     setLookupError(null);
     setErrors({});
     setSubmitError(null);
+    submissionIdRef.current = undefined;
     setReturningPatient(null);
     setLookupNotice(null);
     setIdCheckError(null);
@@ -193,6 +198,7 @@ export function PatientRecordUpdateForm({
     setLookupError(null);
     setErrors({});
     setSubmitError(null);
+    submissionIdRef.current = undefined;
     setReturningPatient(null);
     setLookupNotice(null);
     setIdCheckError(null);
@@ -213,6 +219,7 @@ export function PatientRecordUpdateForm({
     setForm(getEmptyForm());
     setErrors({});
     setSubmitError(null);
+    submissionIdRef.current = undefined;
   }, [open, isAdding]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -361,6 +368,8 @@ export function PatientRecordUpdateForm({
   function validate(): boolean {
     if (!form) return false;
     const newErrors: FormErrors = {};
+    const dateError = getRecordDateError(form.recordDate);
+    if (dateError) newErrors.recordDate = dateError;
 
     if (!form.patientId.trim()) {
       newErrors.patientId = "Patient ID is required.";
@@ -442,6 +451,7 @@ export function PatientRecordUpdateForm({
         : form.diagnosis.trim();
 
       const treatment = {
+        entry_date: form.recordDate,
         diagnosis,
         case_type: isCase ? form.caseType.trim() || undefined : undefined,
         teeth: isCase ? form.teeth.trim() || undefined : undefined,
@@ -466,10 +476,12 @@ export function PatientRecordUpdateForm({
           ...treatment,
         };
 
+        submissionIdRef.current ??= crypto.randomUUID();
         await addRecord(
           recordData,
           returningPatient.patient_id,
-          isCase ? paidAmount : undefined
+          isCase ? paidAmount : undefined,
+          submissionIdRef.current
         );
       } else if (foundRecord) {
         // Without a loaded registry row the form holds record-only prefill;
@@ -664,6 +676,13 @@ export function PatientRecordUpdateForm({
                     </FormField>
                   </div>
 
+                  <RecordDateField
+                    value={form.recordDate}
+                    error={errors.recordDate}
+                    saving={saving}
+                    onChange={(value) => updateField("recordDate", value)}
+                  />
+
                   {isCase ? (
                     <CaseFormFields
                       form={{ ...form, category: defaultCategory }}
@@ -708,6 +727,13 @@ export function PatientRecordUpdateForm({
                     value={form.currentMedications}
                     onChange={(next) => setArrayField("currentMedications", next)}
                     disabled={saving || demographicsLocked}
+                  />
+
+                  <RecordDateField
+                    value={form.recordDate}
+                    error={errors.recordDate}
+                    saving={saving}
+                    onChange={(value) => updateField("recordDate", value)}
                   />
 
                   {isCase ? (
