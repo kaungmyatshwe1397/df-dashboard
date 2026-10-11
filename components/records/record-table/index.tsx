@@ -50,7 +50,7 @@ export function RecordTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-sm font-medium text-muted-foreground">Patient Records</h2>
 
         <Combobox
@@ -58,7 +58,7 @@ export function RecordTable({
           value={selectedMonthAbbr}
           onValueChange={(v) => v && setSelectedMonth(toFullLabel(v))}
         >
-          <ComboboxInput placeholder="Select month" className="w-40 h-6" />
+          <ComboboxInput placeholder="Select month" className="w-full sm:w-40 sm:h-6" />
           <ComboboxContent>
             <ComboboxEmpty>No months found.</ComboboxEmpty>
             <ComboboxList>

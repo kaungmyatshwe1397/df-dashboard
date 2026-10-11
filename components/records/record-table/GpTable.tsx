@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
 import { RecordCategory, GPPatientRecordType } from "@/lib/global";
 import { useCanEdit } from "@/context/AuthContext";
+import { MobileRecordCard } from "./mobileRecordCard";
 import {
   ROWS_PER_PAGE,
   formatCurrency,
@@ -49,12 +50,12 @@ export function GpTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           {records.length} record{records.length !== 1 ? "s" : ""}
         </p>
         {canEdit && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => onEdit(null, RecordCategory.GP)}
               size="sm"
@@ -76,7 +77,14 @@ export function GpTable({
         )}
       </div>
 
-      <div className="rounded-[14px] border border-border">
+      <div className="space-y-3 lg:hidden">
+        {paginatedRecords.map((record) => (
+          <MobileRecordCard key={record.id} record={record}
+            onEdit={canEdit ? (selected) => onEdit(selected as GPPatientRecordType, RecordCategory.GP) : undefined} />
+        ))}
+      </div>
+
+      <div className="hidden rounded-xl border border-border lg:block">
         <Table>
           <TableHeader>
             <TableRow>

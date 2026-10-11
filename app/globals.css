@@ -88,6 +88,61 @@ body {
   font-family: var(--font-family-body);
 }
 
+[data-slot="dialog-content"] {
+  top: calc(var(--dialog-visible-top, var(--space-0)) + var(--dialog-visible-height, 100dvh) * 0.5);
+  max-height: min(var(--dialog-viewport-height), calc(var(--dialog-visible-height, 100dvh) - var(--space-3) * 2));
+  overflow-y: auto;
+}
+
+/* Touch controls and keyboard-aware scrolling use the same tokens across portal forms. */
+@variant max-lg {
+  [data-slot="button"],
+  [data-slot="dialog-close"],
+  [data-slot="sidebar-trigger"],
+  [data-slot="input-group-button"],
+  [data-slot="sidebar-menu-button"],
+  [data-slot="tabs-trigger"],
+  [data-slot="select-trigger"],
+  [data-slot="combobox-item"],
+  [data-slot="select-item"] {
+    min-height: var(--control-touch-size);
+    min-width: var(--control-touch-size);
+  }
+
+  [data-slot="input"],
+  [data-slot="input-group"],
+  [data-slot="input-group-control"],
+  [data-slot="textarea"],
+  [data-slot="select-trigger"] {
+    min-height: var(--control-touch-size);
+    font-size: var(--font-body-size);
+  }
+
+  [data-slot="dialog-content"] {
+    top: calc(var(--dialog-visible-top, var(--space-0)) + var(--space-3));
+    max-width: calc(100% - var(--space-3) * 2);
+    max-height: calc(var(--dialog-visible-height, 100dvh) - var(--space-3) * 2);
+    translate: -50% 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  [data-slot="dialog-content"] [data-slot="scroll-area"] {
+    max-height: none;
+    overflow: visible;
+  }
+
+  [data-slot="dialog-content"] [data-slot="scroll-area-viewport"] {
+    /* Base UI sets overflow inline; the popup owns scrolling on phones. */
+    overflow: visible !important;
+  }
+
+  [data-slot="dialog-footer"] {
+    flex-wrap: wrap;
+  }
+}
+
+
 * {
   scrollbar-color: var(--color-text-secondary) transparent;
   scrollbar-width: thin;

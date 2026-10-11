@@ -24,6 +24,7 @@ import {
 } from "./RecordTableHelpers";
 import { PaymentRow } from "./PaymentRow";
 import { PaymentDialog } from "./PaymentDialog";
+import { MobileRecordCard } from "./mobileRecordCard";
 
 export function CaseTable({
   records,
@@ -34,7 +35,7 @@ export function CaseTable({
   onAdd: () => void;
   onEdit: (record: CasePatientRecordType | null, category: RecordCategory) => void;
 }) {
-  const { getRecordBalance, getRecordTotalPaid } = useData();
+  const { getRecordBalance, getRecordTotalPaid, getPaymentsForRecord } = useData();
   const canEdit = useCanEdit();
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
@@ -59,12 +60,12 @@ export function CaseTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           {records.length} record{records.length !== 1 ? "s" : ""}
         </p>
         {canEdit && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => onEdit(null, RecordCategory.CASE)}
               size="sm"
@@ -86,7 +87,17 @@ export function CaseTable({
         )}
       </div>
 
-      <div className="rounded-[14px] border border-border">
+      <div className="space-y-3 lg:hidden">
+        {paginatedRecords.map((record) => (
+          <MobileRecordCard key={record.id} record={record}
+            totalPaid={getRecordTotalPaid(record.id)} remaining={getRecordBalance(record)}
+            payments={getPaymentsForRecord(record.id)} expanded={expandedRow === record.id}
+            onToggleHistory={toggleExpand} onPay={canEdit ? setPayRecord : undefined}
+            onEdit={canEdit ? (selected) => onEdit(selected as CasePatientRecordType, RecordCategory.CASE) : undefined} />
+        ))}
+      </div>
+
+      <div className="hidden rounded-xl border border-border lg:block">
         <Table>
           <TableHeader>
             <TableRow>

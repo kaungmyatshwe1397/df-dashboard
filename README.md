@@ -1,74 +1,113 @@
 # DC-FMS — Dental Clinic Financial Management System
 
-A web-based dashboard for dental clinics to track patient records, manage monthly billing cycles, reconcile lab fees, calculate doctor commissions, and generate financial reports.
+## Product Summary
 
-Built for a two-role workflow: **Admin** (clinic owner) and **Assistant** (clinic staff).
+From a patient's first visit to the month's final figures, DC-FMS brings the clinic's daily work into one shared workspace. Staff can register patients, record treatments, and track payments as they happen. Clinic owners can follow income, reconcile laboratory fees, and see how commissions and operating expenses affect profit.
 
-## What It Does
+It replaces paper logbooks and manual month-end calculations with connected patient records and monthly financial views. Unpaid case balances can move into the next month, so ongoing treatments stay easy to follow.
 
-DC-FMS replaces the manual paper logbook workflow with a digital system that handles:
+Designed for both the clinic desk and a phone, DC-FMS uses detailed tables on larger screens and readable cards with touch-friendly forms on mobile.
 
-- **Patient record entry** — log treatments with diagnosis, cost, and payment status
-- **Monthly buckets** — each month is a passive bucket; unpaid case balances carry forward on demand
-- **Payment tracking** — record installment payments and calculate remaining balances
-- **Lab fee reconciliation** — assign laboratory fees to specific case treatments
-- **Financial calculations** — compute doctor commission (40%), overhead expenses, and net profit/loss
-- **Carry forward** — move unsettled case balances into the next month (no lock/close workflow)
+### Who It's For
+
+| Role | Workflow |
+|------|----------|
+| **Admin** | Manage clinic finances, laboratory fees, expenses, settings, and user accounts. |
+| **Assistant** | Register patients, record treatments, and track payments without access to clinic financial totals. |
+| **Supervisor** | Review the admin portal with read-only access, excluding user management. |
 
 ## Features
 
-### Patient Records
+### Patient Registry and Treatment Records
 
-- Two record types: **GP** (single-session) and **Case** (multi-installment)
-- Auto-generated patient IDs per cycle (e.g., `0001/26`)
-- Inline editing and bulk operations
-- Payment history tracking with balance calculations
+- Register patients with a unique patient ID, contact details, and medical history.
+- Search the registry, view patient profiles, and reuse registered patients across visits.
+- Record **GP** treatments for single-session visits and **Case** treatments with installment payments.
+- Add and edit treatment details, track payment history, and view remaining balances.
 
 ### Financial Dashboard
 
-- Real-time KPIs: Gross income, lab fees, doctor commission, overhead, net profit/loss
-- Revenue trend chart with two views: **This Month** (daily) and **Every Month** (monthly)
-- Operating expense breakdown (general, salary, bonus, rent, utilities)
+- View gross income, lab fees, doctor commission (40%), overhead, and net profit/loss.
+- Explore revenue trends through **This Month** (daily) and **Every Month** (monthly) views.
+- Track general expenses, salaries, bonuses, rent, utilities, and named additional expenses.
 
 ### Lab Reconciliation
 
-- Group case records by assigned laboratory
-- Input lab fees per case with auto-aggregation
-- Track lab payment status (paid/unpaid)
+- Group case records by laboratory and filter by the selected lab.
+- Enter fees per case, save on blur or Enter, and view aggregated laboratory totals.
+- Track paid/unpaid laboratory status and manage laboratories and case types.
 
 ### Carry Forward
 
-- Move unsettled case balances to the next month
-- Auto-creates the next month bucket
-- Fully paid cases stay in the current month
+- Organize records in monthly buckets without a lock or close workflow.
+- Move unsettled case balances to the next month, creating the next bucket when needed.
+- Keep fully paid cases in their original month.
 
-### User Management
+### Accounts and Access
 
-- Admin can create assistant accounts
-- Password change with current password verification
-- Profile update (username)
-- Account deletion handled by admin via Supabase dashboard
+- Admins can create accounts, change user roles, and delete accounts within the app.
+- Update usernames and change passwords with current-password verification.
+- Provide role-based access for Admins, Assistants, and read-only Supervisors.
+
+### Mobile Experience and Themes
+
+- Browse treatment records, patients, and users as cards on mobile and tables on desktop.
+- Enter data through stacked forms and dialogs that adapt to the mobile keyboard.
+- Use responsive navigation, touch-friendly controls, and compact pagination.
+- Switch between light and dark themes.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | Framework | Next.js 16 (App Router) |
-| Styling | Tailwind CSS |
+| UI Runtime | React 19 |
+| Styling | Tailwind CSS 4 |
 | UI Components | shadcn/ui |
 | Language | TypeScript |
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth |
-| Testing | Vitest |
+| Charts | Recharts |
+| Testing | Vitest and React Testing Library |
 
 ## Documentation
 
+Start with the contributing guide to run the project, or the product requirements to understand the clinic workflow.
+
+### Product and Architecture
+
 | Document | Description |
 |----------|-------------|
-| [Architecture](docs/architecture.md) | System architecture, data flow, key decisions, and project structure |
-| [Contributing](docs/contributions.md) | Getting started, setup, scripts, development workflow, and conventions |
-| [ERD](docs/dc-fms-erd.mmd) | Database schema and relationships |
-| [User Flow](docs/dc-fms-user-flow.mermaid) | Navigation paths and screen flow |
+| [Contributing and Setup](docs/lib/contributions.md) | Local setup, scripts, development workflow, and conventions. |
+| [Product Requirements](docs/lib/prd.md) | Business rules, roles, permissions, and financial calculations. |
+| [Architecture](docs/lib/architecture.md) | System structure, data flow, and key decisions. |
+| [Database ERD](docs/diagram/dc-fms-erd.mmd) | Database tables and relationships in Mermaid format. |
+| [User Flow](docs/diagram/dc-fms-user-flow.mermaid) | Screens and navigation paths in Mermaid format. |
+
+### Design and Development Guides
+
+| Document | Description |
+|----------|-------------|
+| [Design Tokens](docs/lib/tokens.md) | Shared colors, spacing, typography, and visual rules. |
+| [UI States Checklist](docs/lib/dc-fms-ui-states-checklist.md) | Ideal, empty, loading, error, and edge-case states. |
+| [Mobile Responsive Design](docs/superpowers/specs/2026-10-10-mobile-responsive-design.md) | Approved hybrid layout, mobile data entry, and responsive behavior. |
+| [Mobile Implementation Plan](docs/superpowers/plans/2026-10-10-mobile-responsive.md) | Tasks and implementation details for mobile support. |
+| [Light and Dark Theme Design](docs/superpowers/specs/2026-10-09-light-dark-theme-design.md) | Theme behavior and design decisions. |
+| [Project Folder Rules](docs/rules/project-folder-rules.md) | Component architecture and file organization. |
+| [Clean Code Rules](docs/rules/clean-code-rule.md) | Coding and maintainability standards. |
+| [Commenting Rules](docs/rules/comment_method-rules.md) | File headings and guidelines for useful comments. |
+| [Project Conventions](docs/rules/my-rules.md) | Type naming and project-specific working rules. |
+| [Testing Guide](docs/rules/testing-guide-rules.md) | Test selection, structure, and writing guidelines. |
+| [Task Completion Rules](docs/rules/task-completion-rule.md) | Checklist for documenting completed plan tasks. |
+
+### Project Plans
+
+| Document | Description |
+|----------|-------------|
+| [Frontend Plan](plans/frontend-plan.md) | Frontend screens and implementation tasks. |
+| [Backend Integration Plan](plans/backend-plan.md) | Supabase schema, authentication, RLS, and data integration. |
+| [User Management Plan](plans/user-management-plan.md) | Account administration and password workflows. |
+| [Patient ID Plan](plans/patient-unique-id-plan.md) | Shared patient registry and unique patient IDs. |
 
 
 ## License

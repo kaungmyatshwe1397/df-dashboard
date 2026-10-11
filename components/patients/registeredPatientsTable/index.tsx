@@ -30,6 +30,7 @@ import {
 import { filterPatients, formatRegisteredDate, sortPatientsById } from "./helpers";
 import { AddPatientDialog } from "./AddPatientDialog";
 import { Badge } from "@/components/ui/badge";
+import { PatientCard } from "./patientCard";
 
 export interface RegisteredPatientsTablePropsType {
   onRowSelect: (patient: PatientType) => void;
@@ -129,7 +130,7 @@ export function RegisteredPatientsTable({
             {filtered.length} registered
           </span>
         </Badge>
-        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
           {canEdit && (
             <Button size="sm" onClick={openAddDialog}>
               <Plus className="mr-1.5 h-4 w-4" />
@@ -152,7 +153,11 @@ export function RegisteredPatientsTable({
       {filtered.length === 0 ? (
         <TableEmpty message={`No patients match “${query.trim()}”.`} />
       ) : (
-        <div className="rounded-[14px] border border-border">
+        <>
+        <div className="space-y-3 lg:hidden">
+          {pageRows.map((patient) => <PatientCard key={patient.id} patient={patient} onSelect={onRowSelect} />)}
+        </div>
+        <div className="hidden rounded-xl border border-border lg:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -241,6 +246,7 @@ export function RegisteredPatientsTable({
             </TableBody>
           </Table>
         </div>
+        </>
       )}
 
       <TablePagination

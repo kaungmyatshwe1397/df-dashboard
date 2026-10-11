@@ -30,11 +30,11 @@ export function CaseTypeTable() {
   if (loading) {
     return (
       <div className="rounded-md border">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead>Case Type Name</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
+              <TableHead className="w-(--compact-actions-width)">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -56,7 +56,7 @@ export function CaseTypeTable() {
 
   if (error) {
     return (
-      <Alert variant="destructive" className="flex items-center justify-between">
+      <Alert variant="destructive" className="flex flex-wrap items-center justify-between gap-3">
         <span>{error}</span>
         <Button variant="outline" size="sm" onClick={refreshData}>
           <RefreshCw className="mr-2 h-3 w-3" />
@@ -68,7 +68,7 @@ export function CaseTypeTable() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-h3 font-semibold">Case Types</h2>
         <Button
           size="sm"
@@ -89,21 +89,21 @@ export function CaseTypeTable() {
         </div>
       ) : (
         <div className="rounded-md border">
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
                 <TableHead>Case Type Name</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="w-(--compact-actions-width)">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {caseTypes.map((ct) => (
                 <TableRow key={ct.id}>
-                  <TableCell className="font-medium max-w-[300px] truncate" title={ct.name}>
+                  <TableCell className="font-medium whitespace-normal [overflow-wrap:anywhere]" title={ct.name}>
                     {ct.name}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                       <Button
                         variant="ghost"
                         size="icon-xs"

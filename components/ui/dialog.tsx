@@ -6,6 +6,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
+import { useDialogViewport } from "@/hooks/use-dialog-viewport"
 
 interface DialogContextValue {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,17 +54,30 @@ function DialogOverlay({
 function DialogContent({
   className,
   children,
+  style,
   showCloseButton = true,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
   const { onOpenChange } = React.useContext(DialogContext)
+  const viewportStyle = useDialogViewport()
+  const visibleHeight = viewportStyle["--dialog-visible-height"]
+  const popupRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    const activeField = document.activeElement
+    if (activeField instanceof HTMLElement && popupRef.current?.contains(activeField)) {
+      activeField.scrollIntoView?.({ block: "nearest" })
+    }
+  }, [visibleHeight])
 
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
+        ref={popupRef}
+        style={{ ...viewportStyle, ...style }}
         data-slot="dialog-content"
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
@@ -93,7 +107,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
+      className={cn("flex flex-col gap-2 pr-7 sm:pr-0", className)}
       {...props}
     />
   )

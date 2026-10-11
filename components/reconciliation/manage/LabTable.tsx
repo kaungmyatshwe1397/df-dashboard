@@ -30,11 +30,11 @@ export function LabTable() {
   if (loading) {
     return (
       <div className="rounded-md border">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead>Lab Name</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
+              <TableHead className="w-(--compact-actions-width)">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -56,7 +56,7 @@ export function LabTable() {
 
   if (error) {
     return (
-      <Alert variant="destructive" className="flex items-center justify-between">
+      <Alert variant="destructive" className="flex flex-wrap items-center justify-between gap-3">
         <span>{error}</span>
         <Button variant="outline" size="sm" onClick={refreshData}>
           <RefreshCw className="mr-2 h-3 w-3" />
@@ -68,7 +68,7 @@ export function LabTable() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-h3 font-semibold">Labs</h2>
         <Button
           size="sm"
@@ -89,21 +89,21 @@ export function LabTable() {
         </div>
       ) : (
         <div className="rounded-md border">
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
                 <TableHead>Lab Name</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="w-(--compact-actions-width)">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {labs.map((lab) => (
                 <TableRow key={lab.id}>
-                  <TableCell className="font-medium max-w-[300px] truncate" title={lab.lab_name}>
+                  <TableCell className="font-medium whitespace-normal [overflow-wrap:anywhere]" title={lab.lab_name}>
                     {lab.lab_name}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                       <Button
                         variant="ghost"
                         size="icon-xs"
