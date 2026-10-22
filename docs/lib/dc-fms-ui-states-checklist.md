@@ -38,6 +38,10 @@ Use this to design each screen and to QA it before release.
 
 ## 3. Add / Edit Patient Record (Modal)
 
+Both GP and CASE forms include a required **Record Date** before category-specific fields. Add mode shows it only after registry verification and defaults to the local current date; edit mode uses the stored date. Past dates through today are accepted; missing, invalid, and future dates show an inline error. The field is disabled while saving. A failed cycle creation or save keeps the dialog open with all values intact. Successful add saves and changed edit dates select the matching month; unchanged dates preserve carried-forward cycle assignments. CASE lab milestone dates and existing installment dates remain independent.
+
+New record creation saves the cycle, visit, and initial CASE receipt atomically. Failed transactions create no partial visit/payment and do not select another month. The dialog retains its submission ID after errors; retrying identical values recovers a committed save without another receipt. Reusing a committed ID with changed values shows an error instructing the user to retry original values and then edit the recovered record. Closing/resetting starts a new submission.
+
 | State | Checklist |
 |---|---|
 | Ideal | **Add mode:** Dialog opens on Patient ID lookup. A registered ID shows the registry patient name and only the GP or Case record fields; save creates a visit linked to that patient. An unregistered ID shows a clear register-first message and link to Registered Patients; record fields and save action remain unavailable.<br>**Edit mode:** Two-step — enter Patient ID, form appears pre-filled; Patient ID is locked in edit mode.<br>GP fields: Diagnosis, Total Cost.<br>Case fields: Diagnosis, Total Cost, Lab Name, Lab Send Date, Delivery Date, Paid, Remaining (auto).<br>Save button enabled once required fields are valid. |

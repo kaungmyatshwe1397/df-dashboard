@@ -314,8 +314,42 @@ function makeThenable(resolver: () => { data: unknown; error: null }) {
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(() => ({
     from: vi.fn((table: string) => mockQuery(table, db[table] || [])),
-    // Mirrors the record-only RPC: require an existing patient before adding a visit.
+    // Mirrors both registry RPCs; the atomic variant commits one ledger result per submission.
     rpc: vi.fn((fn: string, args: Record<string, unknown>) => {
+      if (fn === "save_registered_record") {
+        const record = args.p_record as Record<string, unknown>;
+        const submissionId = args.p_submission_id as string;
+        const request = JSON.stringify([args.p_patient_id, record, args.p_initial_payment]);
+        const submissions = db.record_save_submissions ??= [];
+        const previous = submissions.find((row) => (row as Record<string, unknown>).id === submissionId) as Record<string, unknown> | undefined;
+        if (previous) return Promise.resolve(previous.request === request
+          ? { data: previous.result, error: null }
+          : { data: null, error: { code: "22023", message: "This save already used different values. Retry the original values, then edit the saved record." } });
+        const patient = (db.patients as Record<string, unknown>[]).find((row) => row.patient_id === args.p_patient_id);
+        if (!patient) return Promise.resolve({ data: null, error: { code: "23503", message: "Patient ID is not registered. Register the patient before adding a record." } });
+        const amount = Number(args.p_initial_payment);
+        if (amount < 0 || amount > Number(record.total_cost)) return Promise.resolve({ data: null, error: { code: "22023", message: "Invalid initial payment." } });
+        const monthYear = String(record.entry_date).slice(0, 7);
+        let cycle = (db.monthly_cycles as Record<string, unknown>[]).find((row) => row.month_year === monthYear);
+        if (!cycle) {
+          cycle = { id: crypto.randomUUID(), month_year: monthYear };
+          db.monthly_cycles.push(cycle);
+        }
+        const [year, month] = monthYear.split("-");
+        const label = `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(month) - 1]} ${year}`;
+        const visit = { ...record, id: crypto.randomUUID(), cycle_id: cycle.id, month_label: label,
+          patient_name: patient.patient_name, address: patient.address ?? null, is_carried_forward: false,
+          paid: amount, remaining: Number(record.total_cost) - amount };
+        const payment = record.category === "CASE" && amount > 0 ? {
+          id: crypto.randomUUID(), record_id: visit.id, payment_date: record.entry_date,
+          paid_amount: amount, payment_note: "Initial payment", payment_status: "COMPLETED",
+        } : null;
+        db.patient_records.push(visit);
+        if (payment) db.case_payments.push(payment);
+        const result = { record: visit, payment, cycle };
+        submissions.push({ id: submissionId, request, result });
+        return Promise.resolve({ data: result, error: null });
+      }
       if (fn !== "register_patient_with_record") {
         return Promise.resolve({ data: null, error: { message: `Unknown function ${fn}` } });
       }

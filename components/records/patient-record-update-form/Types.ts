@@ -8,6 +8,7 @@ import {
   PatientType,
   Gender,
 } from "@/lib/global";
+import { getLocalDate } from "@/lib/record-date";
 
 export interface PatientRecordUpdateFormProps {
   open: boolean;
@@ -18,6 +19,7 @@ export interface PatientRecordUpdateFormProps {
 }
 
 export interface FormErrors {
+  recordDate?: string;
   patientId?: string;
   patientName?: string;
   age?: string;
@@ -32,6 +34,7 @@ export interface FormErrors {
 // Full controlled form state: identity + demographics + treatment.
 // Demographics live only on the patients table — never on records.
 export interface FormState {
+  recordDate: string;
   patientId: string;
   patientName: string;
   address: string;
@@ -53,6 +56,7 @@ export interface FormState {
 
 export function getEmptyForm(): FormState {
   return {
+    recordDate: getLocalDate(),
     patientId: "",
     patientName: "",
     address: "",
@@ -80,6 +84,7 @@ export function getInitialForm(
   const isCase = record.category === RecordCategory.CASE;
   const caseRecord = isCase ? (record as CasePatientRecordType) : null;
   return {
+    recordDate: record.entry_date,
     patientId: record.patient_id,
     patientName: patient?.patient_name ?? record.patient_name,
     address: patient?.address ?? record.address ?? "",
