@@ -14,15 +14,15 @@ export default function AdminRegisterPatientsPage() {
     <PortalLayout>
       <div>
         <h1 className="text-h1 font-bold text-foreground m-0 mb-1">
-          Registered Patients
+          Patient Registration
         </h1>
         <p className="text-body-sm text-muted-foreground m-0 mb-7">
-          Every patient in the registry. Select a row to view full details.
+          Manage registered and unregistered patients without changing their visit history.
         </p>
         <RegisteredPatientsTable
           onRowSelect={(patient) =>
             router.push(
-              `/admin/register-patients/detail?id=${encodeURIComponent(patient.patient_id)}`
+              `/admin/register-patients/detail?uuid=${encodeURIComponent(patient.id)}`
             )
           }
         />

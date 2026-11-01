@@ -9,19 +9,21 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CircleDollarSign, ChevronRight, ChevronDown } from "lucide-react";
+import { CircleDollarSign, ChevronDown, Pencil } from "lucide-react";
 import { CasePatientRecordType } from "@/lib/global";
 import { formatDate } from "./RecordTableHelpers";
 import { PaymentHistoryRow } from "./PaymentHistoryRow";
 
 export interface PaymentRowProps {
   record: CasePatientRecordType;
+  rowNumber: number;
   remaining: number;
   totalPaid: number;
   isSettled: boolean;
   isExpanded: boolean;
   onToggleExpand: (id: string) => void;
   onPay?: (record: CasePatientRecordType) => void;
+  onEdit?: (record: CasePatientRecordType) => void;
 }
 
 function formatCurrency(amount: number): string {
@@ -33,92 +35,36 @@ function formatCurrency(amount: number): string {
 
 export function PaymentRow({
   record,
+  rowNumber,
   remaining,
   totalPaid,
   isSettled,
   isExpanded,
   onToggleExpand,
   onPay,
+  onEdit,
 }: PaymentRowProps) {
   return (
     <>
       <TableRow
         className={record.is_carried_forward ? "bg-muted/30" : ""}
       >
-        <TableCell className="px-2">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => onToggleExpand(record.id)}
-            title={isExpanded ? "Collapse payment history" : "View payment history"}
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </Button>
-        </TableCell>
-        <TableCell className="font-medium tabular-nums">
-          {record.patient_id}
-        </TableCell>
-        <TableCell className="text-body-sm text-muted-foreground">
-          {formatDate(record.entry_date)}
-        </TableCell>
+        <TableCell className="text-caption text-muted-foreground tabular-nums">{rowNumber}</TableCell>
+        <TableCell className="truncate text-body-sm text-muted-foreground" title={formatDate(record.entry_date)}>{formatDate(record.entry_date)}</TableCell>
+        <TableCell className="truncate text-body-sm tabular-nums" title={record.patient_id ?? "Not assigned"}>{record.patient_id ?? "Not assigned"}</TableCell>
+        <TableCell className="truncate text-h4 font-semibold" title={record.patient_name}>{record.patient_name}</TableCell>
+        <TableCell className="truncate text-body-sm" title={record.diagnosis || undefined}>{record.diagnosis || "No diagnosis"}</TableCell>
+        <TableCell className="truncate text-body-sm text-muted-foreground" title={record.lab_name || undefined}>{record.lab_name || "Not assigned"}</TableCell>
+        <TableCell className="text-right text-body-sm font-medium tabular-nums">{formatCurrency(record.total_cost)}</TableCell>
+        <TableCell className="text-right text-body-sm tabular-nums">{formatCurrency(totalPaid)}</TableCell>
+        <TableCell className="text-right text-body-sm tabular-nums">{formatCurrency(remaining)}</TableCell>
+        <TableCell>{isSettled ? <Badge variant="default" className="bg-chart-2 text-background text-caption">Payment Complete</Badge> : <Badge variant="secondary" className="text-caption">Incomplete</Badge>}</TableCell>
         <TableCell>
-          <div className="flex items-center gap-2">
-            <span
-              className="font-medium max-w-50 truncate"
-              title={record.patient_name}
-            >
-              {record.patient_name}
-            </span>
-            {record.is_carried_forward && (
-              <Badge variant="outline" className="text-caption shrink-0">
-                Carried forward
-              </Badge>
-            )}
+          <div className="flex justify-end gap-1">
+            <Button variant="ghost" size="xs" onClick={() => onToggleExpand(record.id)} aria-label={isExpanded ? `Hide payments for ${record.patient_name}` : `View payments for ${record.patient_name}`}>Payments<ChevronDown className="size-3" /></Button>
+            {onEdit && <Button variant="outline" size="xs" onClick={() => onEdit(record)} aria-label={`Edit visit for ${record.patient_name}`}><Pencil className="size-3" />Edit</Button>}
+            {!isSettled && onPay && <Button variant="outline" size="xs" onClick={() => onPay(record)} aria-label={`Record payment for ${record.patient_name}`}><CircleDollarSign className="size-3" />Pay</Button>}
           </div>
-        </TableCell>
-        <TableCell className="text-body-sm text-muted-foreground max-w-50 truncate">
-          {record.diagnosis}
-        </TableCell>
-        <TableCell className="text-body-sm text-muted-foreground">
-          {record.lab_name}
-        </TableCell>
-        <TableCell className="text-right font-medium tabular-nums">
-          {formatCurrency(record.total_cost)}
-        </TableCell>
-        <TableCell className="text-right tabular-nums">
-          {formatCurrency(totalPaid)}
-        </TableCell>
-        <TableCell className="text-right tabular-nums">
-          <span className={remaining > 0 ? "text-muted-foreground" : ""}>
-            {formatCurrency(remaining)}
-          </span>
-        </TableCell>
-        <TableCell>
-          {isSettled ? (
-            <Badge variant="default" className="bg-chart-2 text-background text-caption">
-              Payment Complete
-            </Badge>
-          ) : (
-            <Badge variant="secondary" className="text-caption">
-              Incomplete
-            </Badge>
-          )}
-        </TableCell>
-        <TableCell>
-          {!isSettled && onPay && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => onPay(record)}
-              title="Record payment"
-            >
-              <CircleDollarSign className="h-4 w-4" />
-            </Button>
-          )}
         </TableCell>
       </TableRow>
       {isExpanded && (

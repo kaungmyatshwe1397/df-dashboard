@@ -19,7 +19,7 @@ export function MobileRecordCard({
     <Card size="sm" className="min-w-0" aria-label={`Record for ${record.patient_name}`}>
       <CardHeader>
         <CardTitle className="[overflow-wrap:anywhere]">{record.patient_name}</CardTitle>
-        <CardDescription className="[overflow-wrap:anywhere]">{record.patient_id}</CardDescription>
+        <CardDescription className="[overflow-wrap:anywhere]">{record.patient_id ?? "Not assigned"}</CardDescription>
         {isCase && (
           <div className="flex flex-wrap gap-2 pt-2">
             {record.is_carried_forward && <Badge variant="outline">Carried forward</Badge>}

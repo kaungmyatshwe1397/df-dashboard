@@ -275,7 +275,7 @@ export function LabReconciliationTable() {
                         <p className="text-caption text-muted-foreground lg:hidden">
                           Patient ID
                         </p>
-                        <p className="[overflow-wrap:anywhere] text-sm text-muted-foreground">{record.patient_id}</p>
+                        <p className="[overflow-wrap:anywhere] text-sm text-muted-foreground">{record.patient_id ?? "Not assigned"}</p>
                       </div>
                       <div className="order-first min-w-0 lg:order-none">
                         <p className="text-caption text-muted-foreground lg:hidden">

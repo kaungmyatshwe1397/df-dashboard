@@ -35,6 +35,7 @@ interface CaseFormFieldsProps {
   remaining: string;
   saving: boolean;
   updateField: (field: string, value: string) => void;
+  isEditing?: boolean;
 }
 
 function generateDiagnosis(caseType: string, teeth: string): string {
@@ -49,6 +50,7 @@ export function CaseFormFields({
   remaining,
   saving,
   updateField,
+  isEditing = false,
 }: CaseFormFieldsProps) {
   const generatedDiagnosis = generateDiagnosis(form.caseType, form.teeth);
 
@@ -163,7 +165,7 @@ export function CaseFormFields({
           value={form.paid}
           onChange={(e) => updateField("paid", e.target.value)}
           aria-invalid={!!errors.paid}
-          disabled={saving}
+          disabled={saving || isEditing}
         />
       </FormField>
 

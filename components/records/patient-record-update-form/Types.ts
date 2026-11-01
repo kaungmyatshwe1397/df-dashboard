@@ -23,6 +23,7 @@ export interface FormErrors {
   patientId?: string;
   patientName?: string;
   age?: string;
+  gender?: string;
   diagnosis?: string;
   caseType?: string;
   teeth?: string;
@@ -85,7 +86,7 @@ export function getInitialForm(
   const caseRecord = isCase ? (record as CasePatientRecordType) : null;
   return {
     recordDate: record.entry_date,
-    patientId: record.patient_id,
+    patientId: record.patient_id ?? "",
     patientName: patient?.patient_name ?? record.patient_name,
     address: patient?.address ?? record.address ?? "",
     age: patient ? String(patient.age) : "",

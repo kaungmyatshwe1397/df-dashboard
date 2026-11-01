@@ -1,4 +1,4 @@
-// PatientDetailDialog — read-only registry card for one patient.
+// PatientDetailDialog — registry card and management actions for one patient.
 // Opened from the detail route (?id=NNNN/YY); fetches the registry row
 // itself so both admin and assistant detail pages stay thin.
 // States: loading, found, not-found, fetch error (retry).
@@ -27,10 +27,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { PatientType } from "@/lib/global";
 import { usePatients } from "@/context/hooks/usePatients";
+import { useCanEdit } from "@/context/AuthContext";
+import { useData } from "@/context/DataContext";
+import { AddPatientDialog } from "./AddPatientDialog";
 import { formatPatientProfileDate } from "./helpers";
 
 export interface PatientDetailDialogPropsType {
   patientId: string;
+  patientUuid?: string;
   onClose: () => void;
 }
 
@@ -68,16 +72,23 @@ function DetailList({ label, items }: { label: string; items: string[] }) {
 
 export function PatientDetailDialog({
   patientId,
+  patientUuid,
   onClose,
 }: PatientDetailDialogPropsType) {
-  const { findPatientById } = usePatients();
+  const { findPatientById, findPatientByUuid, setPatientRegistration } = usePatients();
+  const { refreshData } = useData();
+  const canEdit = useCanEdit();
   const [patient, setPatient] = useState<PatientType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [registrationMode, setRegistrationMode] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     // No ?id= in the URL — render the not-found state without a network call.
-    if (!patientId.trim()) {
+    if (!patientId.trim() && !patientUuid) {
       setPatient(null);
       setError(null);
       setLoading(false);
@@ -86,7 +97,7 @@ export function PatientDetailDialog({
     setLoading(true);
     setError(null);
     try {
-      setPatient(await findPatientById(patientId));
+      setPatient(patientUuid ? await findPatientByUuid(patientUuid) : await findPatientById(patientId));
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load patient details."
@@ -94,7 +105,7 @@ export function PatientDetailDialog({
     } finally {
       setLoading(false);
     }
-  }, [findPatientById, patientId]);
+  }, [findPatientById, findPatientByUuid, patientId, patientUuid]);
 
   // Initial fetch on mount: only the loading flag flips synchronously —
   // patient/error land after the promise resolves.
@@ -104,20 +115,35 @@ export function PatientDetailDialog({
   }, [load]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  async function unregister() {
+    if (!patient) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      await setPatientRegistration(patient.id, false);
+      refreshData();
+      await load();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Could not unregister patient.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <><Dialog open={!formOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         className="patient-detail-dialog max-h-[90vh] overflow-y-auto sm:max-w-2xl"
         showCloseButton={false}
       >
         <DialogHeader>
           <DialogTitle className="text-h3">
-            Registered patient profile
+            Patient profile
           </DialogTitle>
           <DialogDescription className="flex flex-wrap items-center gap-2">
             <span>{loading ? "Loading patient details…" : "Patient ID"}</span>
             {!loading && patient && (
-              <Badge variant="secondary">{patient.patient_id}</Badge>
+              <Badge variant="secondary">{patient.patient_id ?? "Not assigned"}</Badge>
             )}
           </DialogDescription>
         </DialogHeader>
@@ -149,9 +175,9 @@ export function PatientDetailDialog({
         {!loading && !error && !patient && (
           <div className="py-4 text-center" data-testid="patient-not-found">
             <p className="text-sm text-muted-foreground mb-1">
-              {patientId.trim() ? (
+              {patientId.trim() || patientUuid ? (
                 <>
-                  Patient <span className="font-medium">{patientId}</span> was
+                  Patient <span className="font-medium">{patientUuid ?? patientId}</span> was
                   not found.
                 </>
               ) : (
@@ -166,6 +192,7 @@ export function PatientDetailDialog({
 
         {!loading && !error && patient && (
           <div className="space-y-4 py-1">
+            {actionError && <Alert variant="destructive"><AlertDescription>{actionError}</AlertDescription></Alert>}
             <Card size="sm" className="bg-muted/20">
               <CardHeader className="border-b">
               <CardTitle className="text-h4">Patient information</CardTitle>
@@ -176,8 +203,9 @@ export function PatientDetailDialog({
                 </div>
                 <DetailRow
                   label="Registered"
-                  value={formatPatientProfileDate(patient.created_at)}
+                  value={formatPatientProfileDate(patient.registered_at)}
                 />
+                <DetailRow label="Registration status" value={patient.is_registered ? "Registered" : "Unregistered"} />
                 <DetailRow label="Age" value={`${patient.age} years`} />
                 <DetailRow label="Gender" value={patient.gender} />
                 <div className="sm:col-span-2">
@@ -219,6 +247,12 @@ export function PatientDetailDialog({
                 </div>
               </CardContent>
             </Card>
+            {canEdit && <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" disabled={busy} onClick={() => { setRegistrationMode(false); setFormOpen(true); }}>Edit patient</Button>
+              {patient.is_registered
+                ? <Button size="sm" variant="destructive" disabled={busy} onClick={unregister}>Unregister</Button>
+                : <Button size="sm" disabled={busy} onClick={() => { setRegistrationMode(true); setFormOpen(true); }}>Register</Button>}
+            </div>}
           </div>
         )}
 
@@ -239,5 +273,7 @@ export function PatientDetailDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <AddPatientDialog open={formOpen} patient={patient} registrationMode={registrationMode} onOpenChange={setFormOpen} onCreated={() => { setFormOpen(false); refreshData(); load(); }} />
+    </>
   );
 }

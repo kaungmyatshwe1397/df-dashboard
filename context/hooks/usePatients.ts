@@ -1,115 +1,69 @@
-// ============================================
-// usePatients — Patient Registry Hook
-// ============================================
-// Registry listings, lookups, and demographic updates.
-// Extracted from DataContext to follow Single Responsibility Principle.
-
+// UUID-based patient operations keep clinic registration separate from person identity.
 import { useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { PatientType, PatientUpdatesType, PatientPayloadType } from "@/lib/global";
+import type { PatientType, PatientUpdatesType, PatientPayloadType, PatientFiltersType, PatientSearchResultType, NewPatientPayloadType } from "@/lib/global";
 import { toPatientType } from "@/lib/data-helpers";
+
+function patientError(error: { code?: string; message?: string }): Error {
+  if (error.code === "23505") return new Error("This clinic ID is already assigned. Choose a different ID or select the existing patient.");
+  return new Error(error.message || "Could not save patient details. Please try again.");
+}
 
 export function usePatients() {
   const supabaseRef = useRef(createClient());
-
-  const findPatientById = useCallback(
-    async (patientId: string): Promise<PatientType | null> => {
-      const trimmed = patientId.trim();
-      if (!trimmed) return null;
-
-      const { data, error } = await supabaseRef.current
-        .from("patients")
-        .select("*")
-        .eq("patient_id", trimmed)
-        .maybeSingle();
-
-      if (error) {
-        throw new Error(error.message || "Failed to look up patient.");
-      }
-      return data ? toPatientType(data) : null;
-    },
-    []
-  );
-
-  // Updates the registry row; when name/address change, the same values
-  // are propagated to all of this patient's records so tables stay in sync.
-  const updatePatient = useCallback(
-    async (patientId: string, updates: PatientUpdatesType): Promise<void> => {
-      const trimmed = patientId.trim();
-      if (!trimmed) throw new Error("Patient ID is required.");
-
-      const { error } = await supabaseRef.current
-        .from("patients")
-        .update(updates)
-        .eq("patient_id", trimmed);
-
-      if (error) {
-        throw new Error(error.message || "Failed to update patient.");
-      }
-
-      const propagate: Record<string, string | null> = {};
-      if (updates.patient_name !== undefined) {
-        propagate.patient_name = updates.patient_name;
-      }
-      if (updates.address !== undefined) {
-        propagate.address = updates.address;
-      }
-
-      if (Object.keys(propagate).length > 0) {
-        const { error: recordsError } = await supabaseRef.current
-          .from("patient_records")
-          .update(propagate)
-          .eq("patient_id", trimmed);
-
-        if (recordsError) {
-          throw new Error(
-            recordsError.message || "Failed to update patient records."
-          );
-        }
-      }
-    },
-    []
-  );
-
-  // Full registry listing for the Registered Patients page, newest first.
-  const listPatients = useCallback(async (): Promise<PatientType[]> => {
-    const { data, error } = await supabaseRef.current
-      .from("patients")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      throw new Error(error.message || "Failed to load patients.");
-    }
-    return (data ?? []).map(toPatientType);
+  const findPatientById = useCallback(async (patientId: string): Promise<PatientType | null> => {
+    if (!patientId.trim()) return null;
+    const { data, error } = await supabaseRef.current.from("patients").select("*").eq("patient_id", patientId.trim()).maybeSingle();
+    if (error) throw new Error("Could not find the patient. Please try again.");
+    return data ? toPatientType(data) : null;
   }, []);
-
-  // Registers a new patient in the registry (no visit record yet).
-  const createPatient = useCallback(
-    async (patient: PatientPayloadType): Promise<void> => {
-      const { error } = await supabaseRef.current.from("patients").insert({
-        patient_id: patient.patient_id,
-        patient_name: patient.patient_name,
-        age: patient.age,
-        gender: patient.gender,
-        address: patient.address ?? null,
-        drug_allergy: patient.drug_allergy ?? null,
-        past_dental_history: patient.past_dental_history ?? null,
-        current_medications: patient.current_medications,
-        past_medical_history: patient.past_medical_history,
-      });
-
-      if (error) {
-        if (error.code === "23505") {
-          throw new Error(
-            "This Patient ID is already registered. Please use a different ID."
-          );
-        }
-        throw new Error(error.message || "Failed to register patient.");
-      }
-    },
-    []
-  );
-
-  return { listPatients, findPatientById, updatePatient, createPatient };
+  const findPatientByUuid = useCallback(async (uuid: string): Promise<PatientType | null> => {
+    if (!uuid) return null;
+    const { data, error } = await supabaseRef.current.from("patients").select("*").eq("id", uuid).maybeSingle();
+    if (error) throw new Error("Could not load patient details. Please try again.");
+    return data ? toPatientType(data) : null;
+  }, []);
+  const updatePatient = useCallback(async (uuid: string, updates: PatientUpdatesType): Promise<void> => {
+    if (!uuid.trim()) throw new Error("Patient identity is required.");
+    const { data, error } = await supabaseRef.current.from("patients").update(updates).eq("id", uuid).select("id").single();
+    if (error || !data) throw patientError(error ?? {});
+  }, []);
+  const searchPatients = useCallback(async (filters: PatientFiltersType, page = 1, exactName?: string, descending = false, sortBy?: "id" | "name" | "registered_at"): Promise<PatientSearchResultType> => {
+    const params = {
+      p_query: filters.query.trim(), p_address: filters.address.trim(),
+      p_age: filters.age === "" ? null : Number(filters.age), p_gender: filters.gender || null,
+      p_registered: filters.registration === "all" ? null : filters.registration === "registered",
+      p_page: page, p_page_size: 10, p_exact_name: exactName ?? null, p_sort_desc: descending,
+    };
+    const { data, error } = sortBy
+      ? await supabaseRef.current.rpc("search_patients_sorted", { ...params, p_sort_key: sortBy })
+      : await supabaseRef.current.rpc("search_patients", params);
+    if (error || !data) throw new Error("Could not search patients. Check your connection and retry.");
+    return { patients: (data.patients ?? []).map(toPatientType), total: Number(data.total) };
+  }, []);
+  const findPossiblePatients = useCallback(async (patient: NewPatientPayloadType): Promise<PatientSearchResultType> => {
+    return searchPatients({ query: "", address: "", age: String(patient.age), gender: patient.gender, registration: "all" }, 1, patient.patient_name);
+  }, [searchPatients]);
+  const listPatients = useCallback(async (): Promise<PatientType[]> => {
+    // Existing consumers still receive a complete listing beyond the API's default row limit.
+    const result: PatientType[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await supabaseRef.current.from("patients").select("*").order("id").range(offset, offset + 999);
+      if (error) throw new Error("Could not load patients. Please retry.");
+      result.push(...(data ?? []).map(toPatientType));
+      if (!data || data.length < 1000) return result;
+    }
+  }, []);
+  const createPatient = useCallback(async (patient: PatientPayloadType): Promise<void> => {
+    const { error } = await supabaseRef.current.from("patients").insert({ ...patient, is_registered: true });
+    if (error) throw patientError(error);
+  }, []);
+  const setPatientRegistration = useCallback(async (uuid: string, registered: boolean, clinicId?: string | null, updates: PatientUpdatesType = {}): Promise<PatientType> => {
+    const { data, error } = await supabaseRef.current.rpc("set_patient_registration", {
+      p_patient_uuid: uuid, p_registered: registered, p_patient_id: clinicId ?? null, p_updates: updates,
+    });
+    if (error || !data) throw patientError(error ?? {});
+    return toPatientType(data);
+  }, []);
+  return { listPatients, searchPatients, findPossiblePatients, findPatientById, findPatientByUuid, updatePatient, createPatient, setPatientRegistration };
 }

@@ -18,6 +18,7 @@ function PatientDetailContent({ listPath }: { listPath: string }) {
   return (
     <PatientDetailDialog
       patientId={patientId}
+      patientUuid={searchParams.get("uuid") ?? undefined}
       onClose={() => router.push(listPath)}
     />
   );

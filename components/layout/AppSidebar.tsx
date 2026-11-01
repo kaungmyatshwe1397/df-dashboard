@@ -13,6 +13,11 @@ import {
   Calculator,
   FlaskConical,
   LayoutDashboard,
+  CalendarDays,
+  Boxes,
+  CreditCard,
+  FileBarChart,
+  BriefcaseBusiness,
   LogOut,
   Moon,
   Settings,
@@ -56,6 +61,14 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
+const upcomingAdminItems = [
+  { title: "Appointments", icon: CalendarDays },
+  { title: "Inventory", icon: Boxes },
+  { title: "Staff", icon: BriefcaseBusiness },
+  { title: "Billing", icon: CreditCard },
+  { title: "Reports", icon: FileBarChart },
+];
+
 const assistantNavItems: NavItem[] = [
   { title: "Records", href: "/assistant", icon: TableProperties },
   { title: "Registered Patients", href: "/assistant/register-patients", icon: UsersRound },
@@ -76,7 +89,8 @@ const adminNavItems: NavItem[] = [
 ];
 
 function isActivePath(pathname: string, href: string) {
-  if (href === "/admin" || href === "/assistant") return pathname === href;
+  if (href === "/assistant") return pathname === href || pathname.startsWith("/assistant/records/");
+  if (href === "/admin") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -153,6 +167,16 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
+              {isAdmin && !isSupervisor && <>
+                <SidebarGroupLabel className="mt-4">Coming soon</SidebarGroupLabel>
+                <SidebarMenu>
+                  {upcomingAdminItems.map((item) => <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton aria-disabled="true" tooltip={`${item.title} — coming soon`} className="cursor-not-allowed opacity-60">
+                      <item.icon className="h-4 w-4" /><span>{item.title}</span><span className="ml-auto text-caption">Soon</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>)}
+                </SidebarMenu>
+              </>}
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>

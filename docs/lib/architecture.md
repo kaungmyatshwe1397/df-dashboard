@@ -45,15 +45,26 @@ Central data layer that:
 - Fetches all case_payments (small table, needed for balance calculations)
 - Provides CRUD operations for records, payments, financials, labs, case_types
 
-### Atomic record creation
+### Patient identity and atomic record creation
 
-New GP/CASE saves call `save_registered_record` through `atomicRecordSaveService`. The database creates or reuses the record-date cycle, verifies the registry patient, inserts the visit, and inserts any initial CASE payment within one transaction. Any error rolls back all writes, including the submission ledger. Existing record edits and later installment payments use their existing paths.
+Patients have permanent UUID identities independent of clinic registration. Visits use
+`patient_uuid`; optional clinic `patient_id` values remain unique and permanently reserved.
+The patient directory has Registered and Unregistered tabs. Registration promotes the same
+profile, and unregistration preserves its assigned ID, visits, and payments.
 
-The form generates one UUID per submission and retains it after errors. `record_save_submissions` privately stores the authenticated owner, canonical JSON request, and committed result. A unique key and row lock serialize concurrent retries. Identical retries return the original result; different data under a committed submission ID is rejected. Retry the original values to recover an uncertain save, then use Edit for corrections. Closing/resetting the form starts a new submission; this identity does not survive a browser reload.
+New entry calls `save_patient_record` through `atomicRecordSaveService`: the database creates
+an optional unregistered profile, the record-date cycle, visit, and initial CASE receipt in
+one transaction. The private per-user submission ledger makes identical retries idempotent.
+Legacy registered-save RPCs retain their signatures and request/result contracts.
 
-The RPC uses `SECURITY DEFINER` with an empty search path, an explicit Admin/Assistant check, owner checks, and the existing registry function's treatment-field whitelist. Browser roles have no direct ledger access. No financial totals are returned. Date validation in the database uses the clinic timezone, `Asia/Bangkok`; the form still defaults from the user's local calendar.
+Global patient search is server-paginated; monthly visit queries join profiles through the UUID
+foreign key so filters use current age, gender, address, and registration status. Database
+triggers synchronize display copies and prevent identity reassignment. Profile and registration
+writes are available to Admin/Assistant, while Supervisor is read-only.
 
-Apply `supabase/migrations/20261011000000_atomic_record_save.sql` before releasing the corresponding frontend. See [atomic save implementation notes](../superpowers/plans/2026-10-11-atomic-record-save.md) for the deferred check list and [verification instructions](../lib/atomic-record-save.md).
+Apply `supabase/migrations/20261101000000_patient_registration_status.sql` before releasing
+the new frontend. See [patient registration](patient-registration.md) for interfaces, rollout,
+manual verification, and deferred test coverage.
 
 ### Role-Based Access
 

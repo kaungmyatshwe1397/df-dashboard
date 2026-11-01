@@ -1,266 +1,111 @@
-// RegisteredPatientsTable — searchable, sortable, paginated registry listing.
-// Reads the full patients registry once, filters and sorts client-side,
-// and reports row clicks so the host page can route to the detail dialog.
-// Handles the 5 UI states: ideal, loading, error, empty, search-no-match.
-
+// Separate status tabs retain one profile per person and load searchable pages from the database.
 "use client";
-
-import { useCallback, useEffect, useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowDown, ArrowUp, Pencil, Plus, Search, UsersRound } from "lucide-react";
-import { PatientType } from "@/lib/global";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ChevronDown, Filter, Plus, Search } from "lucide-react";
 import { usePatients } from "@/context/hooks/usePatients";
 import { useCanEdit } from "@/context/AuthContext";
-import {
-  ROWS_PER_PAGE,
-  TableEmpty,
-  TableError,
-  TablePagination,
-  TableSkeleton,
-} from "@/components/records/record-table/RecordTableHelpers";
-import { filterPatients, formatRegisteredDate, sortPatientsById } from "./helpers";
+import type { PatientType, PatientFiltersType, PatientSearchResultType } from "@/lib/global";
+import { EMPTY_PATIENT_FILTERS } from "@/lib/patient-search";
+import { PatientSearchFilters } from "@/components/patients/patientSearch/filters";
+import { ROWS_PER_PAGE, TablePagination } from "@/components/records/record-table/RecordTableHelpers";
 import { AddPatientDialog } from "./AddPatientDialog";
-import { Badge } from "@/components/ui/badge";
-import { PatientCard } from "./patientCard";
-
-export interface RegisteredPatientsTablePropsType {
-  onRowSelect: (patient: PatientType) => void;
-}
+import { DirectoryRows } from "./directoryRows";
 
 export { PatientDetailDialog } from "./patientDetailDialog";
+export interface RegisteredPatientsTablePropsType { onRowSelect: (patient: PatientType) => void; }
 
-export function RegisteredPatientsTable({
-  onRowSelect,
-}: RegisteredPatientsTablePropsType) {
-  const { listPatients } = usePatients();
+export function RegisteredPatientsTable({ onRowSelect }: RegisteredPatientsTablePropsType) {
+  const { searchPatients } = usePatients();
   const canEdit = useCanEdit();
-  const [patients, setPatients] = useState<PatientType[]>([]);
+  const [filters, setFilters] = useState<PatientFiltersType>({ ...EMPTY_PATIENT_FILTERS, registration: "registered" });
+  const [page, setPage] = useState(1);
+  const [result, setResult] = useState<PatientSearchResultType>({ patients: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [revision, setRevision] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingPatient, setEditingPatient] = useState<PatientType | null>(null);
-  const [sortDirection, setSortDirection] = useState<"ascending" | "descending">("ascending");
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setPatients(await listPatients());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load patients.");
-    } finally {
-      setLoading(false);
-    }
-  }, [listPatients]);
-
-  // Initial fetch on mount: only the loading flag flips synchronously —
-  // patients/error land after the promise resolves.
-  /* eslint-disable react-hooks/set-state-in-effect */
+  const [editing, setEditing] = useState<PatientType | null>(null);
+  const [registrationMode, setRegistrationMode] = useState(false);
+  const [sortBy, setSortBy] = useState<"id" | "name" | "registered_at">("id");
+  const [descending, setDescending] = useState(false);
   useEffect(() => {
-    load();
-  }, [load]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  const filtered = sortPatientsById(filterPatients(patients, query), sortDirection);
-  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
-  const pageRows = filtered.slice(startIndex, startIndex + ROWS_PER_PAGE);
-
-  function handleQueryChange(value: string) {
-    setQuery(value);
-    setCurrentPage(1);
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      const request = searchPatients(filters, page, undefined, descending, sortBy);
+      request.then((next) => {
+        if (!cancelled) {
+          if (page > 1 && next.patients.length === 0) { setPage(1); return; }
+          setResult(next); setLoading(false);
+        }
+      }).catch((err: unknown) => {
+        if (!cancelled) { setError(err instanceof Error ? err.message : "Could not load patients."); setLoading(false); }
+      });
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [searchPatients, filters, page, revision, descending, sortBy]);
+  function reload() { setLoading(true); setError(null); setRevision((value) => value + 1); }
+  function changeFilters(next: PatientFiltersType) { setFilters(next); setPage(1); setLoading(true); setError(null); }
+  function edit(patient: PatientType | null, registration: boolean) { setEditing(patient); setRegistrationMode(registration); setDialogOpen(true); }
+  const activeFilterCount = [filters.address, filters.age].filter(Boolean).length;
+  const sortValue = `${sortBy}:${descending ? "desc" : "asc"}`;
+  function changeSort(value: string) {
+    const [key, direction] = value.split(":");
+    if (key !== "id" && key !== "name" && key !== "registered_at") return;
+    setSortBy(key);
+    setDescending(direction === "desc");
+    setPage(1);
+    setLoading(true);
   }
-
-  function openAddDialog() {
-    setEditingPatient(null);
-    setDialogOpen(true);
-  }
-
-  function openEditDialog(patient: PatientType) {
-    setEditingPatient(patient);
-    setDialogOpen(true);
-  }
-
-  function handleDialogOpenChange(open: boolean) {
-    setDialogOpen(open);
-    if (!open) setEditingPatient(null);
-  }
-
-  if (loading) return <TableSkeleton columns={canEdit ? 6 : 5} />;
-
-  if (error) {
-    return <TableError message={error} onRetry={load} />;
-  }
-
-  if (patients.length === 0) {
-    return (
-      <>
-        <TableEmpty
-          message="No registered patients yet."
-          onAdd={canEdit ? openAddDialog : undefined}
-          addLabel="Add Patient"
-        />
-        <AddPatientDialog
-          open={dialogOpen}
-          patient={editingPatient}
-          onOpenChange={handleDialogOpenChange}
-          onCreated={load}
-        />
-      </>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Badge variant="secondary" className="w-fit gap-2 px-3 py-1.5 text-sm font-medium">
-          <UsersRound className="h-4 w-4" aria-hidden="true" />
-          <span aria-live="polite">
-            {filtered.length} registered
-          </span>
-        </Badge>
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-          {canEdit && (
-            <Button size="sm" onClick={openAddDialog}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              Add Patient
-            </Button>
-          )}
-          <div className="relative w-full sm:w-48">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => handleQueryChange(e.target.value)}
-              placeholder="Search patient ID"
-              aria-label="Search registered patients by ID"
-              className="h-7 pl-8"
-            />
-          </div>
-        </div>
-      </div>
-
-      {filtered.length === 0 ? (
-        <TableEmpty message={`No patients match “${query.trim()}”.`} />
-      ) : (
-        <>
-        <div className="space-y-3 lg:hidden">
-          {pageRows.map((patient) => <PatientCard key={patient.id} patient={patient} onSelect={onRowSelect} />)}
-        </div>
-        <div className="hidden rounded-xl border border-border lg:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">No</TableHead>
-                <TableHead aria-sort={sortDirection}>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="-ml-2"
-                    onClick={() =>
-                      setSortDirection((current) =>
-                        current === "ascending" ? "descending" : "ascending"
-                      )
-                    }
-                    aria-label={`Sort patient IDs ${sortDirection === "ascending" ? "descending" : "ascending"}`}
-                  >
-                    Patient ID
-                    {sortDirection === "ascending" ? (
-                      <ArrowUp className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
-                    ) : (
-                      <ArrowDown className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
-                    )}
-                  </Button>
-                </TableHead>
-                <TableHead>Registered</TableHead>
-                <TableHead>Patient Name</TableHead>
-                <TableHead>Address</TableHead>
-                {canEdit && <TableHead className="w-20 text-right">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageRows.map((patient, i) => (
-                <TableRow
-                  key={patient.id}
-                  tabIndex={0}
-                  className="cursor-pointer"
-                  onClick={() => onRowSelect(patient)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") onRowSelect(patient);
-                  }}
-                >
-                  <TableCell className="text-sm text-muted-foreground tabular-nums">
-                    {startIndex + i + 1}
-                  </TableCell>
-                  <TableCell className="font-medium tabular-nums">
-                    {patient.patient_id}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground tabular-nums">
-                    {formatRegisteredDate(patient.created_at)}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className="font-medium max-w-50 truncate"
-                      title={patient.patient_name}
-                    >
-                      {patient.patient_name}
-                    </span>
-                  </TableCell>
-                  <TableCell
-                    className="text-sm text-muted-foreground max-w-[240px] truncate"
-                    title={patient.address}
-                  >
-                    {patient.address || "—"}
-                  </TableCell>
-                  {canEdit && (
-                    <TableCell className="text-right">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        title="Edit patient"
-                        aria-label={`Edit ${patient.patient_name}`}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openEditDialog(patient);
-                        }}
-                        onKeyDown={(event) => event.stopPropagation()}
-                      >
-                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                      </Button>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        </>
-      )}
-
-      <TablePagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
-
-      <AddPatientDialog
-        open={dialogOpen}
-        patient={editingPatient}
-        onOpenChange={handleDialogOpenChange}
-        onCreated={load}
-      />
+  return <div className="grid gap-4">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+    <Tabs value={filters.registration} onValueChange={(next) => {
+      if (next === "registered" || next === "unregistered") changeFilters({ ...filters, registration: next });
+    }}><TabsList variant="line"><TabsTrigger value="registered">Registered</TabsTrigger><TabsTrigger value="unregistered">Unregistered</TabsTrigger></TabsList></Tabs>
+      {canEdit && <Button size="sm" onClick={() => edit(null, true)}><Plus className="size-4" />Add Patient</Button>}
     </div>
-  );
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+      <div className="relative min-w-0 flex-1">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input aria-label="Search by name or clinic ID" className="pl-9" value={filters.query} placeholder="Search by name or clinic ID" onChange={(event) => changeFilters({ ...filters, query: event.target.value })} />
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Sheet>
+          <SheetTrigger render={<Button variant="outline" size="sm" />}><Filter className="size-4" />Filters{activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount}</Badge>}</SheetTrigger>
+          <SheetContent>
+            <SheetHeader><SheetTitle>Filter patients</SheetTitle><SheetDescription>Narrow the directory by address or exact age.</SheetDescription></SheetHeader>
+            <div className="overflow-y-auto px-4"><PatientSearchFilters value={filters} onChange={changeFilters} showRegistration={false} showQuery={false} showGender={false} /></div>
+          </SheetContent>
+        </Sheet>
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>Sort by<ChevronDown className="size-4" /></DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-48">
+            <DropdownMenuRadioGroup value={sortValue} onValueChange={changeSort}>
+              <DropdownMenuRadioItem value="id:asc">Clinic ID: ascending</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="id:desc">Clinic ID: descending</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="name:asc">Name: A–Z</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="name:desc">Name: Z–A</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="registered_at:desc">{filters.registration === "registered" ? "Registered: newest first" : "Added: newest first"}</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="registered_at:asc">{filters.registration === "registered" ? "Registered: oldest first" : "Added: oldest first"}</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+    <Badge variant="secondary" className="w-fit" aria-live="polite">{loading ? "Loading..." : `${result.total} ${filters.registration} patients`}</Badge>
+    {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription><Button variant="outline" onClick={reload}>Retry</Button></Alert>}
+    {loading ? <p role="status">Loading patients...</p> : error ? null : <>
+      {!result.patients.length && <p className="text-body-sm">No {filters.registration} patients match. Try fewer filters.</p>}
+      <DirectoryRows patients={result.patients} rowOffset={(page - 1) * ROWS_PER_PAGE} onSelect={onRowSelect} />
+      <TablePagination currentPage={page} totalPages={Math.ceil(result.total / ROWS_PER_PAGE)} onPageChange={(next) => { setPage(next); setLoading(true); }} />
+    </>}
+    <AddPatientDialog open={dialogOpen} patient={editing} registrationMode={registrationMode}
+      onOpenChange={setDialogOpen} onCreated={reload} />
+  </div>;
 }

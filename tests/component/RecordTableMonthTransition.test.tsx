@@ -11,8 +11,23 @@ vi.mock("@/context/AuthContext", () => ({ useCanEdit: () => true }));
 afterEach(cleanup);
 
 describe("record table month transitions", () => {
+  test("keeps compact search and detailed filters available", () => {
+    vi.mocked(useData).mockReturnValue({
+      records: [], loading: false, error: null, selectedMonth: "Nov 2026",
+      setSelectedMonth: vi.fn(), refreshData: vi.fn(),
+    } as unknown as ReturnType<typeof useData>);
+    render(<RecordTable onAdd={vi.fn()} onEdit={vi.fn()} />);
+    expect(screen.getByRole("textbox", { name: "Search records by patient name or clinic ID" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+    expect(screen.getByRole("dialog", { name: "Filter records" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Registration")).toBeInTheDocument();
+    expect(screen.getByLabelText("Gender")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Location / address")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Age")).not.toBeInTheDocument();
+  });
   test("keeps the CASE tab and the backdated visit visible after loading another month", () => {
     const record: CasePatientRecordType = {
+  patient_uuid: "patient-fixture",
       id: "backdated-case", cycle_id: "cycle-aug", patient_id: "0001/26",
       patient_name: "Backdated Patient", entry_date: "2026-08-07", month_label: "Aug 2026",
       category: RecordCategory.CASE, diagnosis: "Crown", total_cost: 75000,
@@ -40,5 +55,9 @@ describe("record table month transitions", () => {
     rerender(<RecordTable {...props} />);
     expect(screen.getByRole("tab", { name: "Case Records" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getAllByText("Backdated Patient").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(11);
+    expect(screen.getAllByRole("columnheader").slice(0, 3).map((header) => header.textContent)).toEqual(["#", "Date", "Patient ID"]);
+    expect(screen.getAllByText("Total").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Remaining").length).toBeGreaterThan(0);
   });
 });

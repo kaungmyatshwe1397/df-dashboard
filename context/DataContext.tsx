@@ -12,6 +12,7 @@ import {
   CaseType,
   MedicalHistoryOptionType,
   PatientType,
+  PatientSourceType,
   PatientUpdatesType,
   RecordCategory,
   PaymentStatus,
@@ -24,7 +25,7 @@ import {
   toCustomOverhead,
   toMedicalHistoryOptions,
 } from "@/lib/data-helpers";
-import { saveRegisteredRecord } from "@/lib/services/atomicRecordSaveService";
+import { savePatientRecord, saveRegisteredRecord } from "@/lib/services/atomicRecordSaveService";
 import { resolveRecordCycle } from "@/lib/services/recordCycleService";
 import { getLocalDate, getRecordDateError } from "@/lib/record-date";
 import { useLab } from "./hooks/useLab";
@@ -50,8 +51,8 @@ interface DataContextType {
   getRecordTotalPaid: (recordId: string) => number;
   refreshData: () => void;
   addRecord: (
-    record: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label"> & { entry_date?: string },
-    patientId: string,
+    record: Record<string, unknown> & { entry_date?: string },
+    patient: PatientSourceType | string,
     initialPayment?: number,
     submissionId?: string
   ) => Promise<void>;
@@ -60,6 +61,7 @@ interface DataContextType {
   addPayment: (payment: Omit<CasePayment, "id" | "payment_date">) => Promise<void>;
   findRecordByPatientId: (patientId: string, category?: RecordCategory) => PatientRecord | undefined;
   findPatientById: (patientId: string) => Promise<PatientType | null>;
+  findPatientByUuid: (uuid: string) => Promise<PatientType | null>;
   updatePatient: (patientId: string, updates: PatientUpdatesType) => Promise<void>;
   updateFinancials: (updates: Partial<Omit<MonthlyFinancials, "id" | "cycle_id">>) => Promise<void>;
   addCustomOverhead: (item: Omit<CustomOverhead, "id">) => Promise<void>;
@@ -77,7 +79,12 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 
 
-export function DataProvider({ children }: { children: ReactNode }) {
+interface DataProviderPropsType {
+  children: ReactNode;
+  initialMonth?: string;
+}
+
+export function DataProvider({ children, initialMonth }: DataProviderPropsType) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [allRecords, setAllRecords] = useState<PatientRecord[]>([]);
@@ -86,19 +93,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [medicalHistoryOptions, setMedicalHistoryOptions] = useState<MedicalHistoryOptionType[]>([]);
   const { labs, setLabs, addLab, updateLab, deleteLab } = useLab();
   const { caseTypes, setCaseTypes, addCaseType, updateCaseType, deleteCaseType } = useCaseType();
-  const { findPatientById, updatePatient: updatePatientRow } = usePatients();
+  const { findPatientById, findPatientByUuid, updatePatient: updatePatientRow } = usePatients();
   const { setAllFinancials, getFinancialsForCycle, updateFinancials, addCustomOverhead, removeCustomOverhead } = useFinancials();
-  const [selectedMonth, setSelectedMonthState] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("lastSelectedMonth") ?? "";
+  const [selectedMonth, setSelectedMonthState] = useState(initialMonth ?? "");
+
+  useEffect(() => {
+    try {
+      const savedMonth = localStorage.getItem("lastSelectedMonth");
+      // Browser persistence must not change the first render that hydrates server HTML.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (savedMonth) setSelectedMonthState(savedMonth);
+    } catch {
+      // Blocked storage leaves the shared initial month usable.
     }
-    return "";
-  });
+  }, []);
 
   const setSelectedMonth = useCallback((month: string) => {
     setSelectedMonthState(month);
-    if (typeof window !== "undefined") {
+    try {
       localStorage.setItem("lastSelectedMonth", month);
+    } catch {
+      // Month selection still works when browser storage is unavailable.
     }
   }, []);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -218,7 +233,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const [recordsRes, paymentsRes] = await Promise.all([
-        supabase.from("patient_records").select("*").eq("month_label", month).order("entry_date", { ascending: true }),
+        supabase.from("patient_records").select("*, patient:patients!patient_records_patient_uuid_fkey(*)").eq("month_label", month).order("entry_date", { ascending: true }),
         supabase.from("case_payments").select("*").order("payment_date", { ascending: true }),
       ]);
 
@@ -327,17 +342,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addRecord = useCallback(
     async (
-      recordData: Omit<PatientRecord, "id" | "cycle_id" | "entry_date" | "is_carried_forward" | "month_label"> & { entry_date?: string },
-      patientId: string,
+      recordData: Record<string, unknown> & { entry_date?: string },
+      patient: PatientSourceType | string,
       initialPayment?: number,
       submissionId: string = crypto.randomUUID()
     ) => {
       const recordDate = recordData.entry_date ?? getLocalDate();
       const dateError = getRecordDateError(recordDate);
       if (dateError) throw new Error(dateError);
-      const { record: newRecord, payment: newPayment, cycle } = await saveRegisteredRecord(
-        supabase, submissionId, patientId, { ...recordData, entry_date: recordDate }, initialPayment
-      );
+      // Keep the legacy registered-save contract available during the coordinated rollout.
+      const { record: newRecord, payment: newPayment, cycle } = typeof patient === "string"
+        ? await saveRegisteredRecord(supabase, submissionId, patient, { ...recordData, entry_date: recordDate }, initialPayment)
+        : await savePatientRecord(supabase, submissionId, patient, { ...recordData, entry_date: recordDate }, initialPayment);
       // Publish only a confirmed transaction, deduplicating an already-fetched replay.
       setAllCycles((prev) => prev.some((existing) => existing.id === cycle.id) ? prev : [...prev, cycle]);
       setAllRecords((prev) => prev.some((record) => record.id === newRecord.id)
@@ -364,11 +380,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
           destinationCycle = await resolveRecordCycle(supabase, allCycles, updates.entry_date);
         }
       }
+      const caseBalance = existingRecord?.category === RecordCategory.CASE && updates.total_cost !== undefined
+        ? { remaining: updates.total_cost - getRecordTotalPaid(recordId) } : {};
       const recordUpdates = destinationCycle ? {
         ...updates,
+        ...caseBalance,
         cycle_id: destinationCycle.id,
         month_label: getMonthLabel(destinationCycle.month_year),
-      } : updates;
+      } : { ...updates, ...caseBalance };
       const { error: updateError } = await supabase
         .from("patient_records")
         .update(recordUpdates)
@@ -388,7 +407,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setSelectedMonth(getMonthLabel(savedCycle.month_year));
       }
     },
-    [allCycles, allRecords, setSelectedMonth, supabase]
+    [allCycles, allRecords, getRecordTotalPaid, setSelectedMonth, supabase]
   );
 
   const addPayment = useCallback(
@@ -488,9 +507,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       setAllRecords((prev) =>
         prev.map((r) =>
-          r.patient_id === patientId.trim()
+          r.patient_uuid === patientId
             ? {
                 ...r,
+                patient: r.patient ? { ...r.patient, ...updates, address: updates.address === null ? undefined : updates.address ?? r.patient.address } as PatientType : undefined,
                 patient_name: updates.patient_name ?? r.patient_name,
                 address: updates.address !== undefined ? updates.address ?? undefined : r.address,
               }
@@ -585,6 +605,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         addPayment,
         findRecordByPatientId,
         findPatientById,
+        findPatientByUuid,
         updatePatient,
         updateFinancials: cycle
           ? (updates) => updateFinancials(cycle.id, updates)

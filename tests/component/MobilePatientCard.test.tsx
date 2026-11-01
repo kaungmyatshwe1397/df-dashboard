@@ -7,6 +7,7 @@ import { Gender, type PatientType } from "@/lib/global";
 
 test("patient cards show full identity and open the selected patient", () => {
   const patient: PatientType = {
+  is_registered: true,
     id: "patient-1", patient_id: "0001/26", patient_name: "A long patient name for mobile",
     age: 30, gender: Gender.OTHER, current_medications: [], past_medical_history: [],
     created_at: "2026-10-01",

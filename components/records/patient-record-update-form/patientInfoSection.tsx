@@ -27,6 +27,7 @@ interface PatientInfoSectionProps {
   onPatientIdBlur: () => void;
   onPatientIdChange: (value: string) => void;
   updateField: (field: string, value: string) => void;
+  showPatientId?: boolean;
 }
 
 const GENDER_OPTIONS = [
@@ -46,12 +47,13 @@ export function PatientInfoSection({
   onPatientIdBlur,
   onPatientIdChange,
   updateField,
+  showPatientId = true,
 }: PatientInfoSectionProps) {
   const locked = saving || demographicsLocked;
 
   return (
     <>
-      <FormField
+      {showPatientId && <FormField
         label="Patient ID"
         htmlFor="patientId"
         required
@@ -68,7 +70,7 @@ export function PatientInfoSection({
           aria-invalid={!!errors.patientId}
           disabled={saving || idLocked}
         />
-      </FormField>
+      </FormField>}
 
       {checkingPatient && (
         <p className="text-caption text-muted-foreground flex items-center gap-2">
@@ -105,7 +107,7 @@ export function PatientInfoSection({
             id="age"
             type="text"
             inputMode="numeric"
-            maxLength={2}
+            maxLength={3}
             placeholder="e.g. 30"
             value={form.age}
             onChange={(e) => updateField("age", filterAgeInput(e.target.value))}
@@ -114,7 +116,7 @@ export function PatientInfoSection({
           />
         </FormField>
 
-        <FormField label="Gender" required>
+        <FormField label="Gender" required error={errors.gender}>
           <RadioGroup
             value={form.gender}
             onValueChange={(value) => updateField("gender", value)}
