@@ -33,7 +33,6 @@ interface PatientInfoSectionProps {
 const GENDER_OPTIONS = [
   { value: Gender.MALE, label: "Male" },
   { value: Gender.FEMALE, label: "Female" },
-  { value: Gender.OTHER, label: "Other" },
 ];
 
 export function PatientInfoSection({

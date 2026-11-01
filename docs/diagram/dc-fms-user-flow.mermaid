@@ -22,9 +22,14 @@ flowchart TD
 
     Table --> RecordActions
 
-    Add --> PatientSearch[Search all patients\nName or clinic ID + demographic filters]
-    PatientSearch --> SelectPatient[Select existing profile by UUID]
-    PatientSearch --> NewPatient[New unregistered patient\nName, age, gender; optional address/history]
+    Add -->|GP or Case| NewRecordPage[Full-page record entry\nChoose clinic ID or unregistered]
+    NewRecordPage --> IdCheck{Clinic ID found?}
+    NewRecordPage --> PatientSearch[Search existing patients\nName or clinic ID + demographic filters]
+    PatientSearch --> SelectPatient
+    IdCheck -->|New current-year ID| NewRegistered[New registered patient\nEnter demographics]
+    NewRegistered --> MatchCheck
+    IdCheck -->|No ID| NewPatient[New unregistered patient\nName, age, gender; optional address/history]
+    IdCheck -->|Existing| SelectPatient[Select existing profile by UUID]
     NewPatient --> MatchCheck{Possible matching patients?}
     MatchCheck -->|Select existing| SelectPatient
     MatchCheck -->|None or confirmed separate person| RecordDate
@@ -32,6 +37,7 @@ flowchart TD
     RecordDate --> TxForm[Enter GP or Case treatment]
     TxForm --> Save2[Atomic save\nOptional profile + cycle + visit + initial receipt]
     Save2 --> DateMonth[Select destination month] --> Table
+    Save2 -->|Save and add another| NewRecordPage
     Save2 -->|Error or lost response| RetrySave[Keep fields and submission ID\nRetry original values]
     RetrySave --> Save2
     Edit --> VisitSearch[Filter visits in selected month/category]

@@ -18,10 +18,9 @@ interface PatientSearchFiltersPropsType {
   showGender?: boolean;
   showAddress?: boolean;
   showAge?: boolean;
-  includeOtherGender?: boolean;
 }
 
-export function PatientSearchFilters({ value, onChange, disabled = false, showRegistration = true, showQuery = true, showGender = true, showAddress = true, showAge = true, includeOtherGender = true }: PatientSearchFiltersPropsType) {
+export function PatientSearchFilters({ value, onChange, disabled = false, showRegistration = true, showQuery = true, showGender = true, showAddress = true, showAge = true }: PatientSearchFiltersPropsType) {
   const id = useId();
   function update(field: keyof PatientFiltersType, next: string) {
     onChange({ ...value, [field]: next });
@@ -48,7 +47,7 @@ export function PatientSearchFilters({ value, onChange, disabled = false, showRe
         <SelectTrigger id={`${id}-gender`} className="w-full"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All genders</SelectItem><SelectItem value="MALE">Male</SelectItem>
-          <SelectItem value="FEMALE">Female</SelectItem>{includeOtherGender && <SelectItem value="OTHER">Other</SelectItem>}
+          <SelectItem value="FEMALE">Female</SelectItem>
         </SelectContent>
       </Select>
     </div>}

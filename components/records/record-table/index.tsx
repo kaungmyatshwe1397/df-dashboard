@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,11 @@ export function RecordTable({
   const { records, loading, error, refreshData, selectedMonth, setSelectedMonth } = useData();
   // Keep the saved record's category visible when month loading remounts the tab panels.
   const [activeTab, setActiveTab] = useState<"gp" | "case">("gp");
+  useEffect(() => {
+    // Returning from Case entry should reveal the saved record in its own tab.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (new URLSearchParams(window.location.search).get("tab") === "case") setActiveTab("case");
+  }, []);
   const [filters, setFilters] = useState({ ...EMPTY_PATIENT_FILTERS });
   const filteredRecords = records.filter((record) => !hasPatientFilters(filters)
     || (!!record.patient && matchesPatientFilters(record.patient, filters)));
@@ -80,7 +85,7 @@ export function RecordTable({
           value={selectedMonthAbbr}
           onValueChange={(v) => v && setSelectedMonth(toFullLabel(v))}
         >
-          <ComboboxInput placeholder="Select month" aria-label="Record month" className="w-24" />
+          <ComboboxInput placeholder="Select month" aria-label="Record month" className="h-7 w-24" />
           <ComboboxContent>
             <ComboboxEmpty>No months found.</ComboboxEmpty>
             <ComboboxList>
@@ -103,7 +108,7 @@ export function RecordTable({
           <SheetTrigger render={<Button variant="outline" size="sm" />}><Filter className="size-4" />Filters{activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount}</Badge>}</SheetTrigger>
           <SheetContent>
             <SheetHeader><SheetTitle>Filter records</SheetTitle><SheetDescription>Filter by registration status or gender.</SheetDescription></SheetHeader>
-            <div className="overflow-y-auto px-4"><PatientSearchFilters value={filters} onChange={setFilters} showQuery={false} showAddress={false} showAge={false} includeOtherGender={false} /></div>
+            <div className="overflow-y-auto px-4"><PatientSearchFilters value={filters} onChange={setFilters} showQuery={false} showAddress={false} showAge={false} /></div>
           </SheetContent>
         </Sheet>
       </div>

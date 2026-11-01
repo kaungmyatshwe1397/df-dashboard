@@ -1,27 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { RecordTable } from "@/components/records/record-table";
 import { PatientRecordUpdateForm } from "@/components/records/patient-record-update-form";
 import { RecordCategory, PatientRecord } from "@/lib/global";
 
 export default function AssistantPage() {
+  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [defaultCategory, setDefaultCategory] = useState<RecordCategory>(RecordCategory.GP);
   const [editRecord, setEditRecord] = useState<PatientRecord | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
 
   function handleAdd(category: RecordCategory) {
-    setEditRecord(null);
-    setIsAdding(true);
-    setDefaultCategory(category);
-    setModalOpen(true);
+    router.push(category === RecordCategory.CASE ? "/assistant/records/new-case" : "/assistant/records/new");
   }
 
   function handleEdit(record: PatientRecord | null, category: RecordCategory) {
     setEditRecord(record);
-    setIsAdding(false);
     setDefaultCategory(category);
     setModalOpen(true);
   }
@@ -30,7 +27,6 @@ export default function AssistantPage() {
     setModalOpen(open);
     if (!open) {
       setEditRecord(null);
-      setIsAdding(false);
     }
   }
 
@@ -49,7 +45,6 @@ export default function AssistantPage() {
         onOpenChange={handleModalOpenChange}
         defaultCategory={defaultCategory}
         editRecord={editRecord}
-        isAdding={isAdding}
       />
     </PortalLayout>
   );

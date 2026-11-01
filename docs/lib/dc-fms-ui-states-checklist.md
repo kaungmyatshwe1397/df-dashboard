@@ -38,13 +38,15 @@ Use this to design each screen and to QA it before release.
 
 ## 3. Add / Edit Patient Record
 
+GP and Case add use full pages. The clinic-ID dialog requires an explicit match confirmation, validates a new ID against the current year, or starts an unregistered profile. Patient entry offers Male and Female. Save returns to the matching Records tab; Save & add another saves one visit and resets patient details while retaining the visit date. Failed saves retain the form and submission identity for safe retry. Case entry includes case type, teeth, lab, dates, and initial payment. Record edits keep their dialog flow.
+
 | State | Checklist |
 |---|---|
-| Ideal | Add opens global patient search with name/ID, address, exact age, gender, and registration filters. Select a profile or create an unregistered patient requiring name, age, and gender. Save creates the optional profile, cycle, visit, and initial CASE receipt atomically. Edit selects the actual visit by UUID within the selected month/category. |
+| Ideal | Add opens the full-page record form. Check and confirm a clinic ID, create a registered patient with a new ID, or choose an unregistered patient. New profiles require name, age, and Male or Female. Save creates the optional profile, cycle, visit, and initial CASE receipt atomically. Edit selects the actual visit by UUID within the selected month/category. |
 | Empty | No matches offers fewer filters and New unregistered patient. New profiles omit clinic ID; unknown IDs never force registration first. |
 | Loading | Debounced search ignores stale responses. Saving disables fields, close, and repeat submit. Profile loading prevents edit submission. |
-| Error | Lookup failure has Retry. Save failure retains all fields and submission UUID. A committed request with changed values is rejected with original-value retry guidance. No partial profiles, cycles, visits, or receipts remain after rollback. |
-| Edge case | Same-name patients show age, gender, address, ID, and status before selection. Matching new demographics require explicit separate-person confirmation. Changing patient preserves treatment draft. Optional ID displays Not assigned. Past record dates are accepted; invalid/future dates are rejected. Existing CASE paid values are read-only; installments use Record payment. Cost cannot be below receipts. |
+| Error | Lookup failure has Retry. Uncertain save failure retains all fields and submission UUID. A confirmed clinic-ID uniqueness rejection unlocks patient selection and retains the treatment draft. A committed request with changed values is rejected with original-value retry guidance. No partial profiles, cycles, visits, or receipts remain after rollback. |
+| Edge case | Same-name patients show age, gender, address, ID, and status before selection. Global search can find an existing patient without an ID. Matching new demographics require explicit separate-person confirmation; choosing an existing unregistered match retains a checked new ID. Changing patient preserves treatment draft. Optional ID displays Not assigned. Past record dates are accepted; invalid/future dates are rejected. Existing CASE paid values are read-only; installments use Record payment. Cost cannot be below receipts. |
 
 Successful adds select the record-date month. Changed edit dates move cycle; unchanged dates preserve carry-forward assignments. Lab milestone and payment dates stay independent. Deleting a visit preserves the profile. Forms and pickers must work on mobile and with keyboard navigation.
 

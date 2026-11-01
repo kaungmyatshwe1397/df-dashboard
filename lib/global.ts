@@ -151,9 +151,9 @@ export interface CasePatientRecordType extends PatientRecordBaseType {
 export type PatientRecord = GPPatientRecordType | CasePatientRecordType;
 
 // The discriminated patient source prevents accidentally creating a second person on selection.
-export type NewPatientPayloadType = Omit<PatientPayloadType, "patient_id">;
+export type NewPatientPayloadType = Omit<PatientPayloadType, "patient_id"> & { patient_id?: string };
 export type PatientSourceType =
-  | { existing_patient_uuid: string; new_patient?: never }
+  | { existing_patient_uuid: string; register_existing?: boolean; register_patient_id?: string; new_patient?: never }
   | { new_patient: NewPatientPayloadType; existing_patient_uuid?: never };
 
 export interface PatientFiltersType {

@@ -89,7 +89,8 @@ const adminNavItems: NavItem[] = [
 ];
 
 function isActivePath(pathname: string, href: string) {
-  if (href === "/admin" || href === "/assistant") return pathname === href;
+  if (href === "/assistant") return pathname === href || pathname.startsWith("/assistant/records/");
+  if (href === "/admin") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

@@ -7,13 +7,14 @@ through unregister/re-register operations. Registered profiles require a clinic 
 
 ## Workflow
 
-1. Add GP/Case record opens a global patient search, independent of month.
-2. Select an existing profile or choose New unregistered patient.
-3. New profiles require name, integer age 0–120, and gender. Address and medical
+1. Add GP or Case record opens a full-page form. The assistant checks a clinic ID or chooses an unregistered patient before entering a visit.
+2. A found clinic ID shows patient details for confirmation. An unused current-year ID creates a registered profile in the visit-save transaction. Save & add another saves the current visit, then starts a blank patient entry with the visit date carried forward.
+3. Select an existing profile by clinic ID or global patient search, or choose New unregistered patient. Changing patient preserves the treatment draft.
+4. New profiles require name, integer age 0–120, and Male or Female. Address and medical
    history are optional. A potential-match warning requires explicit selection or
    confirmation that this is a separate person; profiles are never automatically merged.
-4. The atomic save creates any new profile, cycle, visit, and initial CASE payment.
-5. Patient Registration has Registered and Unregistered tabs. Registering an
+5. The atomic save creates any new profile, cycle, visit, and initial CASE payment.
+6. Patient Registration has Registered and Unregistered tabs. Registering an
    existing profile assigns a current-year clinic ID to that same UUID. Unregister
    changes status only. Re-registering reuses the previously assigned ID, even in
    a later year. Profile creation time and first registration time are separate.
@@ -31,6 +32,9 @@ continue working. Missing clinic IDs display Not assigned.
 
 `save_patient_record(uuid,jsonb,jsonb,integer)` accepts exactly one source:
 `{"existing_patient_uuid":"..."}` or `{"new_patient":{...demographics...}}`.
+GP and Case entry may also pass `register_existing` and `register_patient_id` with a matched UUID, or an optional
+`patient_id` with new demographics. Both registration changes happen within the
+visit-save transaction.
 The private submission ledger records a versioned canonical request, owner, and
 result. Identical retries recover the result; changed requests under a committed ID
 are rejected. Failures roll back the new patient as well as visits and receipts.
@@ -48,6 +52,8 @@ string argument remains available for compatibility; the new UI always supplies 
 or new-profile payload.
 
 ## Release and manual verification
+
+Apply `supabase/migrations/20261101000003_registered_patient_visit_save.sql` before enabling full-page GP and Case entry. It extends the existing retry-protected visit save to register a new clinic ID, assign a checked ID to an existing unregistered profile, or re-register a matched profile in the same transaction. Apply `supabase/migrations/20261101000004_unregistered_added_sort.sql` for correct creation-date ordering in the Unregistered tab.
 
 Apply `supabase/migrations/20261101000001_patient_directory_sort.sql` after the registration-status migration. The directory sort control requires this RPC for stable ordering across pages.
 Apply `supabase/migrations/20261101000002_patient_directory_sort_order.sql` afterward to preserve the selected order in the returned JSON array.

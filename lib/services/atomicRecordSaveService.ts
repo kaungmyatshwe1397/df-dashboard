@@ -10,6 +10,13 @@ interface AtomicRecordSaveResultType {
   cycle: MonthlyCycle;
 }
 
+export class RecordSaveError extends Error {
+  constructor(message: string, public readonly code?: string) {
+    super(message);
+    this.name = "RecordSaveError";
+  }
+}
+
 /** Includes patient creation in the same retry-protected transaction as the visit and receipt. */
 export async function savePatientRecord(
   supabase: SupabaseClient,
@@ -21,7 +28,7 @@ export async function savePatientRecord(
   const { data, error } = await supabase.rpc("save_patient_record", {
     p_submission_id: submissionId, p_patient: patient, p_record: record, p_initial_payment: initialPayment,
   });
-  if (error) throw new Error(error.message || "Failed to save record. Please try again.");
+  if (error) throw new RecordSaveError(error.message || "Failed to save record. Please try again.", error.code);
   if (!data?.record || !data?.cycle || !data?.patient) {
     throw new Error("Could not confirm the save. Retry with the same values.");
   }
@@ -44,7 +51,7 @@ export async function saveRegisteredRecord(
     p_record: record,
     p_initial_payment: initialPayment,
   });
-  if (error) throw new Error(error.message || "Failed to save record. Please try again.");
+  if (error) throw new RecordSaveError(error.message || "Failed to save record. Please try again.", error.code);
   if (!data?.record || !data?.cycle) throw new Error("Could not confirm the save. Retry with the same values.");
   return { record: toPatientRecord(data.record), payment: data.payment ?? null, cycle: data.cycle };
 }
