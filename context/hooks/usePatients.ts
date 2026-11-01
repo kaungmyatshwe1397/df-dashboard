@@ -28,13 +28,16 @@ export function usePatients() {
     const { data, error } = await supabaseRef.current.from("patients").update(updates).eq("id", uuid).select("id").single();
     if (error || !data) throw patientError(error ?? {});
   }, []);
-  const searchPatients = useCallback(async (filters: PatientFiltersType, page = 1, exactName?: string, descending = false): Promise<PatientSearchResultType> => {
-    const { data, error } = await supabaseRef.current.rpc("search_patients", {
+  const searchPatients = useCallback(async (filters: PatientFiltersType, page = 1, exactName?: string, descending = false, sortBy?: "id" | "name" | "registered_at"): Promise<PatientSearchResultType> => {
+    const params = {
       p_query: filters.query.trim(), p_address: filters.address.trim(),
       p_age: filters.age === "" ? null : Number(filters.age), p_gender: filters.gender || null,
       p_registered: filters.registration === "all" ? null : filters.registration === "registered",
       p_page: page, p_page_size: 10, p_exact_name: exactName ?? null, p_sort_desc: descending,
-    });
+    };
+    const { data, error } = sortBy
+      ? await supabaseRef.current.rpc("search_patients_sorted", { ...params, p_sort_key: sortBy })
+      : await supabaseRef.current.rpc("search_patients", params);
     if (error || !data) throw new Error("Could not search patients. Check your connection and retry.");
     return { patients: (data.patients ?? []).map(toPatientType), total: Number(data.total) };
   }, []);

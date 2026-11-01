@@ -14,19 +14,21 @@ interface PatientSearchFiltersPropsType {
   onChange: (filters: PatientFiltersType) => void;
   disabled?: boolean;
   showRegistration?: boolean;
+  showQuery?: boolean;
+  showGender?: boolean;
 }
 
-export function PatientSearchFilters({ value, onChange, disabled = false, showRegistration = true }: PatientSearchFiltersPropsType) {
+export function PatientSearchFilters({ value, onChange, disabled = false, showRegistration = true, showQuery = true, showGender = true }: PatientSearchFiltersPropsType) {
   const id = useId();
   function update(field: keyof PatientFiltersType, next: string) {
     onChange({ ...value, [field]: next });
   }
-  return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    <div className="grid gap-2">
+  return <div className={showQuery ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-4"}>
+    {showQuery && <div className="grid gap-2">
       <Label htmlFor={`${id}-query`}>Name or clinic ID</Label>
       <Input id={`${id}-query`} value={value.query} disabled={disabled} placeholder="Search patients"
         onChange={(event) => update("query", event.target.value)} />
-    </div>
+    </div>}
     <div className="grid gap-2">
       <Label htmlFor={`${id}-address`}>Location / address</Label>
       <Input id={`${id}-address`} value={value.address} disabled={disabled}
@@ -37,7 +39,7 @@ export function PatientSearchFilters({ value, onChange, disabled = false, showRe
       <Input id={`${id}-age`} value={value.age} disabled={disabled} inputMode="numeric" maxLength={3}
         onChange={(event) => update("age", event.target.value.replace(/\D/g, "").slice(0, 3))} />
     </div>
-    <div className="grid gap-2">
+    {showGender && <div className="grid gap-2">
       <Label htmlFor={`${id}-gender`}>Gender</Label>
       <Select value={value.gender || "all"} onValueChange={(next) => update("gender", !next || next === "all" ? "" : next)} disabled={disabled}>
         <SelectTrigger id={`${id}-gender`} className="w-full"><SelectValue /></SelectTrigger>
@@ -46,7 +48,7 @@ export function PatientSearchFilters({ value, onChange, disabled = false, showRe
           <SelectItem value="FEMALE">Female</SelectItem><SelectItem value="OTHER">Other</SelectItem>
         </SelectContent>
       </Select>
-    </div>
+    </div>}
     {showRegistration && <div className="grid gap-2">
       <Label htmlFor={`${id}-registration`}>Registration</Label>
       <Select value={value.registration} onValueChange={(next) => update("registration", next ?? "all")} disabled={disabled}>

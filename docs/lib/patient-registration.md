@@ -49,6 +49,11 @@ or new-profile payload.
 
 ## Release and manual verification
 
+Apply `supabase/migrations/20261101000001_patient_directory_sort.sql` after the registration-status migration. The directory sort control requires this RPC for stable ordering across pages.
+Apply `supabase/migrations/20261101000002_patient_directory_sort_order.sql` afterward to preserve the selected order in the returned JSON array.
+
+Test TODOs: add component coverage for Edit and Register/Unregister from the patient profile, including supervisor read-only behavior; add database coverage for each sort key and direction across page boundaries.
+
 Apply `supabase/migrations/20261101000000_patient_registration_status.sql` before the
 frontend release during a brief entry pause. The migration backfills all existing
 profiles as registered and links every visit; an unresolved link aborts the migration.

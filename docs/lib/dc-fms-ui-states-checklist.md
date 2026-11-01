@@ -102,7 +102,7 @@ Successful adds select the record-date month. Changed edit dates move cycle; unc
 
 | State | Checklist |
 |---|---|
-| Ideal | Registered and Unregistered tabs have separate status membership, server pagination, counts, and demographic search. Unregistered rows include name/address from record entry. Register promotes the same UUID; Unregister preserves clinic ID and history. Both mobile cards and desktop rows expose profile/edit/status actions. |
+| Ideal | Registered and Unregistered tabs have separate status membership, server pagination, counts, and demographic search. Directory rows/cards show number, patient ID, name, age, address, and View patient. Gender and registration date appear in the profile. The profile exposes edit and register/unregister actions for editable roles. Sorting by clinic ID, name, or registration date/date added applies before pagination. Register promotes the same UUID; Unregister preserves clinic ID and history. |
 | Empty | No matches keeps filters, tabs, and Add Patient available. Profiles without clinic IDs show Not assigned. |
 | Loading | Search has loading feedback and stale-result protection. Add/edit/status actions disable during writes. |
 | Error | Fetch errors offer Retry. Registration/duplicate-ID/save errors keep drafts open. UUID profile fetch supports retry and a not-found state; legacy clinic-ID links remain valid. |

@@ -23,33 +23,32 @@ afterEach(cleanup);
 test("unregistered tab shows name/address and uses its status filter", async () => {
   render(<RegisteredPatientsTable onRowSelect={vi.fn()} />);
   fireEvent.click(screen.getByRole("tab", { name: "Unregistered" }));
-  await waitFor(() => expect(mocks.search).toHaveBeenCalledWith(expect.objectContaining({ registration: "unregistered" }), 1));
+  await waitFor(() => expect(mocks.search).toHaveBeenCalledWith(expect.objectContaining({ registration: "unregistered" }), 1, undefined, false, "id"));
   expect((await screen.findAllByText("North Village")).length).toBeGreaterThan(0);
-  expect(screen.getAllByText("Not assigned").length).toBeGreaterThan(0);
+  expect((await screen.findAllByRole("button", { name: "View patient" })).length).toBeGreaterThan(0);
 });
-test("registration assigns a clinic ID to the existing UUID without inserting another profile", async () => {
+test("directory keeps profile management out of each row", async () => {
   render(<RegisteredPatientsTable onRowSelect={vi.fn()} />);
-  fireEvent.click(screen.getByRole("tab", { name: "Unregistered" }));
-  fireEvent.click((await screen.findAllByRole("button", { name: "Register" }))[0]);
-  const clinicId = `0123/${String(new Date().getFullYear()).slice(-2)}`;
-  fireEvent.change(screen.getByLabelText(/Patient ID/), { target: { value: clinicId } });
-  fireEvent.click(screen.getByRole("button", { name: "Register Patient" }));
-  await waitFor(() => expect(mocks.registration).toHaveBeenCalledWith(patient.id, true, clinicId,
-    expect.objectContaining({ patient_name: patient.patient_name, address: patient.address })));
-  expect(mocks.create).not.toHaveBeenCalled();
+  await screen.findAllByText("Ma Aye");
+  expect(screen.getByRole("columnheader", { name: "Patient ID" })).toBeInTheDocument();
+  expect(screen.getAllByText("0001/26").length).toBeGreaterThan(0);
+  expect(screen.queryByRole("button", { name: "Actions for Ma Aye" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("columnheader", { name: "Gender" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("columnheader", { name: "Registered" })).not.toBeInTheDocument();
 });
-test("unregister targets UUID and refreshes visit metadata", async () => {
+test("sort selection requests server-side name ordering", async () => {
   render(<RegisteredPatientsTable onRowSelect={vi.fn()} />);
-  fireEvent.click((await screen.findAllByRole("button", { name: "Unregister" }))[0]);
-  await waitFor(() => expect(mocks.registration).toHaveBeenCalledWith(patient.id, false));
-  expect(mocks.refresh).toHaveBeenCalled();
+  await screen.findAllByText("Ma Aye");
+  fireEvent.click(screen.getByRole("button", { name: "Sort by" }));
+  fireEvent.click(screen.getByRole("menuitemradio", { name: "Name: A–Z" }));
+  await waitFor(() => expect(mocks.search).toHaveBeenCalledWith(expect.anything(), 1, undefined, false, "name"));
 });
 test("supervisor can read both tabs but has no create/edit/registration actions", async () => {
   mocks.canEdit = false; render(<RegisteredPatientsTable onRowSelect={vi.fn()} />);
   await screen.findAllByText("Ma Aye");
   expect(screen.queryByRole("button", { name: "Add Patient" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "Unregister" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Actions for Ma Aye" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("tab", { name: "Unregistered" }));
-  await waitFor(() => expect(mocks.search).toHaveBeenCalledWith(expect.objectContaining({ registration: "unregistered" }), 1));
+  await waitFor(() => expect(mocks.search).toHaveBeenCalledWith(expect.objectContaining({ registration: "unregistered" }), 1, undefined, false, "id"));
   expect(screen.queryByRole("button", { name: "Register" })).not.toBeInTheDocument();
 });

@@ -34,6 +34,7 @@
 12. **Follow the interface naming convention** in `docs/rules/my-rules.md`.
 13. **Follow `docs/rules/project-folder-rules.md`** for component architecture and file organization.
 14. **Follow `docs/rules/clean-code-rule.md`** for maintainable code.
+15. **Use compact shadcn controls by default** across app screens, following `docs/lib/tokens.md` and `docs/rules/my-rules.md`. Use a larger existing size when the interaction needs a clearer or easier touch target.
 
 ## Library & External Documentation Rule
 - Whenever working with a new library, an external framework (e.g., Tailwind CSS, shadcn/ui, Next.js), or when interacting with libraries after a long duration, you **MUST** use the `Context7 MCP server`  to check their latest official documentation first.

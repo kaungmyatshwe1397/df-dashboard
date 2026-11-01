@@ -27,6 +27,21 @@
 | `grid-margin` | 32px |
 | `container-max` | 1280px |
 
+## Component Sizing and Interaction Patterns
+
+Use the existing shadcn component size variants instead of writing one-off dimensions in screens. The spacing grid above governs page and component layout gaps, margins, and outer padding. A shadcn component's own height and internal padding follow its defined size variant, even when those values fall between spacing steps.
+
+| Component | Project default | Use a different size when |
+|---|---|---|
+| Button | `size="sm"` for page actions, filters, sort controls, and row actions | A form, dialog, touch-heavy mobile flow, or primary decision needs a larger target; use the existing shadcn size variant. |
+| Input | Standard shadcn Input height | A form or mobile flow needs a larger touch target; keep its size consistent with adjacent controls. |
+| Tabs | Compact shadcn Tabs; prefer `variant="line"` for page-level status switching | A contained segmented control communicates the choice more clearly. |
+| Icon-only action | Existing shadcn icon size with an accessible name | Prefer a short labeled action when the icon's meaning is unclear. |
+
+Compact controls must remain keyboard accessible and readable. Keep related controls aligned in height. On mobile, allow controls to wrap and enlarge the target where needed for touch. Use semantic color and typography tokens for all states and labels. Do not add a new size variant for a single screen.
+
+For table row management, keep the primary task visible and place secondary actions in a labeled `Actions` menu. Use a destructive treatment for destructive actions. Avoid an unlabeled three-dot button when a short label fits.
+
 ## Typography
 
 ### Font Families
@@ -155,6 +170,6 @@
 
 ## Rules Summary
 
-1. **8pt Spacing** — All spacing values are multiples of 8px. 4px half-step allowed only for fine adjustments.
+1. **8pt Spacing** — Layout spacing uses the 8pt scale, with the documented 4px half-step for fine adjustments. Component heights follow the shadcn size variants above.
 2. **Typography Hierarchy** — Every text size maps to a named token. No ad-hoc font sizes.
 3. **Semantic Colors** — Colors are referenced by role, never by raw hex. 60:30:10 ratio enforced (surfaces : borders/text : accent).
