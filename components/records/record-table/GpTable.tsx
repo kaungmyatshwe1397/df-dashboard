@@ -12,11 +12,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil } from "lucide-react";
+import { Plus } from "lucide-react";
 import { RecordCategory, GPPatientRecordType } from "@/lib/global";
 import { useCanEdit } from "@/context/AuthContext";
 import { MobileRecordCard } from "./mobileRecordCard";
-import { Badge } from "@/components/ui/badge";
+import { RecordSortMenu, sortRecords, type RecordSortValueType } from "./recordSort";
 import {
   ROWS_PER_PAGE,
   formatCurrency,
@@ -35,10 +35,11 @@ export function GpTable({
   onEdit: (record: GPPatientRecordType | null, category: RecordCategory) => void;
 }) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortValue, setSortValue] = useState<RecordSortValueType>("date:desc");
   const canEdit = useCanEdit();
   const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
   const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
-  const paginatedRecords = records.slice(startIndex, startIndex + ROWS_PER_PAGE);
+  const paginatedRecords = sortRecords(records, sortValue).slice(startIndex, startIndex + ROWS_PER_PAGE);
 
   if (records.length === 0) {
     return (
@@ -50,32 +51,22 @@ export function GpTable({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-body-sm text-muted-foreground">
           {records.length} record{records.length !== 1 ? "s" : ""}
         </p>
-        {canEdit && (
           <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => onEdit(null, RecordCategory.GP)}
-              size="sm"
-              variant="outline"
-              className="border-input text-foreground"
-            >
-              <Pencil className="mr-1.5 h-4 w-4" />
-              Update / Edit
-            </Button>
+            <RecordSortMenu value={sortValue} onChange={(next) => { setSortValue(next); setCurrentPage(1); }} />
+            {canEdit &&
             <Button
               onClick={onAdd}
               size="sm"
-              className="bg-accent text-accent-foreground hover:bg-accent/90"
             >
-              <Plus className="mr-1.5 h-4 w-4" />
+              <Plus className="size-4" />
               Add GP Record
-            </Button>
+            </Button>}
           </div>
-        )}
       </div>
 
       <div className="space-y-3 lg:hidden">
@@ -94,6 +85,7 @@ export function GpTable({
               <TableHead>Patient Name</TableHead>
               <TableHead>Diagnosis</TableHead>
               <TableHead className="text-right">Total Cost</TableHead>
+              <TableHead className="text-right">Visit</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -107,13 +99,11 @@ export function GpTable({
                 </TableCell>
                 <TableCell>
                   <span
-                    className="font-medium max-w-50 truncate"
+                    className="text-h4 font-semibold max-w-50 truncate"
                     title={record.patient_name}
                   >
                     {record.patient_name}
                   </span>
-                  <Badge variant="secondary">{record.patient?.is_registered ? "Registered" : "Unregistered"}</Badge>
-                  {canEdit && <Button variant="ghost" size="sm" onClick={() => onEdit(record, RecordCategory.GP)}>Edit visit</Button>}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                   {record.diagnosis}
@@ -121,6 +111,7 @@ export function GpTable({
                 <TableCell className="text-right font-medium tabular-nums">
                   {formatCurrency(record.total_cost)}
                 </TableCell>
+                <TableCell className="text-right">{canEdit && <Button variant="outline" size="sm" onClick={() => onEdit(record, RecordCategory.GP)}>Edit visit</Button>}</TableCell>
               </TableRow>
             ))}
           </TableBody>

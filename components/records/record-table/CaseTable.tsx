@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useData } from "@/context/DataContext";
 import { useCanEdit } from "@/context/AuthContext";
 import { RecordCategory, CasePatientRecordType } from "@/lib/global";
@@ -25,6 +25,7 @@ import {
 import { PaymentRow } from "./PaymentRow";
 import { PaymentDialog } from "./PaymentDialog";
 import { MobileRecordCard } from "./mobileRecordCard";
+import { RecordSortMenu, sortRecords, type RecordSortValueType } from "./recordSort";
 
 export function CaseTable({
   records,
@@ -38,12 +39,13 @@ export function CaseTable({
   const { getRecordBalance, getRecordTotalPaid, getPaymentsForRecord } = useData();
   const canEdit = useCanEdit();
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortValue, setSortValue] = useState<RecordSortValueType>("date:desc");
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [payRecord, setPayRecord] = useState<CasePatientRecordType | null>(null);
 
   const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
   const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
-  const paginatedRecords = records.slice(startIndex, startIndex + ROWS_PER_PAGE);
+  const paginatedRecords = sortRecords(records, sortValue).slice(startIndex, startIndex + ROWS_PER_PAGE);
 
   function toggleExpand(recordId: string) {
     setExpandedRow((prev) => (prev === recordId ? null : recordId));
@@ -59,35 +61,25 @@ export function CaseTable({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-body-sm text-muted-foreground">
           {records.length} record{records.length !== 1 ? "s" : ""}
         </p>
-        {canEdit && (
           <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => onEdit(null, RecordCategory.CASE)}
-              size="sm"
-              variant="outline"
-              className="border-input text-foreground"
-            >
-              <Pencil className="mr-1.5 h-4 w-4" />
-              Update / Edit
-            </Button>
+            <RecordSortMenu value={sortValue} onChange={(next) => { setSortValue(next); setCurrentPage(1); }} />
+            {canEdit &&
             <Button
               onClick={onAdd}
               size="sm"
-              className="bg-accent text-accent-foreground hover:bg-accent/90"
             >
-              <Plus className="mr-1.5 h-4 w-4" />
+              <Plus className="size-4" />
               Add New Case
-            </Button>
+            </Button>}
           </div>
-        )}
       </div>
 
-      <div className="space-y-3 lg:hidden">
+      <div className="space-y-3 2xl:hidden">
         {paginatedRecords.map((record) => (
           <MobileRecordCard key={record.id} record={record}
             totalPaid={getRecordTotalPaid(record.id)} remaining={getRecordBalance(record)}
@@ -97,25 +89,25 @@ export function CaseTable({
         ))}
       </div>
 
-      <div className="hidden rounded-xl border border-border lg:block">
-        <Table>
+      <div className="hidden rounded-xl border border-border 2xl:block">
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-8" />
-              <TableHead>Patient ID</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Patient Name</TableHead>
-              <TableHead>Diagnosis</TableHead>
-              <TableHead>Lab</TableHead>
-              <TableHead className="text-right">Total Cost</TableHead>
-              <TableHead className="text-right">Paid</TableHead>
-              <TableHead className="text-right">Remaining</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-10" />
+              <TableHead className="w-10">#</TableHead>
+              <TableHead className="w-24">Date</TableHead>
+              <TableHead className="w-24">Patient ID</TableHead>
+              <TableHead className="w-32">Name</TableHead>
+              <TableHead>Treatment</TableHead>
+              <TableHead className="w-28">Lab</TableHead>
+              <TableHead className="w-24 text-right">Total</TableHead>
+              <TableHead className="w-24 text-right">Paid</TableHead>
+              <TableHead className="w-24 text-right">Remaining</TableHead>
+              <TableHead className="w-32">Status</TableHead>
+              <TableHead className="w-44 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedRecords.map((record) => {
+            {paginatedRecords.map((record, index) => {
               const remaining = getRecordBalance(record);
               const totalPaid = getRecordTotalPaid(record.id);
               const isSettled = remaining <= 0;
@@ -125,6 +117,7 @@ export function CaseTable({
                 <PaymentRow
                   key={record.id}
                   record={record}
+                  rowNumber={startIndex + index + 1}
                   remaining={remaining}
                   totalPaid={totalPaid}
                   isSettled={isSettled}

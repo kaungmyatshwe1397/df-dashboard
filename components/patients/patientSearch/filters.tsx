@@ -16,9 +16,12 @@ interface PatientSearchFiltersPropsType {
   showRegistration?: boolean;
   showQuery?: boolean;
   showGender?: boolean;
+  showAddress?: boolean;
+  showAge?: boolean;
+  includeOtherGender?: boolean;
 }
 
-export function PatientSearchFilters({ value, onChange, disabled = false, showRegistration = true, showQuery = true, showGender = true }: PatientSearchFiltersPropsType) {
+export function PatientSearchFilters({ value, onChange, disabled = false, showRegistration = true, showQuery = true, showGender = true, showAddress = true, showAge = true, includeOtherGender = true }: PatientSearchFiltersPropsType) {
   const id = useId();
   function update(field: keyof PatientFiltersType, next: string) {
     onChange({ ...value, [field]: next });
@@ -29,23 +32,23 @@ export function PatientSearchFilters({ value, onChange, disabled = false, showRe
       <Input id={`${id}-query`} value={value.query} disabled={disabled} placeholder="Search patients"
         onChange={(event) => update("query", event.target.value)} />
     </div>}
-    <div className="grid gap-2">
+    {showAddress && <div className="grid gap-2">
       <Label htmlFor={`${id}-address`}>Location / address</Label>
       <Input id={`${id}-address`} value={value.address} disabled={disabled}
         onChange={(event) => update("address", event.target.value)} />
-    </div>
-    <div className="grid gap-2">
+    </div>}
+    {showAge && <div className="grid gap-2">
       <Label htmlFor={`${id}-age`}>Age</Label>
       <Input id={`${id}-age`} value={value.age} disabled={disabled} inputMode="numeric" maxLength={3}
         onChange={(event) => update("age", event.target.value.replace(/\D/g, "").slice(0, 3))} />
-    </div>
+    </div>}
     {showGender && <div className="grid gap-2">
       <Label htmlFor={`${id}-gender`}>Gender</Label>
       <Select value={value.gender || "all"} onValueChange={(next) => update("gender", !next || next === "all" ? "" : next)} disabled={disabled}>
         <SelectTrigger id={`${id}-gender`} className="w-full"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All genders</SelectItem><SelectItem value="MALE">Male</SelectItem>
-          <SelectItem value="FEMALE">Female</SelectItem><SelectItem value="OTHER">Other</SelectItem>
+          <SelectItem value="FEMALE">Female</SelectItem>{includeOtherGender && <SelectItem value="OTHER">Other</SelectItem>}
         </SelectContent>
       </Select>
     </div>}
