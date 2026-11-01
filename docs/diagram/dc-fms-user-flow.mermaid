@@ -22,21 +22,22 @@ flowchart TD
 
     Table --> RecordActions
 
-    Add --> IdInput[Enter Patient ID]
-    IdInput --> IdCheck{Registered patient?}
-    IdCheck -->|Yes| Prefill[Patient identity shown from registry]
-    Prefill --> RecordDate[Choose Record Date\nToday or an earlier date]
-    RecordDate --> TxForm[Enter GP or Case details]
-    TxForm --> Save2[Atomic RPC save\nCycle + visit + initial receipt] --> DateMonth[Select destination month] --> Table
-    Save2 -->|Error or lost response| RetrySave[Keep values and submission ID\nRetry original values]
+    Add --> PatientSearch[Search all patients\nName or clinic ID + demographic filters]
+    PatientSearch --> SelectPatient[Select existing profile by UUID]
+    PatientSearch --> NewPatient[New unregistered patient\nName, age, gender; optional address/history]
+    NewPatient --> MatchCheck{Possible matching patients?}
+    MatchCheck -->|Select existing| SelectPatient
+    MatchCheck -->|None or confirmed separate person| RecordDate
+    SelectPatient --> RecordDate[Record date\nToday or earlier]
+    RecordDate --> TxForm[Enter GP or Case treatment]
+    TxForm --> Save2[Atomic save\nOptional profile + cycle + visit + initial receipt]
+    Save2 --> DateMonth[Select destination month] --> Table
+    Save2 -->|Error or lost response| RetrySave[Keep fields and submission ID\nRetry original values]
     RetrySave --> Save2
-    IdCheck -->|No| RegisterPrompt[Prompt: register patient first]
-    RegisterPrompt --> RegPatients
-    RegPatients --> RegisterNew[Register patient]
-    RegisterNew --> Add
-
-    Edit --> Lookup[Search by Patient ID]
-    Lookup --> Prefill2[Form Prefilled\nDemographics + Record Date + Treatment] --> Save3[Save\nMove cycle if Record Date changed] --> DateMonth
+    Edit --> VisitSearch[Filter visits in selected month/category]
+    VisitSearch --> SelectVisit[Select actual visit by record UUID]
+    SelectVisit --> Prefill2[Prefill demographics and treatment]
+    Prefill2 --> Save3[Save details\nMove cycle if record date changed] --> DateMonth
 
     DeleteRec --> Confirm[Confirm Delete] --> Table
     NoteDelete["Deletes record only —\npatient stays in registry"]
@@ -51,16 +52,22 @@ flowchart TD
     %% ==============================
     %% BOTH ROLES: REGISTERED PATIENTS
     %% ==============================
-    Role -->|Assistant| RegPatients[Registered Patients List]
+    Role -->|Assistant| RegPatients[Patient Registration]
     Role -->|Admin| RegPatients
 
-    RegPatients --> SearchPt[Search by Patient ID / Name]
-    RegPatients --> PtRow[Select Patient Row]
-    PtRow --> PtDetail[Detail Page —\nPatient Card Dialog]
-    PtDetail --> PtBack[Back to List] --> RegPatients
-    RegPatients --> EditPt[Edit Patient]
-    EditPt --> EditPtForm[Update demographics\nPatient ID locked]
-    EditPtForm --> SavePt[Save patient details\nSync name and address to visits] --> RegPatients
+    RegPatients --> RegisteredTab[Registered tab]
+    RegPatients --> UnregisteredTab[Unregistered tab\nName, address, demographics]
+    RegisteredTab --> SearchPt[Search and filter profiles]
+    UnregisteredTab --> SearchPt
+    SearchPt --> PtDetail[Patient profile by UUID\nLegacy clinic-ID links still resolve]
+    PtDetail --> RegPatients
+    RegisteredTab --> RegisterNew[Register new patient\nReview possible existing profiles]
+    UnregisteredTab --> Promote[Register existing UUID\nAssign clinic ID, retain visits]
+    RegisteredTab --> Unregister[Mark unregistered\nRetain reserved ID and visits]
+    Unregister --> UnregisteredTab
+    Promote --> RegisteredTab
+    SearchPt --> EditPt[Edit profile by UUID\nAtomically synchronize visit display copies]
+    EditPt --> RegPatients
 
     %% ==============================
     %% ADMIN ONLY: EXTRA MODULES

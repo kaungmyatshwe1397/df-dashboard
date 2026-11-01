@@ -131,6 +131,7 @@ export function CaseTable({
                   isExpanded={isExpanded}
                   onToggleExpand={toggleExpand}
                   onPay={canEdit ? setPayRecord : undefined}
+                  onEdit={canEdit ? (selected) => onEdit(selected, RecordCategory.CASE) : undefined}
                 />
               );
             })}

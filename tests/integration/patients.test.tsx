@@ -102,9 +102,10 @@ describe("DataContext — Patient Registry", () => {
       await waitFor(() => expect(result.current.loading).toBe(false));
 
       await act(async () => {
-        await result.current.updatePatient("0001/26", {
+        await result.current.updatePatient("pat-001", {
           patient_name: "John Doe Jr",
           address: "42 New Street",
+          age: 35,
         });
       });
 
@@ -120,6 +121,7 @@ describe("DataContext — Patient Registry", () => {
       const record = result.current.findRecordByPatientId("0001/26");
       expect(record!.patient_name).toBe("John Doe Jr");
       expect(record!.address).toBe("42 New Street");
+      expect(record!.patient?.age).toBe(35);
     });
 
     test("clears optional registry fields and the local record address", async () => {
@@ -127,14 +129,14 @@ describe("DataContext — Patient Registry", () => {
       await waitFor(() => expect(result.current.loading).toBe(false));
 
       await act(async () => {
-        await result.current.updatePatient("0001/26", {
+        await result.current.updatePatient("pat-001", {
           drug_allergy: "Penicillin",
           past_dental_history: "Crown on 16",
         });
       });
 
       await act(async () => {
-        await result.current.updatePatient("0001/26", {
+        await result.current.updatePatient("pat-001", {
           address: null,
           drug_allergy: null,
           past_dental_history: null,
@@ -156,7 +158,7 @@ describe("DataContext — Patient Registry", () => {
         act(async () => {
           await result.current.updatePatient("   ", { patient_name: "X" });
         })
-      ).rejects.toThrow(/patient id is required/i);
+      ).rejects.toThrow(/patient identity is required/i);
     });
   });
 });

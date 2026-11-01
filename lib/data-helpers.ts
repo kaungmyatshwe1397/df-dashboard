@@ -29,7 +29,9 @@ export function toPatientRecord(row: Record<string, unknown>): PatientRecord {
     return {
       id: row.id as string,
       cycle_id: row.cycle_id as string,
-      patient_id: row.patient_id as string,
+      patient_id: (row.patient_id as string | null) ?? null,
+      patient_uuid: row.patient_uuid as string,
+      patient: row.patient ? toPatientType(row.patient as Record<string, unknown>) : undefined,
       entry_date: row.entry_date as string,
       patient_name: row.patient_name as string,
       address: row.address as string | undefined,
@@ -53,7 +55,9 @@ export function toPatientRecord(row: Record<string, unknown>): PatientRecord {
   return {
     id: row.id as string,
     cycle_id: row.cycle_id as string,
-    patient_id: row.patient_id as string,
+    patient_id: (row.patient_id as string | null) ?? null,
+    patient_uuid: row.patient_uuid as string,
+    patient: row.patient ? toPatientType(row.patient as Record<string, unknown>) : undefined,
     entry_date: row.entry_date as string,
     patient_name: row.patient_name as string,
     address: row.address as string | undefined,
@@ -67,7 +71,9 @@ export function toPatientRecord(row: Record<string, unknown>): PatientRecord {
 export function toPatientType(row: Record<string, unknown>): PatientType {
   return {
     id: row.id as string,
-    patient_id: row.patient_id as string,
+    patient_id: (row.patient_id as string | null) ?? null,
+    is_registered: row.is_registered as boolean,
+    registered_at: (row.registered_at as string | null) ?? undefined,
     patient_name: row.patient_name as string,
     age: row.age as number,
     gender: row.gender as Gender,

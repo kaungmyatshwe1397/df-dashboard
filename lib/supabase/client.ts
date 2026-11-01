@@ -8,8 +8,12 @@ export function createClient() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !key) {
+    const missing = [
+      !url && "NEXT_PUBLIC_SUPABASE_URL",
+      !key && "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    ].filter(Boolean).join(", ");
     throw new Error(
-      "Supabase URL and API key are required. Check your .env.local file."
+      `Missing Supabase configuration: ${missing}. Set these in .env.local at the project root and restart Next.js.`
     );
   }
 

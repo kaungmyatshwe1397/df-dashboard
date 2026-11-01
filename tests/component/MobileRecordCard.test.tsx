@@ -6,6 +6,7 @@ import { MobileRecordCard } from "@/components/records/record-table/mobileRecord
 import { RecordCategory, PaymentStatus, type CasePatientRecordType } from "@/lib/global";
 
 const record: CasePatientRecordType = {
+  patient_uuid: "patient-fixture",
   id: "case-1", cycle_id: "cycle-1", patient_id: "0001/26",
   entry_date: "2026-10-01", patient_name: "Patient One",
   category: RecordCategory.CASE, diagnosis: "Crown treatment",

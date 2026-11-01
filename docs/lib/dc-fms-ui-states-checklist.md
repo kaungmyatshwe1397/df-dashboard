@@ -36,19 +36,17 @@ Use this to design each screen and to QA it before release.
 
 ---
 
-## 3. Add / Edit Patient Record (Modal)
-
-Both GP and CASE forms include a required **Record Date** before category-specific fields. Add mode shows it only after registry verification and defaults to the local current date; edit mode uses the stored date. Past dates through today are accepted; missing, invalid, and future dates show an inline error. The field is disabled while saving. A failed cycle creation or save keeps the dialog open with all values intact. Successful add saves and changed edit dates select the matching month; unchanged dates preserve carried-forward cycle assignments. CASE lab milestone dates and existing installment dates remain independent.
-
-New record creation saves the cycle, visit, and initial CASE receipt atomically. Failed transactions create no partial visit/payment and do not select another month. The dialog retains its submission ID after errors; retrying identical values recovers a committed save without another receipt. Reusing a committed ID with changed values shows an error instructing the user to retry original values and then edit the recovered record. Closing/resetting starts a new submission.
+## 3. Add / Edit Patient Record
 
 | State | Checklist |
 |---|---|
-| Ideal | **Add mode:** Dialog opens on Patient ID lookup. A registered ID shows the registry patient name and only the GP or Case record fields; save creates a visit linked to that patient. An unregistered ID shows a clear register-first message and link to Registered Patients; record fields and save action remain unavailable.<br>**Edit mode:** Two-step — enter Patient ID, form appears pre-filled; Patient ID is locked in edit mode.<br>GP fields: Diagnosis, Total Cost.<br>Case fields: Diagnosis, Total Cost, Lab Name, Lab Send Date, Delivery Date, Paid, Remaining (auto).<br>Save button enabled once required fields are valid. |
-| Empty | - Add mode opens at a blank Patient ID lookup; no patient or record fields appear until a registry match is found<br>- Edit mode: empty Patient ID field with search button |
-| Loading | - Save button shows spinner and disables during submit<br>- Dialog cannot be closed mid-save<br>- Patient ID blur lookup disables the ID field briefly while the registry is queried |
-| Error | - Required field missing (Patient ID, Diagnosis, Total Cost) → inline error under that field<br>- Paid > Total Cost → validation error<br>- Failed patient lookup → retry guidance; no record form is shown<br>- Patient becomes unregistered before save → database rejects the visit and the form explains that registration is required<br>- Network/save failure → error banner inside modal, form values are preserved |
-| Edge case | - Patient has records in both GP and Case tabs → same registered Patient ID is valid in either tab (registry is global, not per-tab)<br>- Change Patient returns to ID lookup without losing record category<br>- Paid = 0 (deposit not yet made)<br>- Total Cost with decimals (e.g. 1500.50)<br>- Editing demographics on an existing record updates the registry and propagates name/address to that patient's records<br>- Very long diagnosis text wraps properly, does not overflow modal<br>- Delete Record (admin + assistant) removes only the visit record — patient stays in the registry |
+| Ideal | Add opens global patient search with name/ID, address, exact age, gender, and registration filters. Select a profile or create an unregistered patient requiring name, age, and gender. Save creates the optional profile, cycle, visit, and initial CASE receipt atomically. Edit selects the actual visit by UUID within the selected month/category. |
+| Empty | No matches offers fewer filters and New unregistered patient. New profiles omit clinic ID; unknown IDs never force registration first. |
+| Loading | Debounced search ignores stale responses. Saving disables fields, close, and repeat submit. Profile loading prevents edit submission. |
+| Error | Lookup failure has Retry. Save failure retains all fields and submission UUID. A committed request with changed values is rejected with original-value retry guidance. No partial profiles, cycles, visits, or receipts remain after rollback. |
+| Edge case | Same-name patients show age, gender, address, ID, and status before selection. Matching new demographics require explicit separate-person confirmation. Changing patient preserves treatment draft. Optional ID displays Not assigned. Past record dates are accepted; invalid/future dates are rejected. Existing CASE paid values are read-only; installments use Record payment. Cost cannot be below receipts. |
+
+Successful adds select the record-date month. Changed edit dates move cycle; unchanged dates preserve carry-forward assignments. Lab milestone and payment dates stay independent. Deleting a visit preserves the profile. Forms and pickers must work on mobile and with keyboard navigation.
 
 ---
 
@@ -100,17 +98,17 @@ New record creation saves the cycle, visit, and initial CASE receipt atomically.
 
 ---
 
-## 8. Registered Patients (Admin + Assistant)
+## 8. Patient Registration (Admin + Assistant; Supervisor read-only)
 
 | State | Checklist |
 |---|---|
-| Ideal | - Table lists every registry patient: #, Patient ID, Registered (`d.M.yy`), Name, Address<br>- Patient ID sorts ascending by default; clicking the ID heading toggles ascending/descending order<br>- Clicking a row routes to `register-patients/detail?id=<ID>` and opens the patient detail dialog<br>- Admin and Assistant see an Edit action per row; the edit dialog is prefilled, keeps Patient ID locked, and saves demographic changes to the registry (name/address changes also update visit records)<br>- Compact search box filters by Patient ID only as you type; a styled registered-count badge updates live<br>- "Add Patient" button (hidden for SUPERVISOR) opens the registration dialog: fields for Patient ID*, Name*, Age*, Gender*, Address, Drug Allergy, Past Dental History, Current Medications, Past Medical History; duplicate Patient ID blocked on blur and on save (23505 banner) |
-| Empty | - Registry has no patients → "No registered patients yet." with an "Add Patient" button that opens the patient registration dialog (hidden for SUPERVISOR)<br>- Search matches nothing → "No patients match “query”." and count shows 0 |
-| Loading | - Table skeleton while the registry loads<br>- Add/edit dialog disables fields and shows a saving indicator while submitting<br>- Detail dialog shows skeleton lines while the patient row is fetched; Back button shows a spinner |
-| Error | - Registry fetch fails → destructive error banner with Retry (refetches)<br>- Edit save fails → show an inline destructive message and keep the dialog open with entered values<br>- Detail fetch fails → error banner inside the dialog with Retry<br>- Messages are human-readable, never raw server errors |
-| Edge case | - Missing patient details show "Not provided"; empty history lists show "None recorded"<br>- Long patient names, addresses, and history values wrap without overflowing the dialog<br>- Unknown or deleted `?id=` → dialog shows "Patient `<ID>` was not found."<br>- Missing `?id=` → dialog shows "No Patient ID was provided." (no network call)<br>- 100+ patients → pagination (10 per page); search and counts apply across all pages |
+| Ideal | Registered and Unregistered tabs have separate status membership, server pagination, counts, and demographic search. Unregistered rows include name/address from record entry. Register promotes the same UUID; Unregister preserves clinic ID and history. Both mobile cards and desktop rows expose profile/edit/status actions. |
+| Empty | No matches keeps filters, tabs, and Add Patient available. Profiles without clinic IDs show Not assigned. |
+| Loading | Search has loading feedback and stale-result protection. Add/edit/status actions disable during writes. |
+| Error | Fetch errors offer Retry. Registration/duplicate-ID/save errors keep drafts open. UUID profile fetch supports retry and a not-found state; legacy clinic-ID links remain valid. |
+| Edge case | Re-registering reuses the reserved ID even across years. New IDs require current-year NNNN/YY and reject 0000. Created date differs from first registration date. Same-demographic new registration prompts selection of an existing profile or separate-person confirmation. Long names/addresses wrap on mobile. |
 
-**Test TODO:** Add component coverage for the patient detail section grouping, separate age and gender fields, full profile date format, missing-value labels, hidden X close control, and outside-click close behavior. Cover edit action visibility by role, edit dialog prefill and locked Patient ID, successful updates and save errors, default ascending ID order and sort toggling, and natural numeric ID ordering in `sortPatientsById`.
+Test TODOs and commands are tracked in [patient registration](patient-registration.md).
 
 ---
 
@@ -121,4 +119,4 @@ New record creation saves the cycle, visit, and initial CASE receipt atomically.
 - [ ] All error messages are human-readable, never raw system/server errors
 - [ ] Loading states never block the whole app — only the relevant section
 - [ ] Forms preserve user input if a save fails (no silent data loss)
-- [ ] Mobile/responsive check not required (PRD specifies Desktop/PC optimized, per Section 5.1)
+- [ ] Mobile/responsive and keyboard entry verified per AGENTS.md.

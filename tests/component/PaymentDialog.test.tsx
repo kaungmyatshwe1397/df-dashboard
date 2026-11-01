@@ -11,6 +11,7 @@ import { PaymentDialog } from "@/components/records/record-table/PaymentDialog";
 import { CasePatientRecordType, RecordCategory } from "@/lib/global";
 
 const mockRecord: CasePatientRecordType = {
+  patient_uuid: "patient-fixture",
   id: "rec-test-1",
   cycle_id: "cycle-001",
   patient_id: "0099/26",

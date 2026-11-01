@@ -16,6 +16,7 @@ import { Plus, Pencil } from "lucide-react";
 import { RecordCategory, GPPatientRecordType } from "@/lib/global";
 import { useCanEdit } from "@/context/AuthContext";
 import { MobileRecordCard } from "./mobileRecordCard";
+import { Badge } from "@/components/ui/badge";
 import {
   ROWS_PER_PAGE,
   formatCurrency,
@@ -99,7 +100,7 @@ export function GpTable({
             {paginatedRecords.map((record) => (
               <TableRow key={record.id}>
                 <TableCell className="font-medium tabular-nums">
-                  {record.patient_id}
+                  {record.patient_id ?? "Not assigned"}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {formatDate(record.entry_date)}
@@ -111,6 +112,8 @@ export function GpTable({
                   >
                     {record.patient_name}
                   </span>
+                  <Badge variant="secondary">{record.patient?.is_registered ? "Registered" : "Unregistered"}</Badge>
+                  {canEdit && <Button variant="ghost" size="sm" onClick={() => onEdit(record, RecordCategory.GP)}>Edit visit</Button>}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                   {record.diagnosis}

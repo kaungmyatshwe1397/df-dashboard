@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import React from "react";
 import { DataProvider } from "@/context/DataContext";
@@ -23,6 +24,12 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Serialize one clinic-month snapshot so server/client clocks cannot disagree during hydration.
+  const initialMonth = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Bangkok",
+  }).format(new Date());
   return (
     <html
       lang="en"
@@ -30,16 +37,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try { const mode = localStorage.getItem("dc-fms-theme"); const theme = mode === "light" ? "light" : "dark"; document.documentElement.dataset.theme = theme; document.documentElement.classList.toggle("dark", theme === "dark"); } catch { document.documentElement.dataset.theme = "dark"; document.documentElement.classList.add("dark"); }`,
-          }}
-        />
+        <Script src="/theme-init.js" strategy="beforeInteractive" />
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <AuthProvider>
-            <DataProvider>{children}</DataProvider>
+            <DataProvider initialMonth={initialMonth}>{children}</DataProvider>
           </AuthProvider>
         </ThemeProvider>
         <Analytics />

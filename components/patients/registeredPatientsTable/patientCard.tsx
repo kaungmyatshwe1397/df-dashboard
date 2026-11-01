@@ -11,11 +11,11 @@ export function PatientCard({ patient, onSelect }: { patient: PatientType; onSel
     <Card size="sm" className="min-w-0">
       <CardHeader>
         <CardTitle className="[overflow-wrap:anywhere]">{patient.patient_name}</CardTitle>
-        <CardDescription className="[overflow-wrap:anywhere]">{patient.patient_id}</CardDescription>
+        <CardDescription className="[overflow-wrap:anywhere]">{patient.patient_id ?? "Not assigned"}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <dl className="space-y-3">
-          <DataField label="Registered">{formatRegisteredDate(patient.created_at)}</DataField>
+          <DataField label="Registered">{formatRegisteredDate(patient.registered_at)}</DataField>
           <DataField label="Address">{patient.address || "Not provided"}</DataField>
         </dl>
         <Button variant="outline" className="w-full" aria-label={`View patient ${patient.patient_name}`} onClick={() => onSelect(patient)}>View patient</Button>

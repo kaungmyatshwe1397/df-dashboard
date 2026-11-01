@@ -3,7 +3,7 @@
 // never 0000); YY is a two-digit year. Add-form IDs must use the current
 // year; lookup accepts any year so records from previous years stay
 // searchable.
-// Age — digits only, capped at two characters (no sign, no decimal).
+// Age — digits only; validation enforces the supported 0–120 range.
 
 const PATIENT_ID_PATTERN = /^(\d{4})\/(\d{2})$/;
 
@@ -39,8 +39,8 @@ export function isCurrentYearPatientIdValid(value: string): boolean {
   return PATIENT_ID_PATTERN.exec(value)![2] === currentYearSuffix();
 }
 
-// Digits only, max two characters — blocks "-", ".", and letters at the
+// Digits only, max three characters — blocks "-", ".", and letters at the
 // source so an out-of-range value never reaches validation.
 export function filterAgeInput(raw: string): string {
-  return raw.replace(/\D/g, "").slice(0, 2);
+  return raw.replace(/\D/g, "").slice(0, 3);
 }

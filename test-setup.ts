@@ -176,13 +176,13 @@ function generateAuthId(): string {
 function freshData(): Record<string, unknown[]> {
   return {
     monthly_cycles: SEED_CYCLES.map((c) => ({ ...c })),
-    patient_records: SEED_RECORDS.map((r) => ({ ...r })),
+    patient_records: SEED_RECORDS.map((r) => ({ ...r, patient_uuid: SEED_PATIENTS.find((p) => p.patient_id === r.patient_id)?.id })),
     case_payments: SEED_PAYMENTS.map((p) => ({ ...p })),
     monthly_financials: SEED_FINANCIALS.map((f) => ({ ...f, custom_overheads: [...f.custom_overheads] })),
     labs: SEED_LABS.map((l) => ({ ...l })),
     case_types: SEED_CASE_TYPES.map((ct) => ({ ...ct })),
     patients: SEED_PATIENTS.map((p) => ({
-      ...p,
+      ...p, is_registered: true, registered_at: p.created_at,
       current_medications: [...p.current_medications],
       past_medical_history: [...p.past_medical_history],
     })),
@@ -216,7 +216,13 @@ function mockQuery(table: string, rows: unknown[]) {
 
   const q: Record<string, unknown> = {};
 
-  q.select = vi.fn().mockReturnValue(q);
+  q.select = vi.fn().mockImplementation((columns?: string) => {
+    if (table === "patient_records" && columns?.includes("patient:patients")) {
+      data = data.map((row) => ({ ...(row as Record<string, unknown>), patient: (db.patients as Record<string, unknown>[]).find((p) => p.id === (row as Record<string, unknown>).patient_uuid) }));
+    }
+    return q;
+  });
+  q.range = vi.fn().mockImplementation((from: number, to: number) => { data = data.slice(from, to + 1); return q; });
   q.order = vi.fn().mockReturnValue(q);
   q.eq = vi.fn().mockImplementation((col: string, val: unknown) => {
     data = data.filter((r) => (r as Record<string, unknown>)[col] === val);
@@ -264,10 +270,16 @@ function mockQuery(table: string, rows: unknown[]) {
       );
       const rows = (db[table] ?? []) as Record<string, unknown>[];
       for (const row of rows) {
-        if (matchedIds.has(row.id)) Object.assign(row, values);
+        if (matchedIds.has(row.id)) {
+          Object.assign(row, values);
+          if (table === "patients") for (const visit of db.patient_records as Record<string, unknown>[]) {
+            if (visit.patient_uuid === row.id) Object.assign(visit, { patient_name: row.patient_name, address: row.address, patient_id: row.patient_id });
+          }
+        }
       }
       data = data.map((r) => ({ ...(r as Record<string, unknown>) }));
     };
+    q.single = vi.fn().mockImplementation(() => { apply(); return Promise.resolve({ data: data[0] ?? null, error: null }); });
     q.then = (
       resolve: (v: unknown) => void,
       reject?: (e: unknown) => void
@@ -316,16 +328,35 @@ vi.mock("@/lib/supabase/client", () => ({
     from: vi.fn((table: string) => mockQuery(table, db[table] || [])),
     // Mirrors both registry RPCs; the atomic variant commits one ledger result per submission.
     rpc: vi.fn((fn: string, args: Record<string, unknown>) => {
-      if (fn === "save_registered_record") {
+      if (fn === "search_patients") {
+        const normal = (value: unknown) => String(value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+        const patients = (db.patients as Record<string, unknown>[]).filter((patient) =>
+          (!args.p_query || normal(patient.patient_name).includes(normal(args.p_query)) || normal(patient.patient_id).includes(normal(args.p_query)))
+          && (!args.p_address || normal(patient.address).includes(normal(args.p_address)))
+          && (args.p_age == null || patient.age === args.p_age) && (!args.p_gender || patient.gender === args.p_gender)
+          && (args.p_registered == null || patient.is_registered === args.p_registered)
+          && (args.p_exact_name == null || normal(patient.patient_name) === normal(args.p_exact_name)));
+        const page = Number(args.p_page ?? 1), size = Number(args.p_page_size ?? 10);
+        return Promise.resolve({ data: { patients: patients.slice((page - 1) * size, page * size), total: patients.length }, error: null });
+      }
+      if (fn === "set_patient_registration") {
+        const patient = (db.patients as Record<string, unknown>[]).find((p) => p.id === args.p_patient_uuid);
+        if (!patient) return Promise.resolve({ data: null, error: { message: "Patient was not found." } });
+        Object.assign(patient, args.p_updates, { is_registered: args.p_registered, patient_id: patient.patient_id ?? args.p_patient_id });
+        return Promise.resolve({ data: patient, error: null });
+      }
+      if (fn === "save_registered_record" || fn === "save_patient_record") {
         const record = args.p_record as Record<string, unknown>;
         const submissionId = args.p_submission_id as string;
-        const request = JSON.stringify([args.p_patient_id, record, args.p_initial_payment]);
+        const request = JSON.stringify([fn, args.p_patient ?? args.p_patient_id, record, args.p_initial_payment]);
         const submissions = db.record_save_submissions ??= [];
         const previous = submissions.find((row) => (row as Record<string, unknown>).id === submissionId) as Record<string, unknown> | undefined;
         if (previous) return Promise.resolve(previous.request === request
           ? { data: previous.result, error: null }
           : { data: null, error: { code: "22023", message: "This save already used different values. Retry the original values, then edit the saved record." } });
-        const patient = (db.patients as Record<string, unknown>[]).find((row) => row.patient_id === args.p_patient_id);
+        const source = args.p_patient as { existing_patient_uuid?: string; new_patient?: Record<string, unknown> } | undefined;
+        let patient = (db.patients as Record<string, unknown>[]).find((row) => source ? row.id === source.existing_patient_uuid : row.patient_id === args.p_patient_id);
+        if (source?.new_patient) patient = { ...source.new_patient, id: crypto.randomUUID(), patient_id: null, is_registered: false };
         if (!patient) return Promise.resolve({ data: null, error: { code: "23503", message: "Patient ID is not registered. Register the patient before adding a record." } });
         const amount = Number(args.p_initial_payment);
         if (amount < 0 || amount > Number(record.total_cost)) return Promise.resolve({ data: null, error: { code: "22023", message: "Invalid initial payment." } });
@@ -337,7 +368,8 @@ vi.mock("@/lib/supabase/client", () => ({
         }
         const [year, month] = monthYear.split("-");
         const label = `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(month) - 1]} ${year}`;
-        const visit = { ...record, id: crypto.randomUUID(), cycle_id: cycle.id, month_label: label,
+        if (source?.new_patient) db.patients.push(patient);
+        const visit = { ...record, patient_uuid: patient.id, patient_id: patient.patient_id, id: crypto.randomUUID(), cycle_id: cycle.id, month_label: label,
           patient_name: patient.patient_name, address: patient.address ?? null, is_carried_forward: false,
           paid: amount, remaining: Number(record.total_cost) - amount };
         const payment = record.category === "CASE" && amount > 0 ? {
@@ -346,7 +378,7 @@ vi.mock("@/lib/supabase/client", () => ({
         } : null;
         db.patient_records.push(visit);
         if (payment) db.case_payments.push(payment);
-        const result = { record: visit, payment, cycle };
+        const result = { record: visit, payment, cycle, patient };
         submissions.push({ id: submissionId, request, result });
         return Promise.resolve({ data: result, error: null });
       }

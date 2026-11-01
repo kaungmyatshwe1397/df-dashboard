@@ -10,7 +10,7 @@ export function filterPatients(
 ): PatientType[] {
   const q = query.trim().toLowerCase();
   if (!q) return patients;
-  return patients.filter((p) => p.patient_id.toLowerCase().includes(q));
+  return patients.filter((p) => (p.patient_id ?? "").toLowerCase().includes(q));
 }
 
 export function sortPatientsById(
@@ -18,7 +18,7 @@ export function sortPatientsById(
   direction: "ascending" | "descending"
 ): PatientType[] {
   const sorted = [...patients].sort((a, b) =>
-    a.patient_id.localeCompare(b.patient_id, undefined, {
+    (a.patient_id ?? a.patient_name).localeCompare(b.patient_id ?? b.patient_name, undefined, {
       numeric: true,
       sensitivity: "base",
     })

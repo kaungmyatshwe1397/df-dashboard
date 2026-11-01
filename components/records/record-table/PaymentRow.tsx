@@ -22,6 +22,7 @@ export interface PaymentRowProps {
   isExpanded: boolean;
   onToggleExpand: (id: string) => void;
   onPay?: (record: CasePatientRecordType) => void;
+  onEdit?: (record: CasePatientRecordType) => void;
 }
 
 function formatCurrency(amount: number): string {
@@ -39,6 +40,7 @@ export function PaymentRow({
   isExpanded,
   onToggleExpand,
   onPay,
+  onEdit,
 }: PaymentRowProps) {
   return (
     <>
@@ -60,7 +62,7 @@ export function PaymentRow({
           </Button>
         </TableCell>
         <TableCell className="font-medium tabular-nums">
-          {record.patient_id}
+          {record.patient_id ?? "Not assigned"}
         </TableCell>
         <TableCell className="text-body-sm text-muted-foreground">
           {formatDate(record.entry_date)}
@@ -73,6 +75,8 @@ export function PaymentRow({
             >
               {record.patient_name}
             </span>
+            <Badge variant="secondary">{record.patient?.is_registered ? "Registered" : "Unregistered"}</Badge>
+            {onEdit && <Button variant="ghost" size="sm" onClick={() => onEdit(record)}>Edit visit</Button>}
             {record.is_carried_forward && (
               <Badge variant="outline" className="text-caption shrink-0">
                 Carried forward

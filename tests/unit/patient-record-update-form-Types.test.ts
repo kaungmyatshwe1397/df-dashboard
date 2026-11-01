@@ -14,6 +14,7 @@ import {
 } from "@/lib/global";
 
 const gpRecord: GPPatientRecordType = {
+  patient_uuid: "patient-fixture",
   id: "rec-001",
   cycle_id: "cycle-001",
   patient_id: "0001/26",
@@ -27,6 +28,7 @@ const gpRecord: GPPatientRecordType = {
 };
 
 const caseRecord: CasePatientRecordType = {
+  patient_uuid: "patient-fixture",
   id: "rec-002",
   cycle_id: "cycle-001",
   patient_id: "0002/26",
@@ -86,6 +88,7 @@ describe("getInitialForm", () => {
 
   test("prefills demographics from the registry patient when provided", () => {
     const patient: PatientType = {
+  is_registered: true,
       id: "pat-001",
       patient_id: "0001/26",
       patient_name: "John Doe Registry",

@@ -13,6 +13,7 @@ afterEach(cleanup);
 describe("record table month transitions", () => {
   test("keeps the CASE tab and the backdated visit visible after loading another month", () => {
     const record: CasePatientRecordType = {
+  patient_uuid: "patient-fixture",
       id: "backdated-case", cycle_id: "cycle-aug", patient_id: "0001/26",
       patient_name: "Backdated Patient", entry_date: "2026-08-07", month_label: "Aug 2026",
       category: RecordCategory.CASE, diagnosis: "Crown", total_cost: 75000,

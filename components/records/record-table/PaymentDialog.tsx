@@ -110,7 +110,7 @@ export function PaymentDialog({
         <DialogHeader>
           <DialogTitle>Record Payment</DialogTitle>
           <DialogDescription>
-            Add an installment payment for {record.patient_name} ({record.patient_id}).
+            Add an installment payment for {record.patient_name} ({record.patient_id ?? "Not assigned"}).
           </DialogDescription>
         </DialogHeader>
 

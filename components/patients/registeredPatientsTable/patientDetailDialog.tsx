@@ -31,6 +31,7 @@ import { formatPatientProfileDate } from "./helpers";
 
 export interface PatientDetailDialogPropsType {
   patientId: string;
+  patientUuid?: string;
   onClose: () => void;
 }
 
@@ -68,16 +69,17 @@ function DetailList({ label, items }: { label: string; items: string[] }) {
 
 export function PatientDetailDialog({
   patientId,
+  patientUuid,
   onClose,
 }: PatientDetailDialogPropsType) {
-  const { findPatientById } = usePatients();
+  const { findPatientById, findPatientByUuid } = usePatients();
   const [patient, setPatient] = useState<PatientType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     // No ?id= in the URL — render the not-found state without a network call.
-    if (!patientId.trim()) {
+    if (!patientId.trim() && !patientUuid) {
       setPatient(null);
       setError(null);
       setLoading(false);
@@ -86,7 +88,7 @@ export function PatientDetailDialog({
     setLoading(true);
     setError(null);
     try {
-      setPatient(await findPatientById(patientId));
+      setPatient(patientUuid ? await findPatientByUuid(patientUuid) : await findPatientById(patientId));
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load patient details."
@@ -94,7 +96,7 @@ export function PatientDetailDialog({
     } finally {
       setLoading(false);
     }
-  }, [findPatientById, patientId]);
+  }, [findPatientById, findPatientByUuid, patientId, patientUuid]);
 
   // Initial fetch on mount: only the loading flag flips synchronously —
   // patient/error land after the promise resolves.
@@ -112,12 +114,12 @@ export function PatientDetailDialog({
       >
         <DialogHeader>
           <DialogTitle className="text-h3">
-            Registered patient profile
+            Patient profile
           </DialogTitle>
           <DialogDescription className="flex flex-wrap items-center gap-2">
             <span>{loading ? "Loading patient details…" : "Patient ID"}</span>
             {!loading && patient && (
-              <Badge variant="secondary">{patient.patient_id}</Badge>
+              <Badge variant="secondary">{patient.patient_id ?? "Not assigned"}</Badge>
             )}
           </DialogDescription>
         </DialogHeader>
@@ -149,9 +151,9 @@ export function PatientDetailDialog({
         {!loading && !error && !patient && (
           <div className="py-4 text-center" data-testid="patient-not-found">
             <p className="text-sm text-muted-foreground mb-1">
-              {patientId.trim() ? (
+              {patientId.trim() || patientUuid ? (
                 <>
-                  Patient <span className="font-medium">{patientId}</span> was
+                  Patient <span className="font-medium">{patientUuid ?? patientId}</span> was
                   not found.
                 </>
               ) : (
@@ -176,8 +178,9 @@ export function PatientDetailDialog({
                 </div>
                 <DetailRow
                   label="Registered"
-                  value={formatPatientProfileDate(patient.created_at)}
+                  value={formatPatientProfileDate(patient.registered_at)}
                 />
+                <DetailRow label="Registration status" value={patient.is_registered ? "Registered" : "Unregistered"} />
                 <DetailRow label="Age" value={`${patient.age} years`} />
                 <DetailRow label="Gender" value={patient.gender} />
                 <div className="sm:col-span-2">

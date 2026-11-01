@@ -96,12 +96,12 @@ describe("filterAgeInput", () => {
     expect(filterAgeInput("")).toBe("");
     expect(filterAgeInput("3")).toBe("3");
     expect(filterAgeInput("30")).toBe("30");
-    expect(filterAgeInput("1234")).toBe("12");
+    expect(filterAgeInput("1234")).toBe("123");
   });
 
   test("blocks negative signs, decimals, and letters", () => {
     expect(filterAgeInput("-5")).toBe("5");
-    expect(filterAgeInput("12.5")).toBe("12");
+    expect(filterAgeInput("12.5")).toBe("125");
     expect(filterAgeInput("1e5")).toBe("15");
     expect(filterAgeInput("abc")).toBe("");
   });

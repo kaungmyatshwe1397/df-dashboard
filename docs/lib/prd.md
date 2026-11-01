@@ -90,6 +90,21 @@ Doctor Commission Fee = Commission Base × 40% (0.40)
 - **Active Cycle Record Table:** Displays active and carried-forward patient visits for the current month. Aggregated totals, profit margins, and doctor commission numbers are strictly suppressed.
 - **Inline Editing:** Assistant can edit records at any time — months never lock.
 
+### Patient identity and registration
+
+- Assistants/Admins may record GP/CASE visits without prior registration or a clinic ID.
+- Patients have permanent UUID identities and reusable profiles. New unregistered profiles
+  require name, age (0-120), and gender; address and medical history remain optional.
+- Global patient selection and monthly visit filtering support name/clinic ID, address,
+  exact age, gender, and current registration status. Visit edits select a specific visit.
+- Patient Registration retains new-patient registration and separates Registered/Unregistered
+  tabs. Registering an existing profile assigns its clinic ID without duplicating history.
+  Unregistering retains that profile, reserved clinic ID, visits, and payments.
+- The atomic save includes optional profile creation, cycle, visit, initial receipt, and
+  idempotent per-user submission result. Failure rolls back all new data.
+- Supervisor is read-only. Assistants never see financial totals. All entry/search/status
+  workflows are mobile-responsive and use the established shadcn components and tokens.
+
 ### 4.2 Admin Portal (Financial Reconciliation & Analytics)
 
 - **Case & Lab Fee Reconciliation Engine:** Automated table isolating all active "Case" treatments. Admin inputs specific laboratory fees incurred for each case. Total lab fees auto-aggregate instantly.

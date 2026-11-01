@@ -19,6 +19,8 @@ import { RecordCategory, PatientRecord, GPPatientRecordType, CasePatientRecordTy
 import { TableSkeleton, TableError } from "./RecordTableHelpers";
 import { GpTable } from "./GpTable";
 import { CaseTable } from "./CaseTable";
+import { PatientSearchFilters } from "@/components/patients/patientSearch/filters";
+import { EMPTY_PATIENT_FILTERS, hasPatientFilters, matchesPatientFilters } from "@/lib/patient-search";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 const CURRENT_YEAR = new Date().getFullYear();
@@ -37,9 +39,13 @@ export function RecordTable({
   const { records, loading, error, refreshData, selectedMonth, setSelectedMonth } = useData();
   // Keep the saved record's category visible when month loading remounts the tab panels.
   const [activeTab, setActiveTab] = useState<"gp" | "case">("gp");
+  const [filters, setFilters] = useState({ ...EMPTY_PATIENT_FILTERS });
+  const filteredRecords = records.filter((record) => !hasPatientFilters(filters)
+    || (!!record.patient && matchesPatientFilters(record.patient, filters)));
+  const tableKey = JSON.stringify([selectedMonth, filters]);
 
-  const gpRecords = records.filter((r) => r.category === RecordCategory.GP) as GPPatientRecordType[];
-  const caseRecords = records.filter((r) => r.category === RecordCategory.CASE) as CasePatientRecordType[];
+  const gpRecords = filteredRecords.filter((r) => r.category === RecordCategory.GP) as GPPatientRecordType[];
+  const caseRecords = filteredRecords.filter((r) => r.category === RecordCategory.CASE) as CasePatientRecordType[];
 
   const selectedMonthAbbr = selectedMonth ? selectedMonth.split(" ")[0] : "";
 
@@ -75,6 +81,8 @@ export function RecordTable({
         </Combobox>
       </div>
 
+      <PatientSearchFilters value={filters} onChange={setFilters} />
+      {hasPatientFilters(filters) && filteredRecords.length === 0 && <p className="text-body-sm">No visits match these filters in the selected month. Try fewer filters.</p>}
       <Tabs value={activeTab} onValueChange={(value) => {
         if (value === "gp" || value === "case") setActiveTab(value);
       }}>
@@ -85,6 +93,7 @@ export function RecordTable({
 
         <TabsContent value="gp">
           <GpTable
+            key={`gp-${tableKey}`}
             records={gpRecords}
             onAdd={() => onAdd(RecordCategory.GP)}
             onEdit={(record) => onEdit(record, RecordCategory.GP)}
@@ -93,6 +102,7 @@ export function RecordTable({
 
         <TabsContent value="case">
           <CaseTable
+            key={`case-${tableKey}`}
             records={caseRecords}
             onAdd={() => onAdd(RecordCategory.CASE)}
             onEdit={(record) => onEdit(record, RecordCategory.CASE)}

@@ -70,7 +70,9 @@ export interface CaseType {
 
 export interface PatientType {
   id: string;
-  patient_id: string;
+  patient_id: string | null;
+  is_registered: boolean;
+  registered_at?: string;
   patient_name: string;
   age: number;
   gender: Gender;
@@ -115,7 +117,9 @@ export type PatientUpdatesType =
 export interface PatientRecordBaseType {
   id: string;
   cycle_id: string;
-  patient_id: string;
+  patient_uuid: string;
+  patient_id: string | null;
+  patient?: PatientType;
   entry_date: string;
   patient_name: string;
   address?: string;
@@ -145,6 +149,25 @@ export interface CasePatientRecordType extends PatientRecordBaseType {
 }
 
 export type PatientRecord = GPPatientRecordType | CasePatientRecordType;
+
+// The discriminated patient source prevents accidentally creating a second person on selection.
+export type NewPatientPayloadType = Omit<PatientPayloadType, "patient_id">;
+export type PatientSourceType =
+  | { existing_patient_uuid: string; new_patient?: never }
+  | { new_patient: NewPatientPayloadType; existing_patient_uuid?: never };
+
+export interface PatientFiltersType {
+  query: string;
+  address: string;
+  age: string;
+  gender: string;
+  registration: "all" | "registered" | "unregistered";
+}
+
+export interface PatientSearchResultType {
+  patients: PatientType[];
+  total: number;
+}
 
 export interface CasePayment {
   id: string;

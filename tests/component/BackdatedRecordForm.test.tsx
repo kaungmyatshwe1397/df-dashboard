@@ -7,13 +7,17 @@ import { PatientRecordUpdateForm } from "@/components/records/patient-record-upd
 import { Gender, RecordCategory, type CasePatientRecordType, type GPPatientRecordType } from "@/lib/global";
 
 vi.mock("@/context/DataContext", () => ({ useData: vi.fn() }));
+vi.mock("@/context/hooks/usePatients", () => ({ usePatients: () => ({
+  findPatientByUuid: findPatientById, findPossiblePatients: vi.fn().mockResolvedValue({ patients: [], total: 0 }),
+}) }));
+vi.mock("@/components/patients/patientSearch", () => ({ PatientSearch: ({ onSelect }: { onSelect: (value: unknown) => void }) => <button onClick={() => onSelect(patient)}>Select patient</button> }));
 
 const patient = {
-  id: "patient-1", patient_id: "0001/26", patient_name: "Patient One",
+  id: "patient-1", is_registered: true, patient_id: "0001/26", patient_name: "Patient One",
   age: 30, gender: Gender.FEMALE, current_medications: [], past_medical_history: [],
 };
 const gpRecord: GPPatientRecordType = {
-  id: "record-1", patient_id: patient.patient_id, patient_name: patient.patient_name,
+  id: "record-1", patient_uuid: patient.id, patient_id: patient.patient_id, patient_name: patient.patient_name,
   entry_date: "2026-08-07", cycle_id: "cycle-aug", month_label: "Aug 2026",
   category: RecordCategory.GP, diagnosis: "Checkup", total_cost: 50000,
 };
@@ -32,7 +36,7 @@ beforeEach(() => {
   updateRecord.mockReset().mockResolvedValue(undefined);
   findPatientById.mockReset().mockResolvedValue(patient);
   vi.mocked(useData).mockReturnValue({
-    addRecord, updateRecord, findPatientById, deleteRecord: vi.fn(),
+    refreshData: vi.fn(), addRecord, updateRecord, findPatientById, deleteRecord: vi.fn(),
     updatePatient: vi.fn().mockResolvedValue(undefined), findRecordByPatientId: vi.fn(),
     medicalHistoryOptions: [], labs: [{ id: "lab-1", lab_name: "Central Lab" }],
     caseTypes: [{ id: "case-type-1", name: "Crown" }],
@@ -47,10 +51,8 @@ async function openAdd(category: RecordCategory = RecordCategory.GP) {
   const onOpenChange = vi.fn();
   render(<PatientRecordUpdateForm open onOpenChange={onOpenChange} isAdding defaultCategory={category} />);
   expect(screen.queryByLabelText(/Record Date/i)).not.toBeInTheDocument();
-  const lookup = screen.getByPlaceholderText("e.g. 0001/26");
-  fireEvent.change(lookup, { target: { value: patient.patient_id } });
-  fireEvent.keyDown(lookup, { key: "Enter" });
-  await screen.findByDisplayValue(patient.patient_name);
+  fireEvent.click(screen.getByRole("button", { name: "Select patient" }));
+  await screen.findByText(/Patient One/);
   return onOpenChange;
 }
 
@@ -89,8 +91,8 @@ describe("Record Date in the shared form", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add Record" }));
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(addRecord).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      entry_date: "2026-08-07", lab_send_date: "2026-08-10", delivery_date: "2026-09-25", paid: 20000,
-    }), patient.patient_id, 20000, submissionId);
+      entry_date: "2026-08-07", lab_send_date: "2026-08-10", delivery_date: "2026-09-25",
+    }), { existing_patient_uuid: patient.id }, 20000, submissionId);
   });
   test.each([RecordCategory.GP, RecordCategory.CASE])("%s add shows required local today only after patient verification", async (category) => {
     await openAdd(category);
@@ -127,7 +129,7 @@ describe("Record Date in the shared form", () => {
     fireEvent.change(screen.getByLabelText(/Record Date/i), { target: { value: "2026-07-31" } });
     fireEvent.click(screen.getByRole("button", { name: "Add Record" }));
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
-    expect(addRecord).toHaveBeenCalledWith(expect.objectContaining({ entry_date: "2026-07-31", diagnosis: "Follow-up" }), patient.patient_id, undefined, expect.any(String));
+    expect(addRecord).toHaveBeenCalledWith(expect.objectContaining({ entry_date: "2026-07-31", diagnosis: "Follow-up" }), { existing_patient_uuid: patient.id }, 0, expect.any(String));
   });
 
   test.each(["Failed to create the month bucket.", "Failed to save record."])("preserves all values on save failure: %s", async (message) => {
@@ -157,7 +159,7 @@ describe("Record Date in the shared form", () => {
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(updateRecord).toHaveBeenCalledWith(record.id, expect.objectContaining({ entry_date: "2026-07-15" }));
     if (record.category === RecordCategory.CASE) {
-      expect(updateRecord).toHaveBeenCalledWith(record.id, expect.objectContaining({ lab_send_date: "2026-08-10", delivery_date: "2026-09-25", paid: 20000 }));
+      expect(updateRecord).toHaveBeenCalledWith(record.id, expect.objectContaining({ lab_send_date: "2026-08-10", delivery_date: "2026-09-25" }));
       expect(screen.getByLabelText("Lab Send Date")).toHaveValue("2026-08-10");
       expect(screen.getByLabelText("Delivery Date")).toHaveValue("2026-09-25");
     }

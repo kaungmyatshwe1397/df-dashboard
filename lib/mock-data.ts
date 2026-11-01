@@ -82,6 +82,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
   // Active cycle records
   {
     id: "rec-001",
+    patient_uuid: "patient-fixture",
     cycle_id: "cycle-001",
     patient_id: "0001/26",
     entry_date: "2026-09-01",
@@ -94,6 +95,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
   } satisfies GPPatientRecordType,
   {
     id: "rec-002",
+    patient_uuid: "patient-fixture",
     cycle_id: "cycle-001",
     patient_id: "0002/26",
     entry_date: "2026-09-02",
@@ -109,6 +111,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
   } satisfies CasePatientRecordType,
   {
     id: "rec-003",
+    patient_uuid: "patient-fixture",
     cycle_id: "cycle-001",
     patient_id: "0003/26",
     entry_date: "2026-09-03",
@@ -124,6 +127,7 @@ export const MOCK_PATIENT_RECORDS: PatientRecord[] = [
   // Carried forward from previous cycle
   {
     id: "rec-004",
+    patient_uuid: "patient-fixture",
     cycle_id: "cycle-001",
     patient_id: "0004/26",
     entry_date: "2026-08-25",
