@@ -22,7 +22,7 @@ const gpRecord: GPPatientRecordType = {
   category: RecordCategory.GP, diagnosis: "Checkup", total_cost: 50000,
 };
 const caseRecord: CasePatientRecordType = {
-  ...gpRecord, category: RecordCategory.CASE, case_type: "Crown", lab_name: "Central Lab",
+  ...gpRecord, patient_uuid: patient.id, category: RecordCategory.CASE, case_type: "Crown", lab_name: "Central Lab",
   lab_send_date: "2026-08-10", delivery_date: "2026-09-25", paid: 20000,
   remaining: 30000, is_carried_forward: false,
 };

@@ -24,8 +24,13 @@ import { DuplicateWarning } from "@/components/patients/patientSearch/duplicateW
 import { PatientSearch } from "@/components/patients/patientSearch";
 import { RecordSaveError } from "@/lib/services/atomicRecordSaveService";
 import { PatientIdDialog, type PatientChoiceType } from "./patientIdDialog";
+import { NewGpRecord } from "../newGpRecord";
 
 export function NewPatientRecord({ listPath, category }: { listPath: string; category: RecordCategory }) {
+  return category === RecordCategory.GP ? <NewGpRecord listPath={listPath} /> : <CasePatientRecord listPath={listPath} category={category} />;
+}
+
+function CasePatientRecord({ listPath, category }: { listPath: string; category: RecordCategory }) {
   const router = useRouter();
   const canEdit = useCanEdit();
   const { addRecord, medicalHistoryOptions } = useData();

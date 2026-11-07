@@ -92,6 +92,13 @@ Doctor Commission Fee = Commission Base × 40% (0.40)
 
 ### Patient identity and registration
 
+**GP simplification (2026-11-07):** Add GP Record opens directly to name, age,
+gender, optional address and telephone, record date, diagnosis/treatment, and cost. A GP visit
+can be saved without selecting or creating a registry profile. Demographics belong
+to that visit; missing clinic IDs do not imply an unregistered patient. Registration
+is a separate workflow. Old/new patient identification is deferred. The existing
+identity and registration rules below continue to apply to Case and linked visits.
+
 - Assistants/Admins may record GP/CASE visits without prior registration or a clinic ID.
 - Patients have permanent UUID identities and reusable profiles. New unregistered profiles
   require name, age (0-120), and gender; address and medical history remain optional.

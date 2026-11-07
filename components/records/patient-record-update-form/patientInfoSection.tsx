@@ -28,6 +28,7 @@ interface PatientInfoSectionProps {
   onPatientIdChange: (value: string) => void;
   updateField: (field: string, value: string) => void;
   showPatientId?: boolean;
+  showClinicalHistory?: boolean;
 }
 
 const GENDER_OPTIONS = [
@@ -48,6 +49,7 @@ export function PatientInfoSection({
   onPatientIdChange,
   updateField,
   showPatientId = true,
+  showClinicalHistory = true,
 }: PatientInfoSectionProps) {
   const locked = saving || demographicsLocked;
 
@@ -152,7 +154,7 @@ export function PatientInfoSection({
         />
       </FormField>
 
-      <FormField
+      {showClinicalHistory && <><FormField
         label="Drug Allergy"
         htmlFor="drugAllergy"
         hint="(optional)"
@@ -180,6 +182,7 @@ export function PatientInfoSection({
           rows={2}
         />
       </FormField>
+      </>}
     </>
   );
 }

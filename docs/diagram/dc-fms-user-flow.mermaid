@@ -22,7 +22,13 @@ flowchart TD
 
     Table --> RecordActions
 
-    Add -->|GP or Case| NewRecordPage[Full-page record entry\nChoose clinic ID or unregistered]
+    Add -->|GP| GpRecordPage[Full-page GP entry\nName, age, gender, optional address\nDate, treatment, cost]
+    GpRecordPage --> GpSave[Atomic GP save\nVisit and month only, no registry write]
+    GpSave --> DateMonth
+    GpSave -->|Save and add another| GpRecordPage
+    GpSave -->|Uncertain response| GpRetry[Preserve fields and submission ID\nLock changes and retry original request]
+    GpRetry --> GpSave
+    Add -->|Case| NewRecordPage[Full-page Case entry\nChoose clinic ID or unregistered]
     NewRecordPage --> IdCheck{Clinic ID found?}
     NewRecordPage --> PatientSearch[Search existing patients\nName or clinic ID + demographic filters]
     PatientSearch --> SelectPatient

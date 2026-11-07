@@ -14,7 +14,7 @@ describe("unregistered record service", () => {
     const saved = await savePatientRecord(client as never, "submission", source as never, record);
     expect(saved.record.patient_uuid).toBe(patient.id);
     expect(saved.record.patient?.is_registered).toBe(false);
-    expect(saved.patient.patient_id).toBeNull();
+    expect(saved.patient?.patient_id).toBeNull();
     expect(client.rpc).toHaveBeenCalledWith("save_patient_record", { p_submission_id: "submission", p_patient: source, p_record: record, p_initial_payment: 0 });
   });
   test("reuses the supplied submission and selected UUID across retries", async () => {

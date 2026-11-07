@@ -117,12 +117,15 @@ export type PatientUpdatesType =
 export interface PatientRecordBaseType {
   id: string;
   cycle_id: string;
-  patient_uuid: string;
+  patient_uuid: string | null;
   patient_id: string | null;
   patient?: PatientType;
   entry_date: string;
   patient_name: string;
   address?: string;
+  age?: number;
+  gender?: Gender;
+  telephone?: string;
   category: RecordCategory;
   diagnosis: string;
   total_cost: number;
@@ -135,6 +138,7 @@ export interface GPPatientRecordType extends PatientRecordBaseType {
 
 export interface CasePatientRecordType extends PatientRecordBaseType {
   category: RecordCategory.CASE;
+  patient_uuid: string;
   case_type?: string;
   teeth?: string;
   lab_name: string;
@@ -152,9 +156,11 @@ export type PatientRecord = GPPatientRecordType | CasePatientRecordType;
 
 // The discriminated patient source prevents accidentally creating a second person on selection.
 export type NewPatientPayloadType = Omit<PatientPayloadType, "patient_id"> & { patient_id?: string };
+export type RecordPatientDetailsType = Pick<PatientPayloadType, "patient_name" | "age" | "gender" | "address"> & { telephone?: string };
 export type PatientSourceType =
-  | { existing_patient_uuid: string; register_existing?: boolean; register_patient_id?: string; new_patient?: never }
-  | { new_patient: NewPatientPayloadType; existing_patient_uuid?: never };
+  | { existing_patient_uuid: string; register_existing?: boolean; register_patient_id?: string; new_patient?: never; record_patient?: never }
+  | { new_patient: NewPatientPayloadType; existing_patient_uuid?: never; record_patient?: never }
+  | { record_patient: RecordPatientDetailsType; existing_patient_uuid?: never; new_patient?: never };
 
 export interface PatientFiltersType {
   query: string;

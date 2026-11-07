@@ -25,7 +25,7 @@ import { TableSkeleton, TableError } from "./RecordTableHelpers";
 import { GpTable } from "./GpTable";
 import { CaseTable } from "./CaseTable";
 import { PatientSearchFilters } from "@/components/patients/patientSearch/filters";
-import { EMPTY_PATIENT_FILTERS, hasPatientFilters, matchesPatientFilters } from "@/lib/patient-search";
+import { EMPTY_PATIENT_FILTERS, hasPatientFilters, matchesRecordFilters } from "@/lib/patient-search";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 const CURRENT_YEAR = new Date().getFullYear();
@@ -50,8 +50,7 @@ export function RecordTable({
     if (new URLSearchParams(window.location.search).get("tab") === "case") setActiveTab("case");
   }, []);
   const [filters, setFilters] = useState({ ...EMPTY_PATIENT_FILTERS });
-  const filteredRecords = records.filter((record) => !hasPatientFilters(filters)
-    || (!!record.patient && matchesPatientFilters(record.patient, filters)));
+  const filteredRecords = records.filter((record) => matchesRecordFilters(record, filters));
   const tableKey = JSON.stringify([selectedMonth, filters]);
 
   const gpRecords = filteredRecords.filter((r) => r.category === RecordCategory.GP) as GPPatientRecordType[];

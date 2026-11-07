@@ -55,11 +55,14 @@ erDiagram
     PATIENT_RECORDS {
         uuid id PK
         uuid cycle_id FK
-        uuid patient_uuid FK "permanent identity, FK to PATIENTS.id"
+        uuid patient_uuid FK "nullable for standalone GP; CASE requires PATIENTS.id"
         string patient_id "nullable synchronized clinic ID display copy"
         date entry_date
         string patient_name "denormalized display copy"
         string address "denormalized display copy, optional"
+        integer age "standalone GP visit age, 0-120; linked visits use profile"
+        string telephone "optional visit telephone, separate from registry"
+        enum gender "standalone GP visit gender; linked visits use profile"
         enum category "GP or CASE"
         string diagnosis
         integer total_cost
@@ -126,6 +129,8 @@ erDiagram
     %%   creates the next month's bucket when moving unsettled CASE balances.
     %%
     %% Patient Registry Notes:
+    %%   New GP entry stores name, age, gender, address on the visit with no registry write.
+    %%   Standalone GP has no registration status; old/new patient identification is deferred.
     %%   PATIENTS — one UUID per person; optional clinic ID globally unique forever.
     %%   Clinic IDs are unique; matching demographics prompt a manual duplicate check.
     %%   Registration is optional for visits. save_patient_record atomically

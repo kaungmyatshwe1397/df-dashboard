@@ -21,6 +21,22 @@ beforeEach(() => {
   mocks.updatePatient.mockResolvedValue(undefined); mocks.find.mockResolvedValue(patient); mocks.duplicates.mockResolvedValue({ patients: [], total: 0 });
 });
 afterEach(cleanup);
+
+test("edits standalone GP demographics without fetching or updating registration", async () => {
+  const standalone: GPPatientRecordType = { ...record, patient_uuid: null, patient_name: "Visit Patient", age: 29, gender: Gender.FEMALE, address: "South", telephone: "09 123456" };
+  const close = vi.fn();
+  render(<PatientRecordUpdateForm open editRecord={standalone} onOpenChange={close} />);
+  expect(await screen.findByLabelText(/Patient Name/)).toHaveValue("Visit Patient");
+  expect(screen.getByLabelText(/^Age/)).toHaveValue("29");
+  expect(screen.getByLabelText(/Telephone/)).toHaveValue("09 123456");
+  expect(screen.queryByLabelText(/Drug Allergy/)).not.toBeInTheDocument();
+  expect(mocks.find).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText(/Patient Name/), { target: { value: "Corrected Name" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+  await waitFor(() => expect(close).toHaveBeenCalledWith(false));
+  expect(mocks.update).toHaveBeenCalledWith(record.id, expect.objectContaining({ patient_name: "Corrected Name", age: 29, gender: Gender.FEMALE, address: "South", telephone: "09 123456" }));
+  expect(mocks.updatePatient).not.toHaveBeenCalled();
+});
 function addForm() { const close = vi.fn(); render(<PatientRecordUpdateForm open isAdding onOpenChange={close} />); return close; }
 function treatment() {
   fireEvent.change(screen.getByLabelText(/Diagnosis & Treatment/), { target: { value: "Scaling" } });
@@ -77,10 +93,41 @@ test("invalid demographics stop new-profile submission", () => {
 test("edit and delete use the selected visit UUID and profile UUID", async () => {
   const close = vi.fn(); render(<PatientRecordUpdateForm open editRecord={record} onOpenChange={close} />);
   await waitFor(() => expect(screen.getByRole("button", { name: "Save Changes" })).not.toBeDisabled());
+  expect(screen.queryByLabelText(/Drug Allergy/)).not.toBeInTheDocument();
+  expect(screen.queryByLabelText(/Past Dental History/)).not.toBeInTheDocument();
+  expect(screen.queryByText("Unregistered")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Delete" })).toBeVisible();
   fireEvent.change(screen.getByLabelText(/Patient Name/), { target: { value: "Updated Aye" } });
   fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
   await waitFor(() => expect(mocks.update).toHaveBeenCalledWith(record.id, expect.objectContaining({ entry_date: record.entry_date })));
   expect(mocks.updatePatient).toHaveBeenCalledWith(patient.id, expect.objectContaining({ patient_name: "Updated Aye" }));
+  expect(mocks.updatePatient.mock.calls[0][1]).not.toHaveProperty("current_medications");
+  expect(mocks.updatePatient.mock.calls[0][1]).not.toHaveProperty("past_medical_history");
+});
+
+test("deletes the selected GP visit from the edit popup and closes after success", async () => {
+  const close = vi.fn();
+  render(<PatientRecordUpdateForm open editRecord={{ ...record, patient_uuid: null, age: 40, gender: Gender.FEMALE }} onOpenChange={close} />);
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  await waitFor(() => expect(close).toHaveBeenCalledWith(false));
+  expect(mocks.remove).toHaveBeenCalledWith(record.id);
+  expect(mocks.updatePatient).not.toHaveBeenCalled();
+});
+
+test("locks linked demographics after profile loading fails while allowing visit edits", async () => {
+  mocks.find.mockRejectedValueOnce(new Error("Profile unavailable"));
+  const close = vi.fn();
+  render(<PatientRecordUpdateForm open editRecord={record} onOpenChange={close} />);
+  await screen.findByText("Could not load patient details. Treatment details can still be edited.");
+  expect(screen.getByLabelText(/Patient Name/)).toBeDisabled();
+  expect(screen.getByLabelText(/^Age/)).toBeDisabled();
+  expect(screen.getByLabelText(/Address/)).toBeDisabled();
+  expect(screen.getByLabelText(/Telephone/)).toBeEnabled();
+  treatment();
+  fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+  await waitFor(() => expect(close).toHaveBeenCalledWith(false));
+  expect(mocks.update).toHaveBeenCalledWith(record.id, expect.objectContaining({ diagnosis: "Scaling" }));
+  expect(mocks.updatePatient).not.toHaveBeenCalled();
 });
 test("delete waits for failure and leaves the dialog open", async () => {
   const close = vi.fn(); mocks.remove.mockRejectedValueOnce(new Error("Unavailable"));

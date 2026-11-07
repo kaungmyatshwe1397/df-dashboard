@@ -38,6 +38,23 @@ Use this to design each screen and to QA it before release.
 
 ## 3. Add / Edit Patient Record
 
+**GP entry update (2026-11-07):** GP opens directly with name, age, gender, optional
+address, date, treatment, and cost. It has no patient-ID/search gate, clinical-history
+fields, registration status, or registry writes. Validate blank/invalid fields inline.
+Save & add another clears all visit/patient values except date and creates a new
+submission identity. Saving disables fields and repeat submission. An uncertain
+response retains and locks the draft for Retry save with the original submission.
+Confirmed validation or missing-migration errors allow correcting the draft.
+Search and Edit visit must include standalone GP records and persist their own
+demographics without loading a registry profile. Existing linked visits remain intact.
+The clinic-ID workflow described below applies to Case entry.
+
+Optional telephone is stored per visit and can be added, edited, or cleared. GP edit
+uses the same record-only fields for both new standalone and older linked visits.
+Hidden clinical history must not be cleared. Patient and visit cards sit side by side
+on wider screens and stack on mobile. Delete, Cancel, and Save Changes remain
+available in the edit footer, with disabled actions while saving or deleting.
+
 GP and Case add use full pages. The clinic-ID dialog requires an explicit match confirmation, validates a new ID against the current year, or starts an unregistered profile. Patient entry offers Male and Female. Save returns to the matching Records tab; Save & add another saves one visit and resets patient details while retaining the visit date. Failed saves retain the form and submission identity for safe retry. Case entry includes case type, teeth, lab, dates, and initial payment. Record edits keep their dialog flow.
 
 | State | Checklist |
