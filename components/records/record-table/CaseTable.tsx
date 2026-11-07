@@ -31,10 +31,12 @@ export function CaseTable({
   records,
   onAdd,
   onEdit,
+  emptyMessage,
 }: {
   records: CasePatientRecordType[];
   onAdd: () => void;
   onEdit: (record: CasePatientRecordType | null, category: RecordCategory) => void;
+  emptyMessage?: string;
 }) {
   const { getRecordBalance, getRecordTotalPaid, getPaymentsForRecord } = useData();
   const canEdit = useCanEdit();
@@ -42,9 +44,9 @@ export function CaseTable({
   const [sortValue, setSortValue] = useState<RecordSortValueType>("date:desc");
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [payRecord, setPayRecord] = useState<CasePatientRecordType | null>(null);
-
   const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const visiblePage = Math.min(currentPage, Math.max(totalPages, 1));
+  const startIndex = (visiblePage - 1) * ROWS_PER_PAGE;
   const paginatedRecords = sortRecords(records, sortValue).slice(startIndex, startIndex + ROWS_PER_PAGE);
 
   function toggleExpand(recordId: string) {
@@ -54,7 +56,7 @@ export function CaseTable({
   if (records.length === 0) {
     return (
       <TableEmpty
-        message="No case records yet this cycle."
+        message={emptyMessage ?? "No case records yet this cycle."}
         onAdd={canEdit ? onAdd : undefined}
       />
     );
@@ -80,8 +82,9 @@ export function CaseTable({
       </div>
 
       <div className="space-y-3 2xl:hidden">
-        {paginatedRecords.map((record) => (
+        {paginatedRecords.map((record, index) => (
           <MobileRecordCard key={record.id} record={record}
+            rowNumber={startIndex + index + 1}
             totalPaid={getRecordTotalPaid(record.id)} remaining={getRecordBalance(record)}
             payments={getPaymentsForRecord(record.id)} expanded={expandedRow === record.id}
             onToggleHistory={toggleExpand} onPay={canEdit ? setPayRecord : undefined}
@@ -89,21 +92,19 @@ export function CaseTable({
         ))}
       </div>
 
-      <div className="hidden rounded-xl border border-border 2xl:block">
+      <div className="hidden min-w-0 rounded-xl border border-border 2xl:block">
         <Table className="table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10">#</TableHead>
-              <TableHead className="w-24">Date</TableHead>
-              <TableHead className="w-24">Patient ID</TableHead>
-              <TableHead className="w-32">Name</TableHead>
-              <TableHead>Treatment</TableHead>
-              <TableHead className="w-28">Lab</TableHead>
-              <TableHead className="w-24 text-right">Total</TableHead>
-              <TableHead className="w-24 text-right">Paid</TableHead>
-              <TableHead className="w-24 text-right">Remaining</TableHead>
-              <TableHead className="w-32">Status</TableHead>
-              <TableHead className="w-44 text-right">Actions</TableHead>
+              <TableHead className="w-[4%]">#</TableHead>
+              <TableHead className="w-[10%]">Date</TableHead>
+              <TableHead className="w-[14%]">Name</TableHead>
+              <TableHead className="w-[22%]">Treatment</TableHead>
+              <TableHead className="w-[10%] text-right">Total</TableHead>
+              <TableHead className="w-[9%] text-right">Paid</TableHead>
+              <TableHead className="w-[10%] text-right">Remaining</TableHead>
+              <TableHead className="w-[12%]">Status</TableHead>
+              <TableHead className="w-[9%] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -133,7 +134,7 @@ export function CaseTable({
       </div>
 
       <TablePagination
-        currentPage={currentPage}
+        currentPage={visiblePage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
       />

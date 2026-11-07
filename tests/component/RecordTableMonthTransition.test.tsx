@@ -55,8 +55,8 @@ describe("record table month transitions", () => {
     rerender(<RecordTable {...props} />);
     expect(screen.getByRole("tab", { name: "Case Records" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getAllByText("Backdated Patient").length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("columnheader")).toHaveLength(11);
-    expect(screen.getAllByRole("columnheader").slice(0, 3).map((header) => header.textContent)).toEqual(["#", "Date", "Patient ID"]);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(9);
+    expect(screen.getAllByRole("columnheader").slice(0, 3).map((header) => header.textContent)).toEqual(["#", "Date", "Name"]);
     expect(screen.getAllByText("Total").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Remaining").length).toBeGreaterThan(0);
   });

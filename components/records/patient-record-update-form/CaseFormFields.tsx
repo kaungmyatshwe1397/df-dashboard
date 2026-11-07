@@ -1,5 +1,5 @@
 // Case treatment fields — Case Type, Tooth Numbers,
-// Total Cost, Lab Name (required Select), Lab Send Date, Delivery Date, Paid, Remaining.
+// Total Cost, optional Lab Name and dates, Paid, and Remaining.
 // Diagnosis is auto-generated from case type + teeth selection.
 // Identity/demographics live in PatientInfoSection.
 
@@ -113,7 +113,7 @@ export function CaseFormFields({
       <FormField
         label="Lab Name"
         htmlFor="labName"
-        required
+        hint="(optional)"
         error={errors.labName}
       >
         <LabSelector

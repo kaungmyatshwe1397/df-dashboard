@@ -18,6 +18,7 @@ import type { PatientRecordUpdateFormProps } from "./Types";
 import { useRecordForm } from "./useRecordForm";
 import { VisitPicker } from "./visitPicker";
 import { GpRecordFields } from "./gpRecordFields";
+import { CaseRecordFields } from "./caseRecordFields";
 
 export function PatientRecordUpdateForm(props: PatientRecordUpdateFormProps) {
   const { open, onOpenChange, isAdding = false, defaultCategory = RecordCategory.GP } = props;
@@ -28,12 +29,12 @@ export function PatientRecordUpdateForm(props: PatientRecordUpdateFormProps) {
   const pickingVisit = !isAdding && !record;
   const showDemographics = state.standaloneGp || isNew || (!isAdding && !!patient);
   return <Dialog open={open} onOpenChange={saving ? undefined : onOpenChange}>
-    <DialogContent className={state.gpEditing ? "sm:max-w-4xl" : "sm:max-w-lg"} showCloseButton={!saving}>
+    <DialogContent className={state.gpEditing || state.standaloneRecord ? "sm:max-w-4xl" : "sm:max-w-lg"} showCloseButton={!saving}>
       <DialogHeader>
         <DialogTitle>{isAdding ? `Add ${state.isCase ? "Case" : "GP"} Record` : "Edit Patient Record"}</DialogTitle>
         <DialogDescription>{pickingPatient ? "Search for an existing patient or add an unregistered patient."
           : pickingVisit ? "Find and select the visit you want to edit in the selected month."
-          : state.gpEditing ? "Update patient and treatment details for this visit." : "Enter patient and treatment details. Registration is optional."}</DialogDescription>
+          : state.gpEditing || state.standaloneRecord ? "Update patient and treatment details for this visit." : "Enter patient and treatment details. Registration is optional."}</DialogDescription>
       </DialogHeader>
       {state.error && <Alert variant="destructive"><AlertDescription>{state.error}</AlertDescription></Alert>}
       {loadingPatient && <p role="status">Loading patient details...</p>}
@@ -41,7 +42,8 @@ export function PatientRecordUpdateForm(props: PatientRecordUpdateFormProps) {
         : pickingVisit ? <VisitPicker category={defaultCategory} onSelect={state.setRecord} />
         : <div className="grid gap-4">
           {state.gpEditing ? <GpRecordFields form={form} errors={errors} saving={saving || loadingPatient}
-            demographicsDisabled={!!record?.patient_uuid && !patient} updateField={state.updateField} /> : <>
+            demographicsDisabled={!!record?.patient_uuid && !patient} updateField={state.updateField} />
+            : state.standaloneRecord ? <CaseRecordFields key={record?.id} form={form} errors={errors} saving={saving} updateField={state.updateField} isEditing /> : <>
           {patient && <div className="grid gap-2">
             <p className="break-words font-medium">{patient.patient_name} / {patient.patient_id ?? "Not assigned"}</p>
             <p className="text-body-sm text-muted-foreground">Age {patient.age} / {patient.gender} / {patient.address || "Address not provided"}</p>

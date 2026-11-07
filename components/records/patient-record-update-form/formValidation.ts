@@ -25,7 +25,6 @@ export function validateRecordForm(form: FormState, isCase: boolean, validateDem
   }
   if (isCase) {
     if (!form.caseType.trim()) errors.caseType = "Case type is required.";
-    if (!form.labName.trim()) errors.labName = "Lab name is required.";
   } else if (!form.diagnosis.trim()) errors.diagnosis = "Diagnosis is required.";
   const cost = Number(form.totalCost);
   if (!form.totalCost || !Number.isFinite(cost) || cost <= 0 || !Number.isInteger(cost)) errors.totalCost = "Enter a whole-number cost greater than 0.";

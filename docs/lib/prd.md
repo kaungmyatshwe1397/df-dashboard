@@ -92,6 +92,13 @@ Doctor Commission Fee = Commission Base × 40% (0.40)
 
 ### Patient identity and registration
 
+**Case simplification (2026-11-07):** Add Case Record uses the same direct patient
+entry as GP without requiring a registry match or writing a registration. Required
+case details are date, type, and cost; optional teeth can be selected. Initial
+payment defaults to zero and cannot exceed cost. Lab name and milestone dates are
+optional and can be added or cleared later. Remaining balance is calculated live.
+The case and initial receipt save atomically; later installments use the case UUID.
+
 **GP simplification (2026-11-07):** Add GP Record opens directly to name, age,
 gender, optional address and telephone, record date, diagnosis/treatment, and cost. A GP visit
 can be saved without selecting or creating a registry profile. Demographics belong

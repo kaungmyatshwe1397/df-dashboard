@@ -70,45 +70,46 @@ export function GpTable({
       </div>
 
       <div className="space-y-3 lg:hidden">
-        {paginatedRecords.map((record) => (
+        {paginatedRecords.map((record, index) => (
           <MobileRecordCard key={record.id} record={record}
+            rowNumber={startIndex + index + 1}
             onEdit={canEdit ? (selected) => onEdit(selected as GPPatientRecordType, RecordCategory.GP) : undefined} />
         ))}
       </div>
 
       <div className="hidden rounded-xl border border-border lg:block">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead>Patient ID</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Patient Name</TableHead>
-              <TableHead>Diagnosis</TableHead>
-              <TableHead className="text-right">Total Cost</TableHead>
-              <TableHead className="text-right">Visit</TableHead>
+              <TableHead className="w-[5%]">#</TableHead>
+              <TableHead className="w-[14%]">Date</TableHead>
+              <TableHead className="w-[24%]">Patient Name</TableHead>
+              <TableHead className="w-[27%]">Diagnosis</TableHead>
+              <TableHead className="w-[14%] text-right">Total Cost</TableHead>
+              <TableHead className="w-[16%] text-right">Visit</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedRecords.map((record) => (
+            {paginatedRecords.map((record, index) => (
               <TableRow key={record.id}>
                 <TableCell className="font-medium tabular-nums">
-                  {record.patient_id ?? "Not assigned"}
+                  {startIndex + index + 1}
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="truncate text-body-sm text-muted-foreground" title={formatDate(record.entry_date)}>
                   {formatDate(record.entry_date)}
                 </TableCell>
                 <TableCell>
                   <span
-                    className="text-h4 font-semibold max-w-50 truncate"
+                    className="block truncate text-h4 font-semibold"
                     title={record.patient_name}
                   >
                     {record.patient_name}
                   </span>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                <TableCell className="truncate text-body-sm text-muted-foreground" title={record.diagnosis}>
                   {record.diagnosis}
                 </TableCell>
-                <TableCell className="text-right font-medium tabular-nums">
+                <TableCell className="truncate text-right font-medium tabular-nums" title={formatCurrency(record.total_cost)}>
                   {formatCurrency(record.total_cost)}
                 </TableCell>
                 <TableCell className="text-right">{canEdit && <Button variant="outline" size="sm" onClick={() => onEdit(record, RecordCategory.GP)}>Edit visit</Button>}</TableCell>

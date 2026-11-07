@@ -28,24 +28,12 @@ flowchart TD
     GpSave -->|Save and add another| GpRecordPage
     GpSave -->|Uncertain response| GpRetry[Preserve fields and submission ID\nLock changes and retry original request]
     GpRetry --> GpSave
-    Add -->|Case| NewRecordPage[Full-page Case entry\nChoose clinic ID or unregistered]
-    NewRecordPage --> IdCheck{Clinic ID found?}
-    NewRecordPage --> PatientSearch[Search existing patients\nName or clinic ID + demographic filters]
-    PatientSearch --> SelectPatient
-    IdCheck -->|New current-year ID| NewRegistered[New registered patient\nEnter demographics]
-    NewRegistered --> MatchCheck
-    IdCheck -->|No ID| NewPatient[New unregistered patient\nName, age, gender; optional address/history]
-    IdCheck -->|Existing| SelectPatient[Select existing profile by UUID]
-    NewPatient --> MatchCheck{Possible matching patients?}
-    MatchCheck -->|Select existing| SelectPatient
-    MatchCheck -->|None or confirmed separate person| RecordDate
-    SelectPatient --> RecordDate[Record date\nToday or earlier]
-    RecordDate --> TxForm[Enter GP or Case treatment]
-    TxForm --> Save2[Atomic save\nOptional profile + cycle + visit + initial receipt]
-    Save2 --> DateMonth[Select destination month] --> Table
-    Save2 -->|Save and add another| NewRecordPage
-    Save2 -->|Error or lost response| RetrySave[Keep fields and submission ID\nRetry original values]
-    RetrySave --> Save2
+    Add -->|Case| CaseRecordPage[One-page Case entry\nPatient/contact, treatment, payment\nOptional lab details]
+    CaseRecordPage --> CaseSave[Atomic Case save\nMonth, case, optional receipt, retry ledger\nNo registry write]
+    CaseSave --> DateMonth[Select destination month] --> Table
+    CaseSave -->|Save and add another| CaseRecordPage
+    CaseSave -->|Uncertain response| CaseRetry[Preserve and lock original request\nRetry same submission]
+    CaseRetry --> CaseSave
     Edit --> VisitSearch[Filter visits in selected month/category]
     VisitSearch --> SelectVisit[Select actual visit by record UUID]
     SelectVisit --> Prefill2[Prefill demographics and treatment]

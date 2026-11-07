@@ -1,5 +1,46 @@
 # Patient identity, registration, and visits
 
+## One-page Case entry (2026-11-07)
+
+Case entry now opens directly with name, age, gender, optional address/telephone,
+record date, case type, optional teeth, total cost, and amount paid today. Payment
+defaults to zero; remaining balance is calculated live. Optional lab name and dates
+stay in a collapsed shadcn panel and can be added or cleared in Edit later. Existing
+saved lab details open automatically. No registry lookup, duplicate prompt, status
+decision, or registry write is performed. Recognition of old/new patients is deferred.
+
+The `record_patient` source selects `save_case_record(uuid,jsonb,jsonb,integer)` for
+Case. It saves the passive month bucket, standalone Case snapshot, optional initial
+receipt, and private retry ledger atomically. Identical retries return the same case
+and receipt; changed requests under a committed submission are rejected. The frontend
+checks receipt acknowledgements before confirming a paid save. Further installments
+and carry-forward retain the existing record UUID workflow.
+
+**Rollout required:** Review and apply
+`supabase/migrations/20261107000002_standalone_case_records.sql` after the two GP
+and telephone migrations before enabling new Case saves. No database migration or
+SQL fixture has been executed by the coding agent; local database is production.
+The migration allows valid standalone Case snapshots, protects immutable identity
+and category, and applies cost-versus-receipt checks to standalone Case edits.
+Existing profiles, records, payments, and legacy save RPCs are preserved.
+
+Verification TODOs:
+
+- [x] Run prepared Case entry/save/edit tests and the full mocked suite with one worker:
+  42 files / 258 tests passed. TypeScript, lint, and whitespace checks passed.
+- [ ] Run `supabase/tests/standalone_case_records.sql` only on disposable staging
+  after migration review, including rollback, replay, privilege, and balance checks.
+- [ ] Verify narrow-screen/keyboard entry and optional lab panel in isolated staging.
+- [ ] Verify late lab assignment, receipt entry, and carry-forward end to end on staging.
+
+Historical linked-patient workflows below remain for compatibility; the new direct
+Case form replaces the former Case patient-ID gate.
+
+The focused run initially found one outdated test expecting the former lab
+placeholder. The test now uses the Lab Name label; the subsequent full suite passed.
+Independent static review found no material issues. SQL and browser/staging checks
+remain unrun. No commit was created for the Case changes.
+
 ## Standalone GP entry (2026-11-07)
 
 GP Add Record now opens the visit form directly. Name, age (0-120), and gender
@@ -53,7 +94,7 @@ retry test; rerunning with one worker passed. Vite emits an existing warning abo
 Repeatable commands:
 
 ```powershell
-npm test -- tests/component/NewGpRecord.test.tsx tests/component/NewPatientRecord.test.tsx tests/component/PatientRecordUpdateForm.test.tsx tests/unit/standalone-gp-save.test.ts tests/unit/unregistered-record-save.test.ts
+npm test -- tests/component/NewGpRecord.test.tsx tests/component/NewCaseRecord.test.tsx tests/component/PatientRecordUpdateForm.test.tsx tests/unit/standalone-gp-save.test.ts tests/unit/standalone-case-save.test.ts tests/unit/unregistered-record-save.test.ts
 npm test
 npx.cmd vitest run --maxWorkers=1
 ```

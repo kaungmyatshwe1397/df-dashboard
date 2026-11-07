@@ -26,6 +26,25 @@ Use this to design each screen and to QA it before release.
 
 ## 2. Assistant Portal — Active Cycle Record Table
 
+GP and Case lists omit clinic patient IDs in desktop tables and mobile cards.
+GP row numbers continue across pages in the currently sorted/filtered list; mobile
+cards show the same record number. Case lists omit lab details and expose an All
+labs / Not assigned / named lab selector inside the existing Filters sheet, before
+sorting and pagination. The Filters badge includes the selected lab on the Case tab;
+Clear filters resets the lab too. Lab details remain available in Edit. Both tables
+use proportional columns without a forced minimum width. Main rows stay on one
+line, with truncated long text and full values on hover. Case actions live in a
+labeled Actions menu rather than wrapping across lines. Expanded Case payment
+history spans all nine remaining columns.
+
+Deferred verification TODO (next commit): verify numbering after sorting/pagination,
+no patient-ID or lab display on the lists, and single-line rows without horizontal scrolling.
+Component test TODOs for the next commit: verify named-lab and unassigned filters,
+combining lab with patient search, resetting/clamping pagination, empty results,
+and retaining lab details in Edit while hiding them from desktop/mobile lists.
+Also verify lab options appear only in the Case Filters sheet, the badge and Clear
+filters include lab selection, and the row Actions menu preserves payment/edit flows.
+
 | State | Checklist |
 |---|---|
 | Ideal | - Table lists all current-month records with Patient, Category, Cost, Balance<br>- Carried-forward records are visually flagged (e.g. badge "Carried forward") |
@@ -37,6 +56,16 @@ Use this to design each screen and to QA it before release.
 ---
 
 ## 3. Add / Edit Patient Record
+
+**Case entry update (2026-11-07):** Add opens one page directly with patient/contact,
+treatment, and payment cards. No clinic-ID, registration-status, or duplicate-match
+gate appears. Payment starts at zero; remaining balance updates live. Lab name,
+send date, and delivery date are optional in a collapsed shadcn panel. Saved lab
+details open for editing. Staff can add or clear lab details later. Standalone Case
+edits preserve receipt totals and use Record payment for further installments.
+Saving/reset/retry behavior matches GP; Save & back returns to the Case tab.
+Empty/invalid required fields and overpayment show inline errors. An uncertain
+response locks the draft for retry with the same request and submission UUID.
 
 **GP entry update (2026-11-07):** GP opens directly with name, age, gender, optional
 address, date, treatment, and cost. It has no patient-ID/search gate, clinical-history

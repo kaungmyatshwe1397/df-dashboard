@@ -73,7 +73,7 @@ describe("Record Date in the shared form", () => {
     const onOpenChange = await openAdd(RecordCategory.CASE);
     fireEvent.click(screen.getByText("Select case type"));
     fireEvent.click(await screen.findByRole("option", { name: "Crown" }));
-    fireEvent.click(screen.getByText("Select lab"));
+    fireEvent.click(screen.getByLabelText(/Lab Name/));
     fireEvent.click(await screen.findByRole("option", { name: "Central Lab" }));
     fireEvent.change(screen.getByLabelText(/Total Cost/i), { target: { value: "75000" } });
     fireEvent.change(screen.getByLabelText(/^Paid/i), { target: { value: "20000" } });

@@ -61,7 +61,7 @@ export function LabReconciliationTable() {
     const map = new Map<string, CasePatientRecordType[]>();
 
     for (const record of caseRecords) {
-      const lab = record.lab_name ?? "Unknown";
+      const lab = record.lab_name?.trim() || "Not assigned";
       const group = map.get(lab);
       if (group) {
         group.push(record);

@@ -25,9 +25,9 @@ test("rejects an incomplete GP acknowledgement and reports missing migration", a
   await expect(savePatientRecord(client as never, "submission", { record_patient: details }, record)).rejects.toThrow("database update");
 });
 
-test("rejects direct demographics for Case visits or installments before contacting the database", async () => {
+test("rejects unsupported categories and GP installments before contacting the database", async () => {
   const client = { rpc: vi.fn() };
-  await expect(savePatientRecord(client as never, "submission", { record_patient: details }, { ...record, category: "CASE" })).rejects.toThrow("only supported for GP");
+  await expect(savePatientRecord(client as never, "submission", { record_patient: details }, { ...record, category: "UNKNOWN" })).rejects.toThrow("Choose GP or Case");
   await expect(savePatientRecord(client as never, "submission", { record_patient: details }, record, 1)).rejects.toThrow("without installments");
   expect(client.rpc).not.toHaveBeenCalled();
 });

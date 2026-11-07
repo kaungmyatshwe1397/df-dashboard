@@ -47,12 +47,18 @@ Central data layer that:
 
 ### Patient identity and atomic record creation
 
+New Case entry follows the direct GP workflow. `save_case_record` stores demographic
+snapshots and optional lab details with the month, case, initial receipt, and retry
+ledger in one transaction. It creates no registry profile. Apply the prepared
+`20261107000002_standalone_case_records.sql` migration after the GP/telephone
+migrations. Existing linked identities and save RPC contracts remain supported.
+
 New GP entry is independent of the patient registry. `save_gp_record` stores name, age,
 gender, and optional address directly on the visit, together with its date, treatment,
 and cost. `patient_uuid` and `patient_id` are null for these visits. It atomically saves
 the month bucket, visit, and retry ledger without creating or updating `patients`.
-Standalone GP visits have no registration status. Existing linked visits and Case
-entry retain the identity workflow below. Apply the prepared migration
+Standalone GP visits have no registration status. Existing linked visits and legacy save
+callers retain the identity workflow below. Apply the prepared migration
 `20261107000000_standalone_gp_records.sql` before enabling this GP frontend.
 
 Patients have permanent UUID identities independent of clinic registration. Visits use

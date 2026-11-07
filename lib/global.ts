@@ -138,12 +138,11 @@ export interface GPPatientRecordType extends PatientRecordBaseType {
 
 export interface CasePatientRecordType extends PatientRecordBaseType {
   category: RecordCategory.CASE;
-  patient_uuid: string;
   case_type?: string;
   teeth?: string;
   lab_name: string;
-  lab_send_date?: string;
-  delivery_date?: string;
+  lab_send_date?: string | null;
+  delivery_date?: string | null;
   paid?: number;
   remaining?: number;
   lab_id?: string;

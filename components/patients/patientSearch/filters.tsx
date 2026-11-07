@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { PatientFiltersType } from "@/lib/global";
 import { EMPTY_PATIENT_FILTERS } from "@/lib/patient-search";
 import { useId } from "react";
+import type { ReactNode } from "react";
 
 interface PatientSearchFiltersPropsType {
   value: PatientFiltersType;
@@ -18,9 +19,11 @@ interface PatientSearchFiltersPropsType {
   showGender?: boolean;
   showAddress?: boolean;
   showAge?: boolean;
+  children?: ReactNode;
+  onClear?: () => void;
 }
 
-export function PatientSearchFilters({ value, onChange, disabled = false, showRegistration = true, showQuery = true, showGender = true, showAddress = true, showAge = true }: PatientSearchFiltersPropsType) {
+export function PatientSearchFilters({ value, onChange, disabled = false, showRegistration = true, showQuery = true, showGender = true, showAddress = true, showAge = true, children, onClear }: PatientSearchFiltersPropsType) {
   const id = useId();
   function update(field: keyof PatientFiltersType, next: string) {
     onChange({ ...value, [field]: next });
@@ -59,7 +62,8 @@ export function PatientSearchFilters({ value, onChange, disabled = false, showRe
           <SelectItem value="unregistered">Unregistered</SelectItem></SelectContent>
       </Select>
     </div>}
+    {children}
     <Button type="button" variant="outline" disabled={disabled} className="self-end"
-      onClick={() => onChange({ ...EMPTY_PATIENT_FILTERS, registration: showRegistration ? "all" : value.registration })}>Clear filters</Button>
+      onClick={() => onClear ? onClear() : onChange({ ...EMPTY_PATIENT_FILTERS, registration: showRegistration ? "all" : value.registration })}>Clear filters</Button>
   </div>;
 }

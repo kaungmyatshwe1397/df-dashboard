@@ -23,7 +23,7 @@ export function CaseTypeSelector({ value, onChange, disabled }: CaseTypeSelector
 
   return (
     <Select value={value} onValueChange={(v) => { if (v) onChange(v); }} disabled={disabled}>
-      <SelectTrigger className="w-full">
+      <SelectTrigger id="caseType" className="w-full">
         <SelectValue placeholder="Select case type" />
       </SelectTrigger>
       <SelectContent>

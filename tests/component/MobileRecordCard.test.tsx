@@ -20,7 +20,8 @@ describe("MobileRecordCard", () => {
   test("shows case identity and payment context without exposing lab fees", () => {
     render(<MobileRecordCard record={record} totalPaid={50000} remaining={150000} />);
     expect(screen.getByText("Patient One")).toBeInTheDocument();
-    expect(screen.getByText("0001/26")).toBeInTheDocument();
+    expect(screen.queryByText("0001/26")).not.toBeInTheDocument();
+    expect(screen.queryByText("Lab One")).not.toBeInTheDocument();
     expect(screen.getByText("Crown treatment")).toBeInTheDocument();
     expect(screen.getByText("150,000")).toBeInTheDocument();
     expect(screen.getByText("Carried forward")).toBeInTheDocument();
