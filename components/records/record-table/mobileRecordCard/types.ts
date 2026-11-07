@@ -3,6 +3,7 @@
 import type { CasePatientRecordType, CasePayment, PatientRecord } from "@/lib/global";
 
 export interface MobileRecordCardPropsType {
+  rowNumber?: number;
   record: PatientRecord;
   totalPaid?: number;
   remaining?: number;

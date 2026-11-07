@@ -1,5 +1,106 @@
 # Patient identity, registration, and visits
 
+## One-page Case entry (2026-11-07)
+
+Case entry now opens directly with name, age, gender, optional address/telephone,
+record date, case type, optional teeth, total cost, and amount paid today. Payment
+defaults to zero; remaining balance is calculated live. Optional lab name and dates
+stay in a collapsed shadcn panel and can be added or cleared in Edit later. Existing
+saved lab details open automatically. No registry lookup, duplicate prompt, status
+decision, or registry write is performed. Recognition of old/new patients is deferred.
+
+The `record_patient` source selects `save_case_record(uuid,jsonb,jsonb,integer)` for
+Case. It saves the passive month bucket, standalone Case snapshot, optional initial
+receipt, and private retry ledger atomically. Identical retries return the same case
+and receipt; changed requests under a committed submission are rejected. The frontend
+checks receipt acknowledgements before confirming a paid save. Further installments
+and carry-forward retain the existing record UUID workflow.
+
+**Rollout required:** Review and apply
+`supabase/migrations/20261107000002_standalone_case_records.sql` after the two GP
+and telephone migrations before enabling new Case saves. No database migration or
+SQL fixture has been executed by the coding agent; local database is production.
+The migration allows valid standalone Case snapshots, protects immutable identity
+and category, and applies cost-versus-receipt checks to standalone Case edits.
+Existing profiles, records, payments, and legacy save RPCs are preserved.
+
+Verification TODOs:
+
+- [x] Run prepared Case entry/save/edit tests and the full mocked suite with one worker:
+  42 files / 258 tests passed. TypeScript, lint, and whitespace checks passed.
+- [ ] Run `supabase/tests/standalone_case_records.sql` only on disposable staging
+  after migration review, including rollback, replay, privilege, and balance checks.
+- [ ] Verify narrow-screen/keyboard entry and optional lab panel in isolated staging.
+- [ ] Verify late lab assignment, receipt entry, and carry-forward end to end on staging.
+
+Historical linked-patient workflows below remain for compatibility; the new direct
+Case form replaces the former Case patient-ID gate.
+
+The focused run initially found one outdated test expecting the former lab
+placeholder. The test now uses the Lab Name label; the subsequent full suite passed.
+Independent static review found no material issues. SQL and browser/staging checks
+remain unrun. No commit was created for the Case changes.
+
+## Standalone GP entry (2026-11-07)
+
+GP Add Record now opens the visit form directly. Name, age (0-120), and gender
+(Male/Female) are required; address and telephone are optional. Date, diagnosis/treatment, and
+positive whole-number cost remain required. Patient matching, ID lookup, clinical
+history, and registration decisions are omitted from this flow.
+
+GP entry sends `record_patient` to the existing save adapter, which invokes the new
+`save_gp_record(uuid,jsonb,jsonb)` RPC. This stores demographics on `patient_records`
+with null patient UUID/clinic ID. It never writes to `patients`, never classifies
+the person as unregistered, and creates no receipt. Old/new patient identification
+and linking are deferred. Existing linked visits and Case contracts below remain.
+
+**Rollout required:** `supabase/migrations/20261107000000_standalone_gp_records.sql`
+must be reviewed and applied before using this frontend. It adds nullable visit age
+and gender, allows null UUID only for GP with valid demographics, preserves linked
+identity protections, and adds an Admin/Assistant-only, retry-protected save RPC.
+No existing visit/profile is deleted, detached, or backfilled. No database changes
+have been applied by the coding agent; the local app connects to production.
+
+Apply `20261107000001_record_telephone.sql` after the standalone GP migration. It
+adds optional visit telephone storage and extends the GP save RPC. GP add and edit
+share a dedicated record-only field group. Older linked GP edits also omit registry
+IDs, status badges, medical history, and medication controls; hidden clinical fields
+are preserved. The edit popup uses two side-by-side shadcn cards on wider screens,
+stacking on mobile, with Delete, Cancel, and Save Changes in its footer.
+If an older linked profile cannot be loaded, demographic fields stay disabled to
+avoid discarding edits; telephone and treatment remain editable on the visit.
+
+The monthly list and edit picker search standalone visit demographics. Registration
+status filters exclude these visits from both Registered and Unregistered results
+because their registration is unknown. Editing updates the visit only. An uncertain
+save locks fields and offers Retry save with the same submission and original values.
+
+### Verification TODO
+
+- [x] Run prepared mocked component/unit tests after user permission: direct GP form,
+  standalone save/map/filter, edit without registry access, validation, consecutive
+  entries, retry identity, and existing Case entry coverage.
+- [x] Run the full Vitest suite after user permission: 41 files / 257 tests passed.
+- [ ] Run `supabase/tests/standalone_gp_records.sql` only on a disposable staging
+  database after reviewing the migration. Never run fixtures on this production DB.
+- [ ] Verify mobile/keyboard GP entry and edit against isolated staging.
+- [ ] Rehearse the migration on a production copy and compare existing profile,
+  visit, payment, and ledger counts; check linked Case/GP saves still work.
+
+Mocked verification passed: 41 files / 257 tests with one worker. TypeScript, lint,
+and whitespace checks passed. A parallel focused run timed out on an existing Case
+retry test; rerunning with one worker passed. Vite emits an existing warning about
+`__dirname` in the test config. SQL scripts and migrations remain unexecuted.
+Repeatable commands:
+
+```powershell
+npm test -- tests/component/NewGpRecord.test.tsx tests/component/NewCaseRecord.test.tsx tests/component/PatientRecordUpdateForm.test.tsx tests/unit/standalone-gp-save.test.ts tests/unit/standalone-case-save.test.ts tests/unit/unregistered-record-save.test.ts
+npm test
+npx.cmd vitest run --maxWorkers=1
+```
+
+The historical workflow below describes linked identities and Case entry.
+
 Every patient has a permanent UUID (`patients.id`). Visits reference that identity
 through `patient_records.patient_uuid`, including when no clinic book ID exists.
 `patient_id` is the optional clinic ID. Assigned IDs remain unique and reserved

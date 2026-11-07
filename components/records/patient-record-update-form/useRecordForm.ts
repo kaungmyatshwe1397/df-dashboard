@@ -12,7 +12,7 @@ export function useRecordForm({ open, onOpenChange, defaultCategory = RecordCate
   const [record, setRecord] = useState<PatientRecord | null>(editRecord ?? null);
   const [patient, setPatient] = useState<PatientType | null>(null);
   const [isNew, setIsNew] = useState(false);
-  const [form, setForm] = useState<FormState>(getEmptyForm);
+  const [form, setForm] = useState<FormState>(() => editRecord ? getInitialForm(editRecord, editRecord.patient ?? null) : getEmptyForm());
   const [errors, setErrors] = useState<FormErrors>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -20,6 +20,9 @@ export function useRecordForm({ open, onOpenChange, defaultCategory = RecordCate
   const [duplicates, setDuplicates] = useState<PatientSearchResultType | null>(null);
   const submission = useRef<string | undefined>(undefined);
   const isCase = defaultCategory === RecordCategory.CASE;
+  const standaloneGp = !!record && record.category === RecordCategory.GP && !record.patient_uuid;
+  const standaloneRecord = !!record && !record.patient_uuid;
+  const gpEditing = !isAdding && !!record && record.category === RecordCategory.GP;
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -32,6 +35,7 @@ export function useRecordForm({ open, onOpenChange, defaultCategory = RecordCate
     if (!open || !record) { setLoadingPatient(false); return; }
     let cancelled = false;
     setPatient(null); setForm(getInitialForm(record, null));
+    if (!record.patient_uuid) { setLoadingPatient(false); return; }
     setLoadingPatient(true);
     findPatientByUuid(record.patient_uuid).then((profile) => {
       if (!cancelled) {
@@ -55,7 +59,7 @@ export function useRecordForm({ open, onOpenChange, defaultCategory = RecordCate
     setErrors((previous) => ({ ...previous, [field]: undefined })); setDuplicates(null);
   }
   async function save(confirmedSeparatePerson = false) {
-    const nextErrors = validateRecordForm(form, isCase, isNew || (!isAdding && !!patient));
+    const nextErrors = validateRecordForm(form, isCase, standaloneRecord || isNew || (!isAdding && !!patient));
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length || (isAdding && !patient && !isNew)) return;
     setSaving(true); setError(null);
@@ -68,16 +72,21 @@ export function useRecordForm({ open, onOpenChange, defaultCategory = RecordCate
       const treatment = { entry_date: form.recordDate, category: defaultCategory, total_cost: Number(form.totalCost),
         diagnosis: isCase ? form.caseType + (form.teeth ? ` at ${form.teeth}` : "") : form.diagnosis.trim(),
         case_type: isCase ? form.caseType : undefined, teeth: isCase ? form.teeth || undefined : undefined,
-        lab_name: isCase ? form.labName : undefined, lab_send_date: form.labSendDate || undefined, delivery_date: form.deliveryDate || undefined };
+        lab_name: isCase ? form.labName.trim() : undefined, lab_send_date: isCase ? form.labSendDate || null : undefined,
+        delivery_date: isCase ? form.deliveryDate || null : undefined };
       if (isAdding) {
         submission.current ??= crypto.randomUUID();
         await addRecord(treatment, patient ? { existing_patient_uuid: patient.id } : { new_patient: demographics },
           isCase ? Number(form.paid) : 0, submission.current);
       } else if (record) {
-        if (patient) await updatePatient(patient.id, { ...demographics, address: demographics.address ?? null,
-          drug_allergy: demographics.drug_allergy ?? null, past_dental_history: demographics.past_dental_history ?? null });
+        if (patient) await updatePatient(patient.id, gpEditing
+          ? { patient_name: demographics.patient_name, age: demographics.age, gender: demographics.gender, address: demographics.address ?? null }
+          : { ...demographics, address: demographics.address ?? null,
+            drug_allergy: demographics.drug_allergy ?? null, past_dental_history: demographics.past_dental_history ?? null });
         // Installment totals are owned by payment operations, never overwritten by an edit.
-        await updateRecord(record.id, treatment);
+        const recordUpdates = gpEditing || standaloneRecord ? { ...treatment, telephone: form.telephone.trim() || "" } : treatment;
+        await updateRecord(record.id, standaloneRecord ? { ...recordUpdates, patient_name: demographics.patient_name,
+          age: demographics.age, gender: demographics.gender, address: demographics.address ?? "" } : recordUpdates);
       }
       refreshData(); onOpenChange(false);
     } catch (err) { setError(err instanceof Error ? err.message : "Could not save the record. Retry with the same values."); }
@@ -102,5 +111,5 @@ export function useRecordForm({ open, onOpenChange, defaultCategory = RecordCate
       address: "", drugAllergy: "", pastDentalHistory: "", pastMedicalHistory: [], currentMedications: [] }));
   }
   return { record, setRecord: selectVisit, patient, isNew, form, setForm, errors, error, saving, loadingPatient,
-    duplicates, isCase, selectPatient, updateField, save, remove, changePatient, createNew };
+    duplicates, isCase, standaloneGp, standaloneRecord, gpEditing, selectPatient, updateField, save, remove, changePatient, createNew };
 }

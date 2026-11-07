@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { CalendarDays, Filter, Search } from "lucide-react";
 import {
@@ -25,7 +26,8 @@ import { TableSkeleton, TableError } from "./RecordTableHelpers";
 import { GpTable } from "./GpTable";
 import { CaseTable } from "./CaseTable";
 import { PatientSearchFilters } from "@/components/patients/patientSearch/filters";
-import { EMPTY_PATIENT_FILTERS, hasPatientFilters, matchesPatientFilters } from "@/lib/patient-search";
+import { EMPTY_PATIENT_FILTERS, hasPatientFilters, matchesRecordFilters } from "@/lib/patient-search";
+import { CaseLabFilter } from "./caseLabFilter";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 const CURRENT_YEAR = new Date().getFullYear();
@@ -41,7 +43,7 @@ export function RecordTable({
   onAdd: (category: RecordCategory) => void;
   onEdit: (record: PatientRecord | null, category: RecordCategory) => void;
 }) {
-  const { records, loading, error, refreshData, selectedMonth, setSelectedMonth } = useData();
+  const { records, loading, error, refreshData, selectedMonth, setSelectedMonth, labs = [] } = useData();
   // Keep the saved record's category visible when month loading remounts the tab panels.
   const [activeTab, setActiveTab] = useState<"gp" | "case">("gp");
   useEffect(() => {
@@ -50,15 +52,24 @@ export function RecordTable({
     if (new URLSearchParams(window.location.search).get("tab") === "case") setActiveTab("case");
   }, []);
   const [filters, setFilters] = useState({ ...EMPTY_PATIENT_FILTERS });
-  const filteredRecords = records.filter((record) => !hasPatientFilters(filters)
-    || (!!record.patient && matchesPatientFilters(record.patient, filters)));
+  const [selectedLab, setSelectedLab] = useState("all");
+  const filteredRecords = records.filter((record) => matchesRecordFilters(record, filters));
   const tableKey = JSON.stringify([selectedMonth, filters]);
 
   const gpRecords = filteredRecords.filter((r) => r.category === RecordCategory.GP) as GPPatientRecordType[];
-  const caseRecords = filteredRecords.filter((r) => r.category === RecordCategory.CASE) as CasePatientRecordType[];
+  const caseRecords = filteredRecords.filter((record) => record.category === RecordCategory.CASE
+    && (selectedLab === "all" || (selectedLab === "unassigned"
+      ? !record.lab_name?.trim() : record.lab_name?.trim() === selectedLab.slice(4)))) as CasePatientRecordType[];
+  const labNames = Array.from(new Set([
+    ...labs.map((lab) => lab.lab_name.trim()),
+    ...records.filter((record) => record.category === RecordCategory.CASE).map((record) => record.lab_name?.trim() ?? ""),
+    ...(selectedLab.startsWith("lab:") ? [selectedLab.slice(4)] : []),
+  ].filter(Boolean))).sort((left, right) => left.localeCompare(right));
+  const hasCaseFilters = hasPatientFilters(filters) || selectedLab !== "all";
 
   const selectedMonthAbbr = selectedMonth ? selectedMonth.split(" ")[0] : "";
-  const activeFilterCount = [filters.gender, filters.registration !== "all" ? filters.registration : ""].filter(Boolean).length;
+  const activeFilterCount = [filters.gender, filters.registration !== "all" ? filters.registration : "",
+    activeTab === "case" && selectedLab !== "all" ? selectedLab : ""].filter(Boolean).length;
 
   if (loading) {
     return <TableSkeleton columns={7} />;
@@ -107,12 +118,18 @@ export function RecordTable({
         <Sheet>
           <SheetTrigger render={<Button variant="outline" size="sm" />}><Filter className="size-4" />Filters{activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount}</Badge>}</SheetTrigger>
           <SheetContent>
-            <SheetHeader><SheetTitle>Filter records</SheetTitle><SheetDescription>Filter by registration status or gender.</SheetDescription></SheetHeader>
-            <div className="overflow-y-auto px-4"><PatientSearchFilters value={filters} onChange={setFilters} showQuery={false} showAddress={false} showAge={false} /></div>
+            <SheetHeader><SheetTitle>Filter records</SheetTitle><SheetDescription>{activeTab === "case" ? "Filter by registration status, gender, or lab." : "Filter by registration status or gender."}</SheetDescription></SheetHeader>
+            <div className="overflow-y-auto px-4"><PatientSearchFilters value={filters} onChange={setFilters} showQuery={false} showAddress={false} showAge={false}
+              onClear={() => { setFilters({ ...EMPTY_PATIENT_FILTERS }); setSelectedLab("all"); }}>
+              {activeTab === "case" && <div className="grid gap-2">
+                <Label htmlFor="record-lab-filter">Lab</Label>
+                <CaseLabFilter value={selectedLab} labs={labNames} onChange={setSelectedLab} />
+              </div>}
+            </PatientSearchFilters></div>
           </SheetContent>
         </Sheet>
       </div>
-      {hasPatientFilters(filters) && filteredRecords.length === 0 && <p className="text-body-sm">No visits match these filters in the selected month. Try fewer filters.</p>}
+      {activeTab === "gp" && hasPatientFilters(filters) && gpRecords.length === 0 && <p className="text-body-sm">No visits match these filters in the selected month. Try fewer filters.</p>}
 
         <TabsContent value="gp" className="mt-4">
           <GpTable
@@ -125,8 +142,9 @@ export function RecordTable({
 
         <TabsContent value="case" className="mt-4">
           <CaseTable
-            key={`case-${tableKey}`}
+            key={`case-${tableKey}-${selectedLab}`}
             records={caseRecords}
+            emptyMessage={hasCaseFilters ? "No case records match these filters. Try fewer filters." : undefined}
             onAdd={() => onAdd(RecordCategory.CASE)}
             onEdit={(record) => onEdit(record, RecordCategory.CASE)}
           />

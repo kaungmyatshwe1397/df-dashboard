@@ -32,13 +32,13 @@ export interface FormErrors {
   paid?: string;
 }
 
-// Full controlled form state: identity + demographics + treatment.
-// Demographics live only on the patients table — never on records.
+// Linked visits use profile demographics; standalone GP visits keep their own snapshot.
 export interface FormState {
   recordDate: string;
   patientId: string;
   patientName: string;
   address: string;
+  telephone: string;
   age: string;
   gender: string;
   drugAllergy: string;
@@ -61,6 +61,7 @@ export function getEmptyForm(): FormState {
     patientId: "",
     patientName: "",
     address: "",
+    telephone: "",
     age: "",
     gender: Gender.MALE,
     drugAllergy: "",
@@ -89,8 +90,9 @@ export function getInitialForm(
     patientId: record.patient_id ?? "",
     patientName: patient?.patient_name ?? record.patient_name,
     address: patient?.address ?? record.address ?? "",
-    age: patient ? String(patient.age) : "",
-    gender: patient?.gender ?? Gender.MALE,
+    telephone: record.telephone ?? "",
+    age: patient ? String(patient.age) : record.age !== undefined ? String(record.age) : "",
+    gender: patient?.gender ?? record.gender ?? Gender.MALE,
     drugAllergy: patient?.drug_allergy ?? "",
     pastDentalHistory: patient?.past_dental_history ?? "",
     pastMedicalHistory: patient ? [...patient.past_medical_history] : [],

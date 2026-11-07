@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { PatientRecordUpdateForm } from "@/components/records/patient-record-update-form";
 import { useRecordForm } from "@/components/records/patient-record-update-form/useRecordForm";
-import { Gender, RecordCategory, type PatientType, type GPPatientRecordType } from "@/lib/global";
+import { Gender, RecordCategory, type PatientType, type GPPatientRecordType, type CasePatientRecordType } from "@/lib/global";
 
 const mocks = vi.hoisted(() => ({ add: vi.fn(), update: vi.fn(), remove: vi.fn(), updatePatient: vi.fn(), refresh: vi.fn(), find: vi.fn(), duplicates: vi.fn() }));
 vi.mock("@/context/DataContext", () => ({ useData: () => ({ addRecord: mocks.add, updateRecord: mocks.update, deleteRecord: mocks.remove,
@@ -11,6 +11,14 @@ vi.mock("@/context/DataContext", () => ({ useData: () => ({ addRecord: mocks.add
 vi.mock("@/context/hooks/usePatients", () => ({ usePatients: () => ({ findPatientByUuid: mocks.find, findPossiblePatients: mocks.duplicates }) }));
 vi.mock("@/components/patients/patientSearch", () => ({ PatientSearch: ({ onSelect, onCreate }: { onSelect: (patient: PatientType) => void; onCreate: () => void }) =>
   <div><button onClick={() => onSelect(patient)}>Select existing patient</button><button onClick={onCreate}>New unregistered patient</button></div> }));
+vi.mock("@/components/records/patient-record-update-form/CaseTypeSelector", () => ({
+  CaseTypeSelector: ({ value, onChange }: { value: string; onChange: (value: string) => void }) =>
+    <input id="caseType" value={value} onChange={(event) => onChange(event.target.value)} />,
+}));
+vi.mock("@/components/records/patient-record-update-form/LabSelector", () => ({
+  LabSelector: ({ value, onChange }: { value: string; onChange: (value: string) => void }) =>
+    <input id="labName" value={value} onChange={(event) => onChange(event.target.value)} />,
+}));
 
 const patient: PatientType = { id: "patient-uuid", patient_id: null, is_registered: false, patient_name: "Ma Aye", age: 40,
   gender: Gender.FEMALE, address: "North Village", current_medications: [], past_medical_history: [] };
@@ -21,6 +29,53 @@ beforeEach(() => {
   mocks.updatePatient.mockResolvedValue(undefined); mocks.find.mockResolvedValue(patient); mocks.duplicates.mockResolvedValue({ patients: [], total: 0 });
 });
 afterEach(cleanup);
+
+const standaloneCase: CasePatientRecordType = { ...record, patient_uuid: null, category: RecordCategory.CASE,
+  age: 30, gender: Gender.FEMALE, case_type: "Crown", lab_name: "", paid: 1000, remaining: 4000, is_carried_forward: false };
+
+test("adds lab details later to a standalone Case without changing receipts or registration", async () => {
+  const close = vi.fn();
+  render(<PatientRecordUpdateForm open defaultCategory={RecordCategory.CASE} editRecord={standaloneCase} onOpenChange={close} />);
+  expect(screen.getByLabelText(/Paid to date/)).toBeDisabled();
+  expect(mocks.find).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Lab details (optional)" }));
+  fireEvent.change(await screen.findByLabelText(/Lab Name/), { target: { value: "New Lab" } });
+  fireEvent.change(screen.getByLabelText(/Lab Send Date/), { target: { value: "2026-09-16" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+  await waitFor(() => expect(close).toHaveBeenCalledWith(false));
+  expect(mocks.update).toHaveBeenCalledWith(record.id, expect.objectContaining({ lab_name: "New Lab", lab_send_date: "2026-09-16", patient_name: patient.patient_name }));
+  expect(mocks.update.mock.calls[0][1]).not.toHaveProperty("paid");
+  expect(mocks.updatePatient).not.toHaveBeenCalled();
+});
+
+test("saved Case lab details open for editing and can be cleared explicitly", async () => {
+  const close = vi.fn();
+  render(<PatientRecordUpdateForm open defaultCategory={RecordCategory.CASE}
+    editRecord={{ ...standaloneCase, lab_name: "Old Lab", lab_send_date: "2026-09-01", delivery_date: "2026-09-20" }} onOpenChange={close} />);
+  expect(await screen.findByLabelText(/Lab Name/)).toHaveValue("Old Lab");
+  fireEvent.change(screen.getByLabelText(/Lab Name/), { target: { value: "" } });
+  fireEvent.change(screen.getByLabelText(/Lab Send Date/), { target: { value: "" } });
+  fireEvent.change(screen.getByLabelText(/Delivery Date/), { target: { value: "" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+  await waitFor(() => expect(close).toHaveBeenCalledWith(false));
+  expect(mocks.update).toHaveBeenCalledWith(record.id, expect.objectContaining({ lab_name: "", lab_send_date: null, delivery_date: null }));
+});
+
+test("edits standalone GP demographics without fetching or updating registration", async () => {
+  const standalone: GPPatientRecordType = { ...record, patient_uuid: null, patient_name: "Visit Patient", age: 29, gender: Gender.FEMALE, address: "South", telephone: "09 123456" };
+  const close = vi.fn();
+  render(<PatientRecordUpdateForm open editRecord={standalone} onOpenChange={close} />);
+  expect(await screen.findByLabelText(/Patient Name/)).toHaveValue("Visit Patient");
+  expect(screen.getByLabelText(/^Age/)).toHaveValue("29");
+  expect(screen.getByLabelText(/Telephone/)).toHaveValue("09 123456");
+  expect(screen.queryByLabelText(/Drug Allergy/)).not.toBeInTheDocument();
+  expect(mocks.find).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText(/Patient Name/), { target: { value: "Corrected Name" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+  await waitFor(() => expect(close).toHaveBeenCalledWith(false));
+  expect(mocks.update).toHaveBeenCalledWith(record.id, expect.objectContaining({ patient_name: "Corrected Name", age: 29, gender: Gender.FEMALE, address: "South", telephone: "09 123456" }));
+  expect(mocks.updatePatient).not.toHaveBeenCalled();
+});
 function addForm() { const close = vi.fn(); render(<PatientRecordUpdateForm open isAdding onOpenChange={close} />); return close; }
 function treatment() {
   fireEvent.change(screen.getByLabelText(/Diagnosis & Treatment/), { target: { value: "Scaling" } });
@@ -77,10 +132,41 @@ test("invalid demographics stop new-profile submission", () => {
 test("edit and delete use the selected visit UUID and profile UUID", async () => {
   const close = vi.fn(); render(<PatientRecordUpdateForm open editRecord={record} onOpenChange={close} />);
   await waitFor(() => expect(screen.getByRole("button", { name: "Save Changes" })).not.toBeDisabled());
+  expect(screen.queryByLabelText(/Drug Allergy/)).not.toBeInTheDocument();
+  expect(screen.queryByLabelText(/Past Dental History/)).not.toBeInTheDocument();
+  expect(screen.queryByText("Unregistered")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Delete" })).toBeVisible();
   fireEvent.change(screen.getByLabelText(/Patient Name/), { target: { value: "Updated Aye" } });
   fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
   await waitFor(() => expect(mocks.update).toHaveBeenCalledWith(record.id, expect.objectContaining({ entry_date: record.entry_date })));
   expect(mocks.updatePatient).toHaveBeenCalledWith(patient.id, expect.objectContaining({ patient_name: "Updated Aye" }));
+  expect(mocks.updatePatient.mock.calls[0][1]).not.toHaveProperty("current_medications");
+  expect(mocks.updatePatient.mock.calls[0][1]).not.toHaveProperty("past_medical_history");
+});
+
+test("deletes the selected GP visit from the edit popup and closes after success", async () => {
+  const close = vi.fn();
+  render(<PatientRecordUpdateForm open editRecord={{ ...record, patient_uuid: null, age: 40, gender: Gender.FEMALE }} onOpenChange={close} />);
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  await waitFor(() => expect(close).toHaveBeenCalledWith(false));
+  expect(mocks.remove).toHaveBeenCalledWith(record.id);
+  expect(mocks.updatePatient).not.toHaveBeenCalled();
+});
+
+test("locks linked demographics after profile loading fails while allowing visit edits", async () => {
+  mocks.find.mockRejectedValueOnce(new Error("Profile unavailable"));
+  const close = vi.fn();
+  render(<PatientRecordUpdateForm open editRecord={record} onOpenChange={close} />);
+  await screen.findByText("Could not load patient details. Treatment details can still be edited.");
+  expect(screen.getByLabelText(/Patient Name/)).toBeDisabled();
+  expect(screen.getByLabelText(/^Age/)).toBeDisabled();
+  expect(screen.getByLabelText(/Address/)).toBeDisabled();
+  expect(screen.getByLabelText(/Telephone/)).toBeEnabled();
+  treatment();
+  fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+  await waitFor(() => expect(close).toHaveBeenCalledWith(false));
+  expect(mocks.update).toHaveBeenCalledWith(record.id, expect.objectContaining({ diagnosis: "Scaling" }));
+  expect(mocks.updatePatient).not.toHaveBeenCalled();
 });
 test("delete waits for failure and leaves the dialog open", async () => {
   const close = vi.fn(); mocks.remove.mockRejectedValueOnce(new Error("Unavailable"));

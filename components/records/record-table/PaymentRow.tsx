@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CircleDollarSign, ChevronDown, Pencil } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CasePatientRecordType } from "@/lib/global";
 import { formatDate } from "./RecordTableHelpers";
 import { PaymentHistoryRow } from "./PaymentHistoryRow";
@@ -51,24 +52,25 @@ export function PaymentRow({
       >
         <TableCell className="text-caption text-muted-foreground tabular-nums">{rowNumber}</TableCell>
         <TableCell className="truncate text-body-sm text-muted-foreground" title={formatDate(record.entry_date)}>{formatDate(record.entry_date)}</TableCell>
-        <TableCell className="truncate text-body-sm tabular-nums" title={record.patient_id ?? "Not assigned"}>{record.patient_id ?? "Not assigned"}</TableCell>
         <TableCell className="truncate text-h4 font-semibold" title={record.patient_name}>{record.patient_name}</TableCell>
         <TableCell className="truncate text-body-sm" title={record.diagnosis || undefined}>{record.diagnosis || "No diagnosis"}</TableCell>
-        <TableCell className="truncate text-body-sm text-muted-foreground" title={record.lab_name || undefined}>{record.lab_name || "Not assigned"}</TableCell>
-        <TableCell className="text-right text-body-sm font-medium tabular-nums">{formatCurrency(record.total_cost)}</TableCell>
-        <TableCell className="text-right text-body-sm tabular-nums">{formatCurrency(totalPaid)}</TableCell>
-        <TableCell className="text-right text-body-sm tabular-nums">{formatCurrency(remaining)}</TableCell>
-        <TableCell>{isSettled ? <Badge variant="default" className="bg-chart-2 text-background text-caption">Payment Complete</Badge> : <Badge variant="secondary" className="text-caption">Incomplete</Badge>}</TableCell>
-        <TableCell>
-          <div className="flex justify-end gap-1">
-            <Button variant="ghost" size="xs" onClick={() => onToggleExpand(record.id)} aria-label={isExpanded ? `Hide payments for ${record.patient_name}` : `View payments for ${record.patient_name}`}>Payments<ChevronDown className="size-3" /></Button>
-            {onEdit && <Button variant="outline" size="xs" onClick={() => onEdit(record)} aria-label={`Edit visit for ${record.patient_name}`}><Pencil className="size-3" />Edit</Button>}
-            {!isSettled && onPay && <Button variant="outline" size="xs" onClick={() => onPay(record)} aria-label={`Record payment for ${record.patient_name}`}><CircleDollarSign className="size-3" />Pay</Button>}
-          </div>
+        <TableCell className="truncate text-right text-body-sm font-medium tabular-nums" title={formatCurrency(record.total_cost)}>{formatCurrency(record.total_cost)}</TableCell>
+        <TableCell className="truncate text-right text-body-sm tabular-nums" title={formatCurrency(totalPaid)}>{formatCurrency(totalPaid)}</TableCell>
+        <TableCell className="truncate text-right text-body-sm tabular-nums" title={formatCurrency(remaining)}>{formatCurrency(remaining)}</TableCell>
+        <TableCell>{isSettled ? <Badge variant="default" className="max-w-full bg-chart-2 text-background text-caption" title="Payment Complete"><span className="truncate">Payment Complete</span></Badge> : <Badge variant="secondary" className="max-w-full text-caption"><span className="truncate">Incomplete</span></Badge>}</TableCell>
+        <TableCell className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="outline" size="xs" aria-label={`Actions for ${record.patient_name}`} />}>Actions</DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-48">
+              <DropdownMenuItem onClick={() => onToggleExpand(record.id)}><ChevronDown className="size-3" />{isExpanded ? "Hide payments" : "View payments"}</DropdownMenuItem>
+              {onEdit && <DropdownMenuItem onClick={() => onEdit(record)}><Pencil className="size-3" />Edit visit</DropdownMenuItem>}
+              {!isSettled && onPay && <DropdownMenuItem onClick={() => onPay(record)}><CircleDollarSign className="size-3" />Record payment</DropdownMenuItem>}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </TableCell>
       </TableRow>
       {isExpanded && (
-        <PaymentHistoryRow recordId={record.id} colSpan={11} />
+        <PaymentHistoryRow recordId={record.id} colSpan={9} />
       )}
     </>
   );

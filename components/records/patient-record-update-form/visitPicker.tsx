@@ -5,7 +5,7 @@ import { useData } from "@/context/DataContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PatientSearchFilters } from "@/components/patients/patientSearch/filters";
-import { EMPTY_PATIENT_FILTERS, matchesPatientFilters } from "@/lib/patient-search";
+import { EMPTY_PATIENT_FILTERS, matchesRecordFilters } from "@/lib/patient-search";
 import { RecordCategory, type PatientRecord } from "@/lib/global";
 import { TablePagination, formatDate } from "../record-table/RecordTableHelpers";
 
@@ -13,7 +13,7 @@ export function VisitPicker({ category, onSelect }: { category: RecordCategory; 
   const { records } = useData();
   const [filters, setFilters] = useState({ ...EMPTY_PATIENT_FILTERS });
   const [page, setPage] = useState(1);
-  const matches = records.filter((record) => record.category === category && !!record.patient && matchesPatientFilters(record.patient, filters));
+  const matches = records.filter((record) => record.category === category && matchesRecordFilters(record, filters));
   return <div className="grid gap-4">
     <PatientSearchFilters value={filters} onChange={(next) => { setFilters(next); setPage(1); }} />
     <p className="text-body-sm text-muted-foreground">Visits in the selected month: {matches.length}</p>

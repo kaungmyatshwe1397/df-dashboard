@@ -1,5 +1,5 @@
 // Lab Selector — dropdown for choosing a lab from the available labs list.
-// Used in Case form fields. Lab name is required for all case records.
+// Cases may be saved before lab assignment and assigned or cleared later.
 
 "use client";
 
@@ -20,13 +20,16 @@ interface LabSelectorProps {
 
 export function LabSelector({ value, onChange, disabled }: LabSelectorProps) {
   const { labs } = useData();
+  const items = [{ value: "__unassigned__", label: "Not assigned" },
+    ...labs.map((lab) => ({ value: lab.lab_name, label: lab.lab_name }))];
 
   return (
-    <Select value={value} onValueChange={(v) => { if (v) onChange(v); }} disabled={disabled}>
-      <SelectTrigger className="w-full" aria-invalid={false}>
-        <SelectValue placeholder="Select lab" />
+    <Select items={items} value={value || "__unassigned__"} onValueChange={(v) => { if (v) onChange(v === "__unassigned__" ? "" : v); }} disabled={disabled}>
+      <SelectTrigger id="labName" className="w-full">
+        <SelectValue placeholder="Not assigned" />
       </SelectTrigger>
       <SelectContent>
+        <SelectItem value="__unassigned__">Not assigned</SelectItem>
         {labs.map((lab) => (
           <SelectItem key={lab.id} value={lab.lab_name}>
             {lab.lab_name}

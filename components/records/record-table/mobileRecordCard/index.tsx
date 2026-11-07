@@ -11,7 +11,7 @@ import type { MobileRecordCardPropsType } from "./types";
 
 export function MobileRecordCard({
   record, totalPaid = 0, remaining = 0, payments = [], expanded = false,
-  onToggleHistory, onEdit, onPay,
+  onToggleHistory, onEdit, onPay, rowNumber,
 }: MobileRecordCardPropsType) {
   const isCase = record.category === RecordCategory.CASE;
   const historyId = `mobile-payments-${record.id}`;
@@ -19,7 +19,7 @@ export function MobileRecordCard({
     <Card size="sm" className="min-w-0" aria-label={`Record for ${record.patient_name}`}>
       <CardHeader>
         <CardTitle className="[overflow-wrap:anywhere]">{record.patient_name}</CardTitle>
-        <CardDescription className="[overflow-wrap:anywhere]">{record.patient_id ?? "Not assigned"}</CardDescription>
+        {rowNumber !== undefined && <CardDescription>Record {rowNumber}</CardDescription>}
         {isCase && (
           <div className="flex flex-wrap gap-2 pt-2">
             {record.is_carried_forward && <Badge variant="outline">Carried forward</Badge>}
@@ -35,7 +35,6 @@ export function MobileRecordCard({
           {isCase && <>
             <DataField label="Paid"><span className="tabular-nums">{formatCurrency(totalPaid)}</span></DataField>
             <DataField label="Remaining"><span className="font-medium tabular-nums">{formatCurrency(remaining)}</span></DataField>
-            <DataField className="col-span-2" label="Lab">{record.lab_name || "Not provided"}</DataField>
           </>}
         </dl>
         {(onEdit || (isCase && onPay && remaining > 0)) && (
